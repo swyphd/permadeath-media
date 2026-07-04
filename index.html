@@ -3,13 +3,19 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Permadeath Media</title>
+<title>Permadeath Media — Game Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Stencil:wght@600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #0a0a0c;
-    --fg: #f4f4f5;
-    --accent: #ff3b3b;
-    --muted: #8a8a92;
+    --soot: #1A1A18;
+    --soot-2: #232320;
+    --oxide: #C0392B;
+    --yellow: #F1C40F;
+    --teal: #1A7A6E;
+    --paper: #E9E4D8;
+    --paper-dim: #B8B2A2;
   }
 
   * {
@@ -18,98 +24,329 @@
     box-sizing: border-box;
   }
 
-  html, body {
-    height: 100%;
+  html {
+    scroll-behavior: smooth;
   }
 
   body {
-    background: var(--bg);
-    color: var(--fg);
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
-    display: flex;
-    flex-direction: column;
-    min-height: 100vh;
-    background-image:
-      radial-gradient(circle at 20% 20%, rgba(255, 59, 59, 0.08), transparent 40%),
-      radial-gradient(circle at 80% 70%, rgba(255, 59, 59, 0.06), transparent 45%);
+    background: var(--soot);
+    color: var(--paper);
+    font-family: "IBM Plex Sans", sans-serif;
+    line-height: 1.5;
   }
 
-  main {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    padding: 2rem 1.5rem;
+  .stencil {
+    font-family: "Big Shoulders Stencil", sans-serif;
+    text-transform: uppercase;
+  }
+
+  .mono {
+    font-family: "IBM Plex Mono", monospace;
+  }
+
+  .hazard-rule {
+    height: 8px;
+    background: repeating-linear-gradient(
+      135deg,
+      var(--yellow) 0 16px,
+      var(--soot) 16px 32px
+    );
+  }
+
+  .wrap {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 0 1.5rem;
+  }
+
+  /* Header */
+  header {
+    padding: 3rem 0 2.5rem;
+    border-bottom: 1px solid rgba(233, 228, 216, 0.15);
   }
 
   .wordmark {
-    font-size: clamp(2.5rem, 8vw, 5rem);
+    font-size: clamp(2.75rem, 9vw, 5.5rem);
     font-weight: 800;
-    letter-spacing: 0.02em;
-    text-transform: uppercase;
-    line-height: 1.05;
-  }
-
-  .wordmark span {
-    color: var(--accent);
-  }
-
-  .tagline {
-    margin-top: 1.25rem;
-    font-size: clamp(1.1rem, 3vw, 1.5rem);
-    font-weight: 600;
-    color: var(--fg);
     letter-spacing: 0.01em;
+    color: var(--paper);
+    line-height: 0.95;
   }
 
-  .description {
-    margin-top: 1rem;
-    max-width: 34rem;
-    font-size: 1rem;
-    line-height: 1.6;
-    color: var(--muted);
+  .wordmark .hit {
+    color: var(--oxide);
   }
 
-  .cta {
-    margin-top: 2.5rem;
-    display: inline-block;
-    padding: 0.85rem 2rem;
-    border-radius: 999px;
-    background: var(--accent);
-    color: #0a0a0c;
-    font-weight: 700;
-    font-size: 1rem;
-    text-decoration: none;
-    letter-spacing: 0.01em;
-    transition: transform 0.15s ease, box-shadow 0.15s ease;
-    box-shadow: 0 0 0 rgba(255, 59, 59, 0);
-  }
-
-  .cta:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 24px rgba(255, 59, 59, 0.35);
-  }
-
-  footer {
-    padding: 1.5rem;
-    text-align: center;
+  .subline {
+    margin-top: 0.9rem;
     font-size: 0.85rem;
-    color: var(--muted);
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    letter-spacing: 0.18em;
+    color: var(--yellow);
+    text-transform: uppercase;
+  }
+
+  .subline::before {
+    content: "// ";
+    color: var(--teal);
+  }
+
+  /* Hero */
+  .hero {
+    padding: 3.5rem 0;
+  }
+
+  .hero h1 {
+    font-size: clamp(1.8rem, 4.5vw, 2.8rem);
+    font-weight: 700;
+    letter-spacing: 0.005em;
+    max-width: 20ch;
+    color: var(--paper);
+  }
+
+  .hero h1 .accent {
+    color: var(--oxide);
+  }
+
+  .hero p {
+    margin-top: 1.25rem;
+    max-width: 48ch;
+    font-size: 0.95rem;
+    color: var(--paper-dim);
+  }
+
+  /* Section label */
+  .section-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-size: 0.78rem;
+    letter-spacing: 0.16em;
+    color: var(--soot);
+    background: var(--yellow);
+    padding: 0.3rem 0.7rem;
+    margin-bottom: 1.75rem;
+  }
+
+  .section-label::before {
+    content: "";
+    width: 8px;
+    height: 8px;
+    background: var(--soot);
+    display: inline-block;
+  }
+
+  section {
+    padding: 3rem 0;
+    border-bottom: 1px solid rgba(233, 228, 216, 0.15);
+  }
+
+  /* Operations / file card */
+  .file-card {
+    background: var(--soot-2);
+    border: 1px solid rgba(233, 228, 216, 0.18);
+    border-left: 4px solid var(--teal);
+    padding: 1.5rem 1.75rem;
+  }
+
+  .file-card-top {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 0.75rem;
+    border-bottom: 1px dashed rgba(233, 228, 216, 0.25);
+    padding-bottom: 0.9rem;
+    margin-bottom: 0.9rem;
+  }
+
+  .file-id {
+    font-size: 0.75rem;
+    color: var(--paper-dim);
+    letter-spacing: 0.08em;
+  }
+
+  .status {
+    font-size: 0.75rem;
+    letter-spacing: 0.1em;
+    color: var(--teal);
+    border: 1px solid var(--teal);
+    padding: 0.15rem 0.6rem;
+  }
+
+  .status::before {
+    content: "\25CF ";
+  }
+
+  .file-title {
+    font-family: "Big Shoulders Stencil", sans-serif;
+    text-transform: uppercase;
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--paper);
+    letter-spacing: 0.01em;
+  }
+
+  .file-desc {
+    margin-top: 0.6rem;
+    color: var(--paper-dim);
+    font-size: 0.92rem;
+    max-width: 52ch;
+  }
+
+  .file-link {
+    display: inline-block;
+    margin-top: 1.25rem;
+    font-size: 0.85rem;
+    letter-spacing: 0.06em;
+    color: var(--soot);
+    background: var(--yellow);
+    padding: 0.65rem 1.1rem;
+    text-decoration: none;
+    font-weight: 500;
+    transition: background 0.15s ease;
+  }
+
+  .file-link:hover {
+    background: var(--paper);
+  }
+
+  .file-link::after {
+    content: " \2192";
+  }
+
+  /* Design principles */
+  .principles {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: 1.25rem;
+  }
+
+  .principle {
+    position: relative;
+    border: 1px solid rgba(233, 228, 216, 0.18);
+    padding: 1.5rem 1.25rem 1.25rem;
+    background: var(--soot-2);
+  }
+
+  .principle-num {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 0.75rem;
+    color: var(--oxide);
+    letter-spacing: 0.1em;
+    display: block;
+    margin-bottom: 0.75rem;
+  }
+
+  .principle h2 {
+    font-family: "Big Shoulders Stencil", sans-serif;
+    text-transform: uppercase;
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: var(--paper);
+    margin-bottom: 0.5rem;
+    letter-spacing: 0.01em;
+  }
+
+  .principle p {
+    font-size: 0.85rem;
+    color: var(--paper-dim);
+  }
+
+  .principle::before {
+    content: "";
+    position: absolute;
+    top: 0.9rem;
+    right: 0.9rem;
+    width: 10px;
+    height: 10px;
+    border: 1px solid var(--yellow);
+  }
+
+  /* Footer */
+  footer {
+    padding: 2rem 0 2.5rem;
+    text-align: center;
+  }
+
+  footer p {
+    font-size: 0.75rem;
+    letter-spacing: 0.08em;
+    color: var(--paper-dim);
+  }
+
+  @media (max-width: 480px) {
+    .file-card-top {
+      flex-direction: column;
+      align-items: flex-start;
+    }
   }
 </style>
 </head>
 <body>
-  <main>
-    <div class="wordmark">PERMA<span>DEATH</span> MEDIA</div>
-    <p class="tagline">Games that stick with you.</p>
-    <p class="description">
-      We make daily puzzle games. Our first game, Hexagons, is live now.
-    </p>
-    <a class="cta" href="https://hexagons-red.vercel.app" target="_blank" rel="noopener">Play Hexagons</a>
-  </main>
-  <footer>© 2026 Permadeath Media</footer>
+
+  <div class="hazard-rule"></div>
+
+  <div class="wrap">
+    <header>
+      <div class="wordmark">PERMA<span class="hit">DEATH</span> MEDIA</div>
+      <p class="subline mono">GAME STUDIO / EST. 2024</p>
+    </header>
+
+    <section class="hero">
+      <h1 class="stencil">We make games about <span class="accent">systems</span>, not villains.</h1>
+      <p class="mono">
+        Power is more interesting when it's structural. Our games put you inside
+        a bureaucracy, a hierarchy, a feedback loop — and ask you to understand
+        it, not just beat it.
+      </p>
+    </section>
+
+    <section id="operations">
+      <span class="section-label mono">Current Operations</span>
+
+      <div class="file-card">
+        <div class="file-card-top">
+          <span class="file-id mono">FILE NO. 001 / DAILY PUZZLE DIV.</span>
+          <span class="status mono">STATUS: ACTIVE</span>
+        </div>
+        <div class="file-title">Hexagons</div>
+        <p class="file-desc mono">
+          A daily puzzle game. One board, one system, one chance to see how
+          it fits together. New puzzle every day.
+        </p>
+        <a class="file-link mono" href="https://hexagons-red.vercel.app" target="_blank" rel="noopener">Play Hexagons</a>
+      </div>
+    </section>
+
+    <section id="principles">
+      <span class="section-label mono">Design Principles</span>
+
+      <div class="principles">
+        <div class="principle">
+          <span class="principle-num">NO. 01</span>
+          <h2>Systems over stories</h2>
+          <p>A rulebook is more honest than a plot. We'd rather hand you a
+          machine than tell you a myth.</p>
+        </div>
+        <div class="principle">
+          <span class="principle-num">NO. 02</span>
+          <h2>Power without heroes</h2>
+          <p>No chosen ones, no final bosses. Just structures, incentives,
+          and the people caught inside them.</p>
+        </div>
+        <div class="principle">
+          <span class="principle-num">NO. 03</span>
+          <h2>Games as working models</h2>
+          <p>A good game simulates how something actually works — then lets
+          you feel what that means.</p>
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      <p class="mono">© 2026 PERMADEATH MEDIA</p>
+    </footer>
+  </div>
+
 </body>
 </html>
