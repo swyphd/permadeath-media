@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
 <title>Card Check — Playtest · Permadeath Media</title>
 <meta name="description" content="Card Check: a cooperative card game about running a union drive inside a game studio. Online playtest build from Permadeath Media.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -15,17 +16,20 @@
   --eng:#2b6cb0;--art:#b83280;--qa:#2f855a;--prod:#c05621;
   --red:#b7312c;--amber:#b7791f;--ok:#2f855a;--accent:#1f3b6e;--accent-ink:#ffffff;
   --hostile:#fff1f0;--undecided:#f7f8fa;--leaning:#eef5fc;--signed:#edf8f0;--steward:#e3f3e8;
-  --sel:#f6c34c;
+  --sel:#f6c34c;--sel-ink:#1c2230;
+  color-scheme:light dark;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
   --bg:#161a22;--panel:#1f2430;--ink:#e8ebf0;--muted:#9aa5b5;--line:#343b48;--soft:#262c38;
   --hostile:#3a2422;--undecided:#262c38;--leaning:#1f2d40;--signed:#1f3328;--steward:#20402b;
-  --accent:#6f9ae0;--accent-ink:#0f1420;--sel:#e0b23a;
+  --accent:#6f9ae0;--accent-ink:#0f1420;--sel:#e0b23a;--sel-ink:#1c2230;
+  --red:#f28b84;--amber:#e8bc5a;--ok:#6fd49a;
 }}
 :root[data-theme="dark"]{
   --bg:#161a22;--panel:#1f2430;--ink:#e8ebf0;--muted:#9aa5b5;--line:#343b48;--soft:#262c38;
   --hostile:#3a2422;--undecided:#262c38;--leaning:#1f2d40;--signed:#1f3328;--steward:#20402b;
-  --accent:#6f9ae0;--accent-ink:#0f1420;--sel:#e0b23a;
+  --accent:#6f9ae0;--accent-ink:#0f1420;--sel:#e0b23a;--sel-ink:#1c2230;
+  --red:#f28b84;--amber:#e8bc5a;--ok:#6fd49a;
 }
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
 *{box-sizing:inherit}
@@ -39,11 +43,11 @@ button:hover{border-color:var(--accent)}
 button:focus-visible{outline:3px solid var(--sel);outline-offset:1px}
 button:disabled{opacity:.45;cursor:default}
 button.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600}
-button.armed{background:var(--sel);color:#1c2230;border-color:var(--sel);font-weight:600}
+button.armed{background:var(--sel);color:var(--sel-ink);border-color:var(--sel);font-weight:600}
 input{font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--ink)}
 .wrap{max-width:1360px;margin:0 auto;padding:14px}
-.home{display:block;max-width:1360px;margin:0 auto;padding:10px 14px 0;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);text-decoration:none}
-.home:hover{color:var(--accent)}
+.home{display:inline-block;padding:5px 10px;border:1px solid var(--line);border-radius:6px;background:var(--panel);font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink);text-decoration:none;white-space:nowrap}
+.home:hover{border-color:var(--accent);color:var(--accent)}
 .credit{max-width:1360px;margin:0 auto;padding:4px 14px 20px;font-size:12px;color:var(--muted)}
 .top{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;margin-bottom:12px}
 .top .sub{color:var(--muted)}
@@ -100,7 +104,7 @@ input{font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:6
 .actions button{padding:7px 6px;font-size:13px}
 .hint{font-size:13px;color:var(--muted);margin-top:8px;min-height:1.4em}
 .hint.warn{color:var(--red)}
-.prompt{background:var(--sel);color:#1c2230;padding:8px 10px;border-radius:6px;font-weight:600;margin-top:8px}
+.prompt{background:var(--sel);color:var(--sel-ink);padding:8px 10px;border-radius:6px;font-weight:600;margin-top:8px}
 
 /* fear */
 .fear{display:flex;align-items:center;gap:10px}
@@ -150,7 +154,6 @@ input{font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:6
 </style>
 </head>
 <body>
-<a class="home" href="/">&larr; Permadeath Media</a>
 <div class="wrap" id="app"></div>
 <p class="credit">Card Check is a Permadeath Media playtest build. Rules and cards are subject to change.</p>
 <div class="toast" id="toast"></div>
@@ -510,6 +513,7 @@ async function connectFirestore(){
 }
 let db=null,userApi=null,myId=null,code=null,G=null,unsub=null,armed=null,offline=false;
 const app=document.getElementById("app");
+const HOME=`<a class="home" href="/">&larr; Permadeath Media</a>`;
 const $=(h)=>{const t=document.createElement("template");t.innerHTML=h.trim();return t.content.firstChild;};
 function esc(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
 function toast(t){const e=document.getElementById("toast");e.textContent=t;e.classList.add("show");clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove("show"),2200);}
@@ -533,7 +537,7 @@ function renderLobby(){
   const recent=(ls("cc_recent")||"").split(",").filter(Boolean).slice(0,6);
   app.innerHTML="";
   app.appendChild($(`<div class="lobby stack">
-    <div class="top"><h1>Card Check</h1><span class="sub">online playtest · v0.1</span></div>
+    <div class="top"><h1>Card Check</h1><span class="sub">online playtest · v0.1</span><span class="spacer"></span>${HOME}</div>
     <div class="panel stack">
       <h2>Start a game</h2>
       <p class="small">${offline?"This playtest build runs on your device only: play solo, or pass-and-play on one screen.":"Each game gets a code. Share the link; everyone claims an organizer on their own device."}</p>
@@ -556,7 +560,7 @@ function renderSeats(){
   const mine=G.seats.filter(s=>s.playerId===myId).length;
   app.innerHTML="";
   const el=$(`<div class="lobby stack">
-    <div class="top"><h1>Card Check</h1><span class="sub">lobby</span><span class="spacer"></span><span class="code">${code}</span></div>
+    <div class="top"><h1>Card Check</h1><span class="sub">lobby</span><span class="spacer"></span><span class="code">${code}</span>${HOME}</div>
     <div class="panel stack">
       ${offline?"":`<p>Share this link: <a href="${location.href}">${location.href}</a></p>`}
       <p class="small">Claim an organizer. ${G.hotseat?"This game lets anyone control any seat, so one person can claim several.":"Each person claims their own; to play solo, start a game with the one-screen option."} Any count faces the full 32 workers. 21 to win; 24 with four organizers.</p>
@@ -583,7 +587,7 @@ function render(){
   const root=$(`<div>
     ${why.length?`<div class="panel" style="margin-bottom:10px;border-color:var(--red);color:var(--red);font-size:13px">${why.map(esc).join(" ")}</div>`:""}
     <div class="top"><h1>Card Check</h1><span class="sub">${g.phase==="over"?"game over":`round ${g.round} of ${g.maxRound}`}${g.phase==="absorb"?" · management phase":g.phase==="steward"?" · steward phase":""}</span><span class="spacer"></span>
-      <span class="small">${sc} Signed/Steward · ${g.threshold} needed${sc!==vc?` · ${vc} would count now`:""}</span>${offline?"":`<span class="code" style="font-size:18px">${code}</span>`}</div>
+      <span class="small">${sc} Signed/Steward · ${g.threshold} needed${sc!==vc?` · ${vc} would count now`:""}</span>${offline?"":`<span class="code" style="font-size:18px">${code}</span>`}${HOME}</div>
     ${g.phase==="over"?`<div class="banner ${g.result}">${g.result==="win"?"The union is certified.":"The drive is broken."} ${esc(g.why||"")}</div>`:""}
     <div class="grid">
       <div class="side stack" id="side"></div>
