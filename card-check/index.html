@@ -497,7 +497,7 @@ function afterAction(g){ if(g.phase!=="org")return; cleanPending(g); if(g.pendin
 /* ============ APP / SYNC ============ */
 /* Online play. Paste the web app config from the Firebase console here.
    Leave apiKey empty and the game stays device-only (solo / pass-and-play). */
-const FIREBASE_CONFIG={apiKey:"",authDomain:"",projectId:"",appId:""};
+const FIREBASE_CONFIG={apiKey:"AIzaSyCam5Zmp9Aa8JYy3fcA7xqJQ3WKfIsc7qQ",authDomain:"card-check-12453.firebaseapp.com",projectId:"card-check-12453",appId:"1:787538877518:web:9c89e5cdc48d145475b71f"};
 const GAME_TTL_DAYS=7;
 function loadScript(src){return new Promise((res,rej)=>{const e=document.createElement("script");e.src=src;e.onload=res;e.onerror=()=>rej(new Error("failed to load "+src));document.head.appendChild(e);});}
 async function connectFirestore(){
