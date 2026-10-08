@@ -495,6 +495,19 @@ function afterAction(g){ if(g.phase!=="org")return; cleanPending(g); if(g.pendin
 </script>
 <script>
 /* ============ APP / SYNC ============ */
+/* Online play. Paste the web app config from the Firebase console here.
+   Leave apiKey empty and the game stays device-only (solo / pass-and-play). */
+const FIREBASE_CONFIG={apiKey:"",authDomain:"",projectId:"",appId:""};
+const GAME_TTL_DAYS=7;
+function loadScript(src){return new Promise((res,rej)=>{const e=document.createElement("script");e.src=src;e.onload=res;e.onerror=()=>rej(new Error("failed to load "+src));document.head.appendChild(e);});}
+async function connectFirestore(){
+  if(!FIREBASE_CONFIG.apiKey||!FIREBASE_CONFIG.projectId)return null;
+  const v="10.14.1";
+  await loadScript(`https://www.gstatic.com/firebasejs/${v}/firebase-app-compat.js`);
+  await loadScript(`https://www.gstatic.com/firebasejs/${v}/firebase-firestore-compat.js`);
+  firebase.initializeApp(FIREBASE_CONFIG);
+  return firebase.firestore();
+}
 let db=null,userApi=null,myId=null,code=null,G=null,unsub=null,armed=null,offline=false;
 const app=document.getElementById("app");
 const $=(h)=>{const t=document.createElement("template");t.innerHTML=h.trim();return t.content.firstChild;};
@@ -504,12 +517,14 @@ function ls(k,v){try{if(v===undefined)return localStorage.getItem(k);localStorag
 function localId(){let id=ls("cc_local_id");if(!id){id="local_"+Math.random().toString(36).slice(2,10);ls("cc_local_id",id);}return id;}
 function genCode(){const a="ABCDEFGHJKLMNPQRSTUVWXYZ23456789";let s="";for(let i=0;i<5;i++)s+=a[Math.floor(Math.random()*a.length)];return s;}
 function docRef(){return db.doc("games/"+code);}
-async function write(g){ G=g; if(db&&!offline){ try{ await docRef().set(g); }catch(e){ toast("Could not sync: "+(e.code||e.message)); } } render(); }
+function expiresAt(){ return (window.firebase&&firebase.firestore)?firebase.firestore.Timestamp.fromMillis(Date.now()+GAME_TTL_DAYS*864e5):null; }
+async function write(g){ G=g; if(db&&!offline){ try{ const doc=clone(g); const x=expiresAt(); if(x)doc.expires=x; await docRef().set(doc); }catch(e){ toast("Could not sync: "+(e.code||e.message)); } } render(); }
 function controls(oi){ const o=G.orgs[oi]; if(G.hotseat||offline||!myId)return true; return o.playerId===myId; }
 
 async function init(){
   myId=localId();
-  try{ db=await window.claude.use("db"); userApi=await window.claude.use("user"); if(userApi){const id=await userApi.id(); if(id)myId=id;} }catch(e){}
+  try{ db=await connectFirestore(); }catch(e){ toast("Online play unavailable: "+e.message); }
+  if(!db){ try{ db=await window.claude.use("db"); userApi=await window.claude.use("user"); if(userApi){const id=await userApi.id(); if(id)myId=id;} }catch(e){} }
   if(!db)offline=true;
   const h=location.hash.replace("#","").toUpperCase();
   if(h&&/^[A-Z0-9]{5}$/.test(h)&&!offline){ join(h); } else renderLobby();
