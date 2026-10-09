@@ -45,7 +45,8 @@ async function fetchWithTimeout(url, init) {
   }
 }
 
-// Returns 'subscribed', 'exists', 'skipped' (no key) or throws.
+// Returns 'subscribed', 'exists', 'blocked' (Buttondown's spam firewall said
+// no), 'skipped' (no key) or throws.
 async function addToButtondown(email, source, apiKey) {
   if (!apiKey) return 'skipped';
   const res = await fetchWithTimeout(BUTTONDOWN_URL, {
@@ -58,6 +59,7 @@ async function addToButtondown(email, source, apiKey) {
   try { detail = await res.json(); } catch (e) { /* non-JSON error body */ }
   const code = detail && (detail.code || detail.detail || '');
   if (res.status === 400 && /already_exists|already subscribed/i.test(String(code))) return 'exists';
+  if (res.status === 400 && /subscriber_blocked|blocked/i.test(String(code))) return 'blocked';
   throw new Error(`Buttondown ${res.status}: ${JSON.stringify(detail)}`);
 }
 
@@ -109,6 +111,7 @@ module.exports = async function handler(req, res) {
   if (!backupOk) console.error('newsletter: Supabase backup failed', backup.reason && backup.reason.message);
 
   if (mailerOk && mailer.value === 'skipped') console.warn('newsletter: BUTTONDOWN_API_KEY is not set; kept the backup record only');
+  if (mailerOk && mailer.value === 'blocked') console.warn(`newsletter: Buttondown's firewall blocked ${email}; kept the backup record only`);
   if (mailerOk || backupOk) {
     return send(res, 200, { ok: true, mailer: mailerOk ? mailer.value : 'failed', backup: backupOk ? backup.value : 'failed' });
   }
