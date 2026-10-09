@@ -20,24 +20,33 @@ address.
 
 ## Mailing list
 
-Every page (the site, Hexagons, Card Check) and the two games hosted
-elsewhere (Guild Rising, Union Up) carry an email signup form. Signups
-are stored in the `newsletter_signups` table of the Supabase project the
-games already use; nothing is sent to a third-party mailer.
+Every page (the site, Hexagons, Card Check, Guild Rising, Union Up) carries
+an email signup form. The forms post to `/api/subscribe`, a Vercel
+serverless function in `api/subscribe.js`, which:
 
-Setup, once: open the Supabase SQL Editor and run `newsletter-signups.sql`.
-Until the table exists the forms show "Something went wrong".
+1. creates the subscriber in **Buttondown**, tagged with the page it came
+   from (`site`, `hexagons`, `card-check`, `guild-rising`, `union-up`).
+   Buttondown sends the welcome email and handles unsubscribes;
+2. writes the same address to the `newsletter_signups` table in the
+   Supabase project the games already use, as a backup record
+   (`newsletter-signups.sql` creates it; insert-only from the public API).
 
-Each form posts the lowercased address and a `source` (`site`, `hexagons`,
-`card-check`, `guild-rising`, `union-up`) straight to the Supabase REST
-API with the public key. The table is insert-only from the public API, so
-the list can only be read from the dashboard. A repeat address is treated
-as success. To export the list for a mailer:
+A repeat address counts as success in both places. If the Buttondown key
+is missing the function still keeps the backup row and answers ok, so a
+misconfiguration never breaks a form; it logs a warning instead.
+
+### Setup
+
+- **Vercel**: add the environment variable `BUTTONDOWN_API_KEY` to the
+  permadeath-media project (Production and Preview) with the API key from
+  Buttondown → Settings → Programming, then redeploy.
+- **Buttondown**: write the welcome email under Settings → Subscribing.
+  Decide there whether new subscribers must confirm their address first
+  (Buttondown's default) or go straight on the list.
+- **Supabase**: run `newsletter-signups.sql` once in the SQL Editor.
+
+To export the backup list for any reason:
 
 ```sql
 select email, source, created_at from public.newsletter_signups order by created_at;
 ```
-
-To move the list to a mailing service later, change `SIGNUP_URL`,
-`SIGNUP_KEY` and the body of `subscribe()` in each page; the forms do not
-depend on anything else.
