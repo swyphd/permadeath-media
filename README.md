@@ -1,6 +1,22 @@
 # Permadeath Media
 
-Official website for Permadeath Media.
+Official website for Permadeath Media, served at https://permadeathmedia.com.
+
+## Where the games live
+
+| Path | Source |
+| --- | --- |
+| `/hexagons/` | `hexagons/` in this repo |
+| `/card-check/` | `card-check/` in this repo |
+| `/guild-rising/` | the `swyphd/guild-rising` repo, deployed on its own Vercel project |
+| `/union-up/` | the `swyphd/union-up` repo, deployed on its own Vercel project |
+
+`vercel.json` proxies `/guild-rising/` and `/union-up/` to those two
+deployments, so each game keeps its own repo, build and deploy. The two
+apps are built with a matching Vite `base`, and their old `*.vercel.app`
+addresses send visitors here. Adding another separately-built game is the
+same three steps: a rewrite here, a `base` there, a redirect on its old
+address.
 
 ## Mailing list
 
