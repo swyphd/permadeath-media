@@ -653,10 +653,16 @@ function render(){
   if(g.phase==="over"){const b=$(`<div class="panel"><button class="primary" id="again">Back to lobby (same seats)</button></div>`); root.querySelector("#side").appendChild(b);
     b.querySelector("#again").onclick=async()=>{ if(g.local){ try{localStorage.removeItem("cc_local");}catch(e){} G=null; renderLobby(); return; } const ng={phase:"lobby",seats:g.seats,hotseat:g.hotseat,host:g.host,seed:Math.floor(Math.random()*1e9)};await write(ng);};}
 }
-function fearSvg(f){ const a=-120+240*(f/10); const rad=a*Math.PI/180; const x=46+34*Math.sin(rad), y=50-34*Math.cos(rad);
-  return `<svg class="dial" viewBox="0 0 92 92"><path d="M16 74 A38 38 0 1 1 76 74" fill="none" stroke="var(--line)" stroke-width="8" stroke-linecap="round"/>
+function fearSvg(f){ const ang=v=>-120+24*v; const pt=(v,r)=>{const a=ang(v)*Math.PI/180;return [46+r*Math.sin(a),50-r*Math.cos(a)];};
+  const [x7,y7]=pt(7,38),[x10,y10]=pt(10,38); const tick=v=>{const [a,b]=pt(v,31),[c,d]=pt(v,45);return `<line x1="${a.toFixed(1)}" y1="${b.toFixed(1)}" x2="${c.toFixed(1)}" y2="${d.toFixed(1)}" stroke="var(--red)" stroke-width="2"/>`;};
+  const [lx7,ly7]=pt(7,52),[lx10,ly10]=pt(10,52); const [nx,ny]=pt(f,34);
+  return `<svg class="dial" viewBox="-6 -2 104 96" aria-label="Fear ${f} of 10; danger from 7"><path d="M16 74 A38 38 0 1 1 76 74" fill="none" stroke="var(--line)" stroke-width="8" stroke-linecap="round"/>
+  <path d="M${x7.toFixed(1)} ${y7.toFixed(1)} A38 38 0 0 1 ${x10.toFixed(1)} ${y10.toFixed(1)}" fill="none" stroke="var(--red)" stroke-opacity=".35" stroke-width="8"/>
   <path d="M16 74 A38 38 0 1 1 76 74" fill="none" stroke="${f>=8?"var(--red)":f>=7?"var(--amber)":"var(--accent)"}" stroke-width="8" stroke-linecap="round" stroke-dasharray="${(f/10)*159} 200"/>
-  <line x1="46" y1="50" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}" stroke="var(--ink)" stroke-width="3" stroke-linecap="round"/><circle cx="46" cy="50" r="4" fill="var(--ink)"/></svg>`; }
+  ${tick(7)}${tick(10)}
+  <text x="${lx7.toFixed(1)}" y="${(ly7+3).toFixed(1)}" font-size="9" font-weight="700" text-anchor="middle" fill="var(--red)" font-family="Barlow Condensed, sans-serif">7</text>
+  <text x="${lx10.toFixed(1)}" y="${(ly10+3).toFixed(1)}" font-size="9" font-weight="700" text-anchor="middle" fill="var(--red)" font-family="Barlow Condensed, sans-serif">10</text>
+  <line x1="46" y1="50" x2="${nx.toFixed(1)}" y2="${ny.toFixed(1)}" stroke="var(--ink)" stroke-width="3" stroke-linecap="round"/><circle cx="46" cy="50" r="4" fill="var(--ink)"/></svg>`; }
 
 function renderSide(el,g,pend){
   const f=g.fear;
@@ -730,7 +736,7 @@ function renderMgmt(el,g){
   const row=$(`<div class="mrow"></div>`);
   for(let i=0;i<9;i++){ const s=g.row[i]; const filled=s&&s.cards.length; const now=i===g.round-1;
     const label=i===7?"vote":i===8?(g.maxRound===9?"vote":"—"):i===3?"tier 2":i===6?"tier 3":"";
-    const e=$(`<div class="slot ${filled?"filled":""} ${now?"now":""}"><div class="n">${i+1}</div>${filled?`<div class="cards">${s.cards.map(id=>MGMT.find(m=>m[0]===id)[2]).join("<br>")}</div>`:`<div>${label}</div>`}${s&&s.issues&&s.issues.length?`<div title="${s.issues.length} Issue card${s.issues.length===1?"":"s"}: +${s.issues.length} draw">${s.issues.map(()=>'<span class="iss"></span>').join("")}</div>`:""}</div>`);
+    const e=$(`<div class="slot ${filled?"filled":""} ${now?"now":""}" data-slot="${i+1}"><div class="n">${i+1}</div>${filled?`<div class="cards">${s.cards.map(id=>MGMT.find(m=>m[0]===id)[2]).join("<br>")}</div>`:`<div>${label}</div>`}${s&&s.issues&&s.issues.length?`<div title="${s.issues.length} Issue card${s.issues.length===1?"":"s"}: +${s.issues.length} draw">${s.issues.map(()=>'<span class="iss"></span>').join("")}</div>`:""}</div>`);
     if(filled)e.title=s.cards.map(id=>{const m=MGMT.find(x=>x[0]===id);return m[2]+": "+m[3];}).join("\n");
     row.appendChild(e); }
   el.appendChild(row);
@@ -771,7 +777,7 @@ function renderRight(el,g){
 /* A fixed opening so the guided game plays out the same way every time. */
 const TUT_SCRIPT={piles:{Eng:[1,3,4,2,7],Prod:[26]},deck:{1:[5,4,2,1],2:[16,14]}};
 const TUT=[
- {h:"Welcome to Card Check",next:true,spot:".board",t:"You are <b>The Senior Engineer</b>, one organizer at a game studio. The goal: <b>21 of 32 workers Signed</b> before the union vote in round 8. The board is the studio: one row per department, one column per disposition from Hostile to Steward. Two Engineering workers are already known: Priya and Dev, both Leaning."},
+ {h:"Welcome to Card Check",next:true,spot:".board",t:"You are <b>The Senior Engineer</b> and you’re organizing a union at a video game studio. Your goal: <b>21 of 32 workers on board</b> before the union vote in round 8. The game board you see here is the studio: one row per department, one column per disposition from Hostile to Steward. Two Engineering workers are already known: Priya and Dev, both in the Leaning column."},
  {h:"Management moves first, every round",next:true,spot:".fear",t:"Management already played <b>Culture Survey</b>: Fear went from 3 to 4. Fear is the studio's anxiety meter. At <b>7</b> One-on-Ones cost double and every organizer takes Burnout at round end. At <b>10</b> the drive collapses. You will learn to push it back down."},
  {h:"You get 3 actions a round. Start with Map.",allow:["[data-act=map]"],t:"Map turns over the next card in a department pile: you learn who works there and how they feel. Click <b>Map</b>.",done:()=>armed==="map"},
  {h:"Click the Engineering pile",allow:["[data-pile=Eng]"],t:"Mapping your home department costs 1 action. Any other department costs 2, or 1 once somebody there is Signed.",done:g=>g.workers[4].onBoard},
@@ -781,38 +787,38 @@ const TUT=[
  {h:"Influence",allow:["[data-wk='3']"],t:"Priya has 2 influence: when she signs she brings up to two colleagues in her department one step each, and you choose who. Pick <b>Dev</b>.",done:g=>g.workers[3].disp>=3},
  {h:"Priya's second pick",allow:["[data-wk='4']"],t:"Pick <b>Tomasz</b>. He goes from Undecided to Leaning.",done:g=>g.workers[4].disp>=2},
  {h:"Influence chains",allow:["[data-wk='4']"],t:"Dev just signed too, and Dev has 1 influence of his own. Pick <b>Tomasz</b> again and he signs. One action, three signatures.",done:g=>g.workers[4].disp>=3},
- {h:"Three Signed workers who share Crunch",next:true,spot:"[data-issue=crunch]",t:"That unlocks a <b>Small Win</b>. Each Issue on the right needs 3 Signed or Steward workers who share its icon. Winning one moves every worker with that icon up a step, lowers Fear, and changes a rule for the rest of the game. The price: management draws an extra card next round. You get three Small Wins per game."},
+ {h:"Three Signed workers who share Crunch",next:true,spot:"[data-issue=crunch]",t:"That unlocks a <b>Small Win</b>. Each Issue on the right needs 3 Signed or Steward workers who share its icon. Each Small Win moves every worker with that icon up a step, lowers Fear, and changes a rule for the rest of the game. The price: management draws an extra card next round. You get three Small Wins per game."},
  {h:"Click Small Win",allow:["[data-act=win]"],t:"It costs 1 action, 2 when Fear is 8 or higher.",done:()=>armed==="win"},
  {h:"Win End Crunch",allow:["[data-issue=crunch]"],t:"Click <b>End Crunch</b> in the Issues panel.",done:g=>won(g,"crunch")},
- {h:"No actions left. End your turn.",allow:["[data-act=end]"],t:"Then comes the <b>status check</b>: Fear 7 or more burns every organizer, Fear 10 ends the drive. Then management plays again.",done:g=>g.round===2},
+ {h:"No actions left. End your turn.",allow:["[data-act=end]"],t:"At the end of every round comes a <b>fear check</b>: Fear of 7 or more burns every organizer, Fear 10 ends the drive. If you pass the fear check, management turns over its next card(s) and the next round starts.",done:g=>g.round===2},
  {h:"Round 2: two cards",next:true,spot:".mpanel",t:"Because you won an Issue, management drew two cards: <b>Town Hall</b> (Fear +1, and your next One-on-One costs 2) and <b>Captive-Audience Meeting</b>, which found no Undecided workers to hit. Watch the Management panel each round: it shows what was played and how many cards come next."},
- {h:"Build Committee",allow:["[data-act=com]"],t:"A Signed <b>Leader</b> (star) can become a <b>Steward</b> for 2 actions. Stewards are how you hold ground. Click <b>Build Committee</b>.",done:()=>armed==="com"},
+ {h:"Build Committee",allow:["[data-act=com]"],t:"A Signed <b>Leader</b> ★ can become a <b>Steward</b> for 2 actions. Stewards make up your leadership team and are your best allies. Click <b>Build Committee</b>.",done:()=>armed==="com"},
  {h:"Make Priya a Steward",allow:["[data-wk='1']"],t:"Click Priya's card.",done:g=>g.workers[1].disp===4},
- {h:"What a Steward does",next:true,spot:"[data-wk='1']",t:"Three things. Every round, one <b>free One-on-One</b> in her department. At the start of every round, she <b>brings one worker up</b> a step. And <b>once per game</b> she can <b>absorb</b> a management card aimed at her department. Her card shows which of these are still ready."},
- {h:"Overwork",allow:["[data-act=ow]"],t:"Overwork gives +1 action this round for +1 Burnout. Burnout 2 means 2 actions a round; Burnout 3 means 1 action and no ability. You won End Crunch, so right now it's <b>free</b>. Click <b>Overwork</b>.",done:g=>g.orgs[0].overworked},
+ {h:"What a Steward does",next:true,spot:"[data-wk='1']",t:"At the start of every round, she brings one worker in her department up a step: a free one-on-one. And <b>once per game</b> she can <b>absorb</b> a management card aimed at her department. Her card shows which of these are still ready."},
+ {h:"Overwork",allow:["[data-act=ow]"],t:"Overwork gives +1 action this round for +1 Burnout. If you are at Burnout 2, you only get 2 actions a round; Burnout 3 means 1 action and no ability. You won End Crunch, so right now Overwork is <b>free</b>. Click <b>Overwork</b>.",done:g=>g.orgs[0].overworked},
  {h:"Map again",allow:["[data-act=map]"],t:"Click <b>Map</b>.",done:()=>armed==="map"},
  {h:"Click the Engineering pile",allow:["[data-pile=Eng]"],t:"",done:g=>g.workers[2].onBoard},
- {h:"Marcus is a holdout",next:true,spot:"[data-wk='2']",t:"The lock means Marcus will <b>not sign until Pay Transparency is won</b>. One-on-Ones take him to Leaning and no further. Pay Transparency needs 3 Signed workers with Pay. Dev is one. Keep an eye out for two more."},
+ {h:"Marcus is a holdout",next:true,spot:"[data-wk='2']",t:"The lock means Marcus will <b>not sign until Pay Transparency is won</b>. One-on-Ones can take him to Leaning but no further. The Pay Transparency Small Win needs 3 Signed workers with Pay. Dev is one. Keep an eye out for two more."},
  {h:"Reassure",allow:["[data-act=re]"],t:"1 action, Fear −1, once per round for the whole committee. Fear is 4 after Town Hall. Click <b>Reassure</b>.",done:g=>g.reassuredRound},
  {h:"End your turn",allow:["[data-act=end]"],t:"Round 3 is coming, and this time management will aim at Engineering.",done:g=>g.round===3&&g.phase==="absorb"},
- {h:"A Steward's absorb decision",allow:["[data-act=absorb]"],absorb:[],t:"<b>Open Door Policy</b> would pull your highest-influence Leaning worker, Marcus, back to Undecided. Priya could absorb it, but a Steward absorbs <b>once per game</b>. This one is small. Let it through and save the absorb. Click <b>Resolve the card</b>.",done:g=>g.phase==="steward"},
+ {h:"A Steward's absorb decision",allow:["[data-act=absorb]"],absorb:[],t:"<b>Open Door Policy</b> would pull your highest-influence Leaning worker, Marcus, back to Undecided. Priya could absorb it, but a Steward only absorbs <b>once per game</b>. This one is small. Let it through and save the absorb. Click to <b>Resolve the card</b>.",done:g=>g.phase==="steward"},
  {h:"Steward phase",allow:["[data-wk='2']"],t:"At the start of each round, each Steward brings one worker in her department up a step. Marcus got knocked down, so pick <b>Marcus</b> to bring him back to Leaning.",done:g=>g.workers[2].disp===2&&g.phase==="org"},
- {h:"Town Hall is still in effect",allow:["[data-act=map]"],t:"Your next paid One-on-One costs 2, so Map first for 1 action. Click <b>Map</b>.",done:()=>armed==="map"},
+ {h:"Town Hall is still in effect",allow:["[data-act=map]"],t:"Thanks to management’s Town Hall, your next paid One-on-One costs 2, so Map first for 1 action. Click <b>Map</b>.",done:()=>armed==="map"},
  {h:"Click the Engineering pile",allow:["[data-pile=Eng]"],t:"",done:g=>g.workers[7].onBoard},
  {h:"Sam: a contract worker with Pay",allow:["[data-act=one]"],t:"Contract workers can be removed from the board by a <b>Contract Ends</b> card, so sign them while you can. Click <b>One-on-One</b>.",done:()=>armed==="one"},
  {h:"Talk to Sam, for free",allow:["[data-wk='7']"],t:"Priya is a Steward in Engineering, so one One-on-One there each round costs <b>0</b>, Town Hall or not. Click Sam's card. That makes two Pay signatures: Dev and Sam.",done:g=>g.workers[7].disp>=3},
  {h:"Two actions left. Go find the third Pay signature.",allow:["[data-act=map]"],t:"Mapping another department costs 2 actions. Click <b>Map</b>.",done:()=>armed==="map"},
  {h:"Click the Production pile",allow:["[data-pile=Prod]"],t:"",done:g=>g.workers[26].onBoard},
- {h:"Esteban, Associate Producer. End your turn.",allow:["[data-act=end]"],t:"Pay and Credit, Leaning, and a Leader. No actions left to talk to him now. Round 4 starts <b>tier 2</b>: management's cards get nastier. Tier 3 starts in round 7.",done:g=>g.round===4&&g.phase==="absorb"},
- {h:"This one is worth the absorb",allow:["[data-act=absorb]"],absorb:[1],t:"<b>Supervisor Pressure</b> hits every department with a Steward and would knock Marcus down again. Priya's absorb is ticked. Click <b>Resolve the card</b> and nothing happens in Engineering. Her absorb is now spent for the game.",done:g=>g.round===4&&g.phase==="org"},
- {h:"Talk to Esteban",allow:["[data-act=one]"],t:"Town Hall is still waiting for a paid One-on-One, so this one costs 2. Click <b>One-on-One</b>.",done:()=>armed==="one"},
+ {h:"Esteban, Associate Producer. End your turn.",allow:["[data-act=end]"],spot:".slot[data-slot='4'],.slot[data-slot='7']",t:"Pay and Credit, Leaning, and a Leader. No actions left to talk to him now. Round 4 starts <b>tier 2</b>: management's cards get nastier. Tier 3 starts in round 7. Both are marked on the management shelf below the board.",done:g=>g.round===4&&g.phase==="absorb"},
+ {h:"This one is worth the absorb",allow:["[data-act=absorb]"],absorb:[1],t:"Management just activated <b>Supervisor Pressure</b>, which hits every department with a Steward and would knock Marcus down again. Priya's absorb is ticked. Click <b>Resolve the card</b> to protect Engineering. Her absorb is now spent for the game.",done:g=>g.round===4&&g.phase==="org"},
+ {h:"Talk to Esteban",allow:["[data-act=one]"],t:"The Town Hall cost effect on your “next One-on-One” hasn’t been triggered yet, so this one costs 2. Click <b>One-on-One</b>.",done:()=>armed==="one"},
  {h:"Click Esteban",allow:["[data-wk='26']"],t:"Three Pay signatures: Pay Transparency is ready.",done:g=>g.workers[26].disp>=3},
  {h:"One action left: Reassure",allow:["[data-act=re]"],t:"Fear is 4. Spare actions are best spent keeping Fear down; it only gets harder to lower later. Click <b>Reassure</b>.",done:g=>g.reassuredRound},
  {h:"End your turn",allow:["[data-act=end]"],t:"",done:g=>g.round===5&&g.phase==="org"},
- {h:"Mandatory Meeting with HR",next:true,spot:".org",t:"That card gives one organizer Burnout and costs them an action. Your ability is <b>immune to the first Burnout-dealing card</b>, so you shrugged it off, but you still lose the action: 2 this round. Every organizer has one ability like this, and loses it at Burnout 3."},
+ {h:"Mandatory Meeting with HR",next:true,spot:".org .ab",t:"That card gives one organizer Burnout and costs them an action. Your ability is <b>immune to the first Burnout effect</b>, so you shrugged it off, but you still lose the action. Every organizer has one ability like this, but lose access to it at Burnout 3."},
  {h:"Click Small Win",allow:["[data-act=win]"],t:"",done:()=>armed==="win"},
  {h:"Win Pay Transparency",allow:["[data-issue=pay]"],t:"Click <b>Pay Transparency</b>. Watch Marcus.",done:g=>won(g,"pay")},
- {h:"Marcus signed",next:true,spot:"[data-wk='2']",t:"Winning Pay Transparency unlocked every Pay holdout and moved every Pay worker up a step. You have 6 Signed or Steward of the 21 you need, with the rest of this round and three more to get there. From here the game is yours: tier 3 cards arrive in round 7 and the vote is at the end of round 8. The <b>Rules</b> button up top has everything on one page, and the game will keep pointing things out the first time they happen. Good luck."},
+ {h:"Marcus signed",next:true,spot:"[data-wk='2']",t:"Winning Pay Transparency unlocked every Pay holdout and moved every Pay worker up a step. You have 6 Signed or Steward of the 21 you need, with the rest of this round and three more to get there. From here the game is yours: Management starts playing tier 3 cards in round 7 and the vote to unionize is at the end of round 8. The <b>Rules</b> button up top has everything on one page, and the game will keep pointing things out the first time they happen. Good luck!"},
 ];
 function startTutorial(){
   if(unsub){unsub();unsub=null;} code=null; try{ if(location.hash)history.replaceState(null,"",location.pathname+location.search); }catch(e){}
@@ -832,7 +838,7 @@ function gate(root,step){
   root.querySelectorAll(".pile.ok").forEach(e=>{ if(ok(e))e.classList.add("tut-target"); else {e.classList.remove("ok");e.onclick=null;} });
   root.querySelectorAll(".issue").forEach(e=>{ if(!e.onclick)return; if(ok(e))e.classList.add("tut-target"); else {e.onclick=null;e.style.cursor="";e.style.boxShadow="";} });
   if(step.absorb){ root.querySelectorAll("#abs input").forEach(i=>{ i.checked=step.absorb.includes(+i.dataset.id); i.disabled=true; }); }
-  if(step.spot){ const e=root.querySelector(step.spot); if(e)e.classList.add("tut-spot"); }
+  if(step.spot){ root.querySelectorAll(step.spot).forEach(e=>e.classList.add("tut-spot")); }
 }
 /* first-time notes for real games: shown once per device, when the thing first happens */
 const CALLOUTS=[
