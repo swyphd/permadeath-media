@@ -150,7 +150,38 @@ input{font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:6
 .phase{font-family:"Barlow Condensed";font-weight:700;font-size:22px}
 .toast{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:8px 14px;border-radius:8px;font-size:13px;opacity:0;transition:opacity .2s;pointer-events:none}
 .toast.show{opacity:1}
-@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+/* tutorial, callouts, rules */
+.tut,.callout{position:sticky;top:0;z-index:5;background:var(--panel);border:1px solid var(--line);border-left:5px solid var(--sel);border-radius:10px;padding:12px 14px;margin-bottom:12px;box-shadow:0 4px 14px rgba(0,0,0,.14)}
+.callout{border-left-color:var(--accent)}
+.tut .th{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.tut h2,.callout h2{font-size:20px}
+.tut .step{font-size:12px;color:var(--muted);margin-left:auto;white-space:nowrap}
+.tut p,.callout p{margin:6px 0 0;font-size:14px;max-width:72ch}
+.tut .row,.callout .row{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;align-items:center}
+.tut .row .small{margin-left:auto}
+.tut-target{box-shadow:0 0 0 3px var(--sel),0 0 16px var(--sel)!important;position:relative;z-index:1;animation:tutpulse 1.2s ease-in-out infinite}
+button.tut-target{border-color:var(--sel)}
+.tut-spot{outline:3px solid var(--sel);outline-offset:3px;border-radius:8px}
+@keyframes tutpulse{0%,100%{box-shadow:0 0 0 3px var(--sel),0 0 10px var(--sel)}50%{box-shadow:0 0 0 4px var(--sel),0 0 22px var(--sel)}}
+@media (max-width:700px){
+  .tut{position:fixed;top:auto;bottom:0;left:0;right:0;margin:0;border-radius:12px 12px 0 0;max-height:42vh;overflow:auto;border-left-width:1px;border-top:5px solid var(--sel);padding-bottom:calc(12px + env(safe-area-inset-bottom,0px))}
+  body.tut-on{padding-bottom:44vh}
+  .tut .step{margin-left:0;width:100%}
+}
+button.ghost{background:transparent}
+.rules{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:20;overflow:auto;padding:16px;padding-top:calc(16px + env(safe-area-inset-top,0px))}
+.rules .sheet{background:var(--panel);color:var(--ink);max-width:840px;margin:0 auto;border-radius:10px;padding:18px 20px 24px;border:1px solid var(--line)}
+.rules .sh{display:flex;align-items:baseline;gap:12px;position:sticky;top:-18px;background:var(--panel);padding:6px 0;margin:-6px 0 4px;z-index:1}
+.rules .sh .spacer{flex:1}
+.rules h2{margin-top:18px;border-bottom:1px solid var(--line);padding-bottom:4px}
+.rules h3{margin-top:12px;color:var(--ink)}
+.rules p,.rules li{font-size:14px}
+.rules ul{padding-left:20px;margin:6px 0}
+.rules table{width:100%;border-collapse:collapse;font-size:13px;margin-top:6px}
+.rules td,.rules th{text-align:left;padding:5px 6px;border-bottom:1px solid var(--line);vertical-align:top}
+.rules th{font-family:"Barlow Condensed";font-size:14px;color:var(--muted)}
+.rules td.k{white-space:nowrap;font-weight:600}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}.tut-target{animation:none}}
 </style>
 </head>
 <body>
@@ -250,7 +281,7 @@ function rng(seed){let s=seed>>>0;return()=>{s=(s*1664525+1013904223)>>>0;return
 function shuffle(a,r){for(let i=a.length-1;i>0;i--){const j=Math.floor(r()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
 function clone(o){return JSON.parse(JSON.stringify(o));}
 
-function newGame(seats,seed){
+function newGame(seats,seed,script){
   const r=rng(seed);
   const two=false;
   const workers={};
@@ -262,6 +293,10 @@ function newGame(seats,seed){
   Object.keys(DEPTS).forEach(d=>{piles[d]=shuffle(Object.values(workers).filter(w=>w.dept===d).map(w=>w.id),r);});
   const deck={1:[],2:[],3:[]};
   [1,2,3].forEach(t=>{let ids=MGMT.filter(m=>m[1]===t).map(m=>m[0]);shuffle(ids,r);deck[t]=ids;});
+  if(script){ /* a fixed opening: listed ids come first, the rest keep their shuffled order */
+    Object.keys(script.piles||{}).forEach(d=>{const f=script.piles[d];piles[d]=[...f,...piles[d].filter(id=>!f.includes(id))];});
+    Object.keys(script.deck||{}).forEach(t=>{const f=script.deck[t];deck[t]=[...f,...deck[t].filter(id=>!f.includes(id))];});
+  }
   const orgs=seats.map(s=>{const o=ORGS.find(x=>x.k===s.k);return {k:o.k,n:o.n,d:o.d,playerId:s.playerId||null,burnout:0,actions:0,overworked:false,townhall:false,immuneUsed:false,apFree:false,skip:0};});
   return {
     v:1,seed,phase:"mgmt",round:0,maxRound:8,threshold:seats.length>=4?24:21,
@@ -513,7 +548,7 @@ async function connectFirestore(){
 }
 let db=null,userApi=null,myId=null,code=null,G=null,unsub=null,armed=null,offline=false;
 const app=document.getElementById("app");
-const HOME=`<a class="home" href="/">&larr; Permadeath Media</a>`;
+const HOME=`<button class="ghost" data-always data-act="rules" onclick="openRules()">Rules</button><a class="home" data-always href="/">&larr; Permadeath Media</a>`;
 const $=(h)=>{const t=document.createElement("template");t.innerHTML=h.trim();return t.content.firstChild;};
 function esc(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
 function toast(t){const e=document.getElementById("toast");e.textContent=t;e.classList.add("show");clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove("show"),2200);}
@@ -522,8 +557,8 @@ function localId(){let id=ls("cc_local_id");if(!id){id="local_"+Math.random().to
 function genCode(){const a="ABCDEFGHJKLMNPQRSTUVWXYZ23456789";let s="";for(let i=0;i<5;i++)s+=a[Math.floor(Math.random()*a.length)];return s;}
 function docRef(){return db.doc("games/"+code);}
 function expiresAt(){ return (window.firebase&&firebase.firestore)?firebase.firestore.Timestamp.fromMillis(Date.now()+GAME_TTL_DAYS*864e5):null; }
-async function write(g){ G=g; if(db&&!offline){ try{ const doc=clone(g); const x=expiresAt(); if(x)doc.expires=x; await docRef().set(doc); }catch(e){ toast("Could not sync: "+(e.code||e.message)); } } render(); }
-function controls(oi){ const o=G.orgs[oi]; if(G.hotseat||offline||!myId)return true; return o.playerId===myId; }
+async function write(g){ G=g; if(g&&g.local){ ls("cc_local",JSON.stringify(g)); render(); return; } if(db&&!offline){ try{ const doc=clone(g); const x=expiresAt(); if(x)doc.expires=x; await docRef().set(doc); }catch(e){ toast("Could not sync: "+(e.code||e.message)); } } render(); }
+function controls(oi){ const o=G.orgs[oi]; if(G.hotseat||G.local||offline||!myId)return true; return o.playerId===myId; }
 
 async function init(){
   myId=localId();
@@ -533,11 +568,19 @@ async function init(){
   const h=location.hash.replace("#","").toUpperCase();
   if(h&&/^[A-Z0-9]{5}$/.test(h)&&!offline){ join(h); } else renderLobby();
 }
+function savedLocal(){ try{ const g=JSON.parse(ls("cc_local")||"null"); return g&&g.local&&g.phase!=="over"?g:null; }catch(e){ return null; } }
 function renderLobby(){
+  document.body.classList.remove("tut-on");
   const recent=(ls("cc_recent")||"").split(",").filter(Boolean).slice(0,6);
+  const saved=savedLocal();
   app.innerHTML="";
   app.appendChild($(`<div class="lobby stack">
     <div class="top"><h1>Card Check</h1><span class="sub">online playtest · v0.1</span><span class="spacer"></span>${HOME}</div>
+    <div class="panel stack">
+      <h2>First time here?</h2>
+      <p class="small">A guided game teaches every action, one click at a time, in about ten minutes. The Rules button up top is a full reference whenever you need it.</p>
+      <div class="row"><button class="primary" id="tut">Learn to play</button>${saved?`<button id="resume">Resume your ${saved.tutorial&&!saved.tutorial.done?"tutorial":"local game"} (round ${saved.round})</button>`:""}</div>
+    </div>
     <div class="panel stack">
       <h2>Start a game</h2>
       <p class="small">${offline?"This playtest build runs on your device only: play solo, or pass-and-play on one screen.":"Each game gets a code. Share the link; everyone claims an organizer on their own device."}</p>
@@ -548,6 +591,8 @@ function renderLobby(){
     ${recent.length?`<div class="small">Recent: ${recent.map(c=>`<a href="#${c}" data-c="${c}">${c}</a>`).join(" · ")}</div>`:""}</div>`}
   </div>`));
   document.getElementById("newg").onclick=async()=>{ const hb=document.getElementById("hot"); const hot=offline||!!(hb&&hb.checked); code=genCode(); G={phase:"lobby",seats:[],hotseat:hot,host:myId,seed:Math.floor(Math.random()*1e9),created:Date.now()}; location.hash=code; remember(code); if(!offline){await write(G);subscribe();} else render(); };
+  document.getElementById("tut").onclick=()=>startTutorial();
+  const rb=document.getElementById("resume"); if(rb)rb.onclick=()=>{ if(unsub){unsub();unsub=null;} code=null; G=savedLocal(); render(); };
   const jb=document.getElementById("joinb"); if(jb)jb.onclick=()=>{const c=document.getElementById("jc").value.trim().toUpperCase(); if(c.length===5){location.hash=c;join(c);}};
   app.querySelectorAll("a[data-c]").forEach(a=>a.onclick=(e)=>{e.preventDefault();location.hash=a.dataset.c;join(a.dataset.c);});
 }
@@ -586,8 +631,8 @@ function render(){
   if(g.flags.vdc){const n=onBoard(g).filter(w=>w.disp>=3&&!g.flags.vdc.includes(w.id)).length; if(n)why.push(`Vote Delay Challenge: ${n} signed this round don't count.`);}
   const root=$(`<div>
     ${why.length?`<div class="panel" style="margin-bottom:10px;border-color:var(--red);color:var(--red);font-size:13px">${why.map(esc).join(" ")}</div>`:""}
-    <div class="top"><h1>Card Check</h1><span class="sub">${g.phase==="over"?"game over":`round ${g.round} of ${g.maxRound}`}${g.phase==="absorb"?" · management phase":g.phase==="steward"?" · steward phase":""}</span><span class="spacer"></span>
-      <span class="small">${sc} Signed/Steward · ${g.threshold} needed${sc!==vc?` · ${vc} would count now`:""}</span>${offline?"":`<span class="code" style="font-size:18px">${code}</span>`}${HOME}</div>
+    <div class="top"><h1>Card Check</h1><span class="sub">${g.tutorial&&!g.tutorial.done?"tutorial · ":""}${g.phase==="over"?"game over":`round ${g.round} of ${g.maxRound}`}${g.phase==="absorb"?" · management phase":g.phase==="steward"?" · steward phase":""}</span><span class="spacer"></span>
+      <span class="small">${sc} Signed/Steward · ${g.threshold} needed${sc!==vc?` · ${vc} would count now`:""}</span>${!offline&&code&&!g.local?`<span class="code" style="font-size:18px">${code}</span>`:""}${HOME}</div>
     ${g.phase==="over"?`<div class="banner ${g.result}">${g.result==="win"?"The union is certified.":"The drive is broken."} ${esc(g.why||"")}</div>`:""}
     <div class="grid">
       <div class="side stack" id="side"></div>
@@ -604,8 +649,9 @@ function render(){
   renderBoard(root.querySelector("#board"),g,pend);
   renderMgmt(root.querySelector("#mgmt"),g);
   renderRight(root.querySelector("#right"),g);
+  renderGuide(root,g);
   if(g.phase==="over"){const b=$(`<div class="panel"><button class="primary" id="again">Back to lobby (same seats)</button></div>`); root.querySelector("#side").appendChild(b);
-    b.querySelector("#again").onclick=async()=>{const ng={phase:"lobby",seats:g.seats,hotseat:g.hotseat,host:g.host,seed:Math.floor(Math.random()*1e9)};await write(ng);};}
+    b.querySelector("#again").onclick=async()=>{ if(g.local){ try{localStorage.removeItem("cc_local");}catch(e){} G=null; renderLobby(); return; } const ng={phase:"lobby",seats:g.seats,hotseat:g.hotseat,host:g.host,seed:Math.floor(Math.random()*1e9)};await write(ng);};}
 }
 function fearSvg(f){ const a=-120+240*(f/10); const rad=a*Math.PI/180; const x=46+34*Math.sin(rad), y=50-34*Math.cos(rad);
   return `<svg class="dial" viewBox="0 0 92 92"><path d="M16 74 A38 38 0 1 1 76 74" fill="none" stroke="var(--line)" stroke-width="8" stroke-linecap="round"/>
@@ -630,7 +676,7 @@ function renderSide(el,g,pend){
         if(pend.type==="icon"){const row=$(`<div class="actions"></div>`);["Crunch","Pay","Layoffs","Credit","Harassment"].forEach(ic=>{const b=$(`<button>${ic}</button>`);b.onclick=()=>act(g=>{g.pending=[];return doSmallWin(g,g.cur,"wild",ic);});row.appendChild(b);});d.appendChild(row);}
       } else {
         const a=$(`<div class="actions"></div>`);
-        const mk=(id,label,fn,dis)=>{const b=$(`<button class="${armed===id?"armed":""}" ${dis?"disabled":""}>${label}</button>`);b.onclick=fn;a.appendChild(b);return b;};
+        const mk=(id,label,fn,dis)=>{const b=$(`<button data-act="${id}" class="${armed===id?"armed":""}" ${dis?"disabled":""}>${label}</button>`);b.onclick=fn;a.appendChild(b);return b;};
         mk("map","Map",()=>arm("map"),o.actions<1||g.flags.noMap);
         mk("one","One-on-One",()=>arm("one"),o.actions<1);
         mk("win","Small Win",()=>arm("win"),o.actions<1);
@@ -656,7 +702,7 @@ function renderBoard(el,g,pend){
     const [label,color]=DEPTS[d]; const n=g.piles[d].length;
         const canMap=mine&&armed==="map"&&n>0&&cur.actions>=mapCost(g,cur,d)&&!pend;
     const canInoc=false;
-    const p=$(`<div class="pile ${canMap?"ok":""}"><span class="n">${n}</span><span>${n===1?"card":"cards"}</span>${mine&&armed==="map"&&n>0?`<span>${mapCost(g,cur,d)} act.</span>`:""}</div>`);
+    const p=$(`<div class="pile ${canMap?"ok":""}" data-pile="${d}"><span class="n">${n}</span><span>${n===1?"card":"cards"}</span>${mine&&armed==="map"&&n>0?`<span>${mapCost(g,cur,d)} act.</span>`:""}</div>`);
     p.onclick=()=>{ if(canMap)act(g=>doMap(g,g.cur,d)); else if(canInoc)act(g=>doInoc(g,g.cur,d)); };
     b.appendChild(p);
     b.appendChild($(`<div class="deptlab" style="background:${color}">${label}${g.flags.reorg===d?" ⟲":""}${g.flags.decert===d?" ✕":""}</div>`));
@@ -667,7 +713,7 @@ function renderBoard(el,g,pend){
         if(mine&&!pend){ if(armed==="one"&&s<3&&!immovable(w)&&!(s===2&&locked(g,w)))sel=true; if(armed==="com"&&w.leader&&s===3)sel=true; }
         if(pend&&pend.type==="influence"&&(mine||g.phase==="steward"&&anySeat)&&w.dept===pend.dept&&s<3&&!immovable(w)&&!(s===2&&locked(g,w)))sel=true;
         if(pend&&pend.type==="steward"&&anySeat&&w.dept===pend.dept&&stewardTargets(g,pend.dept).some(x=>x.id===w.id))sel=true;
-        const e=$(`<div class="wk ${sel?"sel":""} ${w.contract?"contract":""}"><b><span class="nm">${esc(w.name)}</span><span class="st">${w.leader?"★":""}${locked(g,w)?"🔒":""}${w.disp===4?(w.absorbUsed?"⊘":"⛨"):""}</span><span class="inf">${"●".repeat(infl(g,w))}${"○".repeat(Math.max(0,2-infl(g,w)))}</span></b><span class="r">${esc(w.role)}</span><span class="i" ${immovable(w)?'style="color:var(--red);font-weight:600"':w.disp===4?'style="color:var(--ok);font-weight:600"':""}>${w.disp===4?`free 1-on-1 ${w.freeUsed?"used":"ready"} · absorb ${w.absorbUsed?"spent":"ready"}`:w.reserve?"+1 One-on-One cost here · immovable":(w.issues.join(", ")||"no issues · immovable")}</span></div>`);
+        const e=$(`<div class="wk ${sel?"sel":""} ${w.contract?"contract":""}" data-wk="${w.id}"><b><span class="nm">${esc(w.name)}</span><span class="st">${w.leader?"★":""}${locked(g,w)?"🔒":""}${w.disp===4?(w.absorbUsed?"⊘":"⛨"):""}</span><span class="inf">${"●".repeat(infl(g,w))}${"○".repeat(Math.max(0,2-infl(g,w)))}</span></b><span class="r">${esc(w.role)}</span><span class="i" ${immovable(w)?'style="color:var(--red);font-weight:600"':w.disp===4?'style="color:var(--ok);font-weight:600"':""}>${w.disp===4?`free 1-on-1 ${w.freeUsed?"used":"ready"} · absorb ${w.absorbUsed?"spent":"ready"}`:w.reserve?"+1 One-on-One cost here · immovable":(w.issues.join(", ")||"no issues · immovable")}</span></div>`);
         e.title=`${w.name} — ${w.role}${w.contract?" (contract)":""}\n${w.leader?"Leader. ":""}Influence ${infl(g,w)}${infl(g,w)!==w.infl?" (Credit Policy)":""}.\nIssues: ${w.reserve?"none — a management Plant. Immovable; every One-on-One in this department costs +1.":(w.issues.join(", ")||"none — immovable: no grievance, no leverage")}.\nDisposition: ${DISP[w.disp]}.${w.lock?(locked(g,w)?`\nHoldout: won't sign until ${w.lock==="Pay"?"Pay Transparency":"End Crunch"} is won.`:"\nFormer holdout, now willing to sign."):""}${w.disp===4?(w.absorbUsed?"\nSteward; absorb spent.":"\nSteward; one absorb available.")+(w.freeUsed?" Free One-on-One used this round.":" Free One-on-One available this round."):""}`;
         if(sel)e.onclick=()=>{ if(pend&&pend.type==="steward")act(g=>doStewardPick(g,w.id)); else if(pend)act(g=>doInfluencePick(g,w.id)); else if(armed==="one")act(g=>doOne(g,g.cur,w.id)); else if(armed==="com")act(g=>doCommittee(g,g.cur,w.id)); };
         c.appendChild(e);
@@ -693,7 +739,7 @@ function renderMgmt(el,g){
       <div style="font-weight:400;margin-top:6px">Each Steward has one absorb per game. Tick the ones allowed to spend it if this card hits their department, then resolve.</div><div id="abs" style="margin-top:6px"></div></div>`);
     const list=box.querySelector("#abs");
     sts.forEach(st=>list.appendChild($(`<label style="display:block;font-weight:500"><input type="checkbox" data-id="${st.id}"> ${esc(st.name)} may absorb in ${DEPTS[st.dept][0]}</label>`)));
-    const b=$(`<button class="primary" style="margin-top:8px" ${anySeat?"":"disabled"}>Resolve the card</button>`);
+    const b=$(`<button class="primary" data-act="absorb" style="margin-top:8px" ${anySeat?"":"disabled"}>Resolve the card</button>`);
     b.onclick=()=>{ const allow={}; list.querySelectorAll("input:checked").forEach(i=>allow[i.dataset.id]=true); act(g=>doAbsorbDecision(g,allow)); };
     box.appendChild(b); if(!anySeat)box.appendChild($(`<div class="small">Waiting for a seated player.</div>`)); el.appendChild(box); }
   const slot=g.row[g.round-1];
@@ -711,7 +757,7 @@ function renderRight(el,g){
     const hold=(def.icon==="Pay"||def.icon==="Crunch")?onBoard(g).filter(w=>w.lock===def.icon&&locked(g,w)).length:def.id==="wild"?onBoard(g).filter(w=>locked(g,w)).length:0;
     const need=(def.icon==="any"?`Needs ${R} Signed or Steward workers sharing any one icon.`:`Needs ${R} Signed or Steward workers with ${def.icon}. Have ${n}${who?": "+who:""}.`)+(hold?` Unlocks ${hold} holdout${hold===1?"":"s"} on the board.`:"");
     const cost=`Cost: ${g.fear>=8?"2 actions (Fear 8+)":"1 action"}, and management draws +1 next round. Effect: every worker with ${def.icon==="any"?"the chosen icon":def.icon} moves up one, Fear ${def.id==="harass"?"−2":"−1"}. Then: ${def.x}`;
-    const e=$(`<div class="issue ${ready?"ready":""} ${st.state==="done"?"done":st.state==="gone"?"gone":""}"><div><b>${def.n}</b><small>${st.state==="open"?(winsLeft(g)>0?need:"No Small Win slots left. ")+" Then: "+def.x:st.state==="done"?"In effect: "+def.x:"Lost to Counter-Offer."}</small></div><div class="req">${st.state==="open"?`${Math.min(n,R)}/${R}`:st.state==="done"?"won":"lost"}</div></div>`);
+    const e=$(`<div class="issue ${ready?"ready":""} ${st.state==="done"?"done":st.state==="gone"?"gone":""}" data-issue="${def.id}"><div><b>${def.n}</b><small>${st.state==="open"?(winsLeft(g)>0?need:"No Small Win slots left. ")+" Then: "+def.x:st.state==="done"?"In effect: "+def.x:"Lost to Counter-Offer."}</small></div><div class="req">${st.state==="open"?`${Math.min(n,R)}/${R}`:st.state==="done"?"won":"lost"}</div></div>`);
     e.title=need+" "+cost;
     if(mine&&armed==="win"&&ready){e.style.cursor="pointer";e.style.boxShadow="0 0 0 2px var(--sel)";e.onclick=()=>act(g=>doSmallWin(g,g.cur,def.id));}
     ip.appendChild(e); });
@@ -720,6 +766,164 @@ function renderRight(el,g){
   g.log.slice().reverse().forEach(x=>L.appendChild($(`<div class="${x.r?"r":""}">${esc(x.r||x.t)}</div>`)));
   el.appendChild(lg);
   function sc(g){const n=signedCount(g);return `next round draws ${1+(g.round+1>=7?1:0)+(n>=12?1:0)+(n>=20?1:0)+((g.row[g.round]&&g.row[g.round].issues.length)||0)}`;}
+}
+/* ============ TUTORIAL / CALLOUTS / RULES ============ */
+/* A fixed opening so the guided game plays out the same way every time. */
+const TUT_SCRIPT={piles:{Eng:[1,3,4,2,7],Prod:[26]},deck:{1:[5,4,2,1],2:[16,14]}};
+const TUT=[
+ {h:"Welcome to Card Check",next:true,spot:".board",t:"You are <b>The Senior Engineer</b>, one organizer at a game studio. The goal: <b>21 of 32 workers Signed</b> before the union vote in round 8. The board is the studio: one row per department, one column per disposition from Hostile to Steward. Two Engineering workers are already known: Priya and Dev, both Leaning."},
+ {h:"Management moves first, every round",next:true,spot:".fear",t:"Management already played <b>Culture Survey</b>: Fear went from 3 to 4. Fear is the studio's anxiety meter. At <b>7</b> One-on-Ones cost double and every organizer takes Burnout at round end. At <b>10</b> the drive collapses. You will learn to push it back down."},
+ {h:"You get 3 actions a round. Start with Map.",allow:["[data-act=map]"],t:"Map turns over the next card in a department pile: you learn who works there and how they feel. Click <b>Map</b>.",done:()=>armed==="map"},
+ {h:"Click the Engineering pile",allow:["[data-pile=Eng]"],t:"Mapping your home department costs 1 action. Any other department costs 2, or 1 once somebody there is Signed.",done:g=>g.workers[4].onBoard},
+ {h:"Meet Tomasz",next:true,spot:"[data-wk='4']",t:"Read a worker card: the dots are <b>influence</b>, a star marks a <b>Leader</b>, the words are the <b>issues</b> they care about. A worker with no issues can't be moved at all. Tomasz is Undecided and cares about Crunch."},
+ {h:"One-on-One moves a worker one step up",allow:["[data-act=one]"],t:"It costs 1 action, 2 when Fear is 7 or higher. Click <b>One-on-One</b>.",done:()=>armed==="one"},
+ {h:"Talk to Priya",allow:["[data-wk='1']"],t:"She is Leaning, so one conversation signs her. Click her card.",done:g=>g.workers[1].disp>=3},
+ {h:"Influence",allow:["[data-wk='3']"],t:"Priya has 2 influence: when she signs she brings up to two colleagues in her department one step each, and you choose who. Pick <b>Dev</b>.",done:g=>g.workers[3].disp>=3},
+ {h:"Priya's second pick",allow:["[data-wk='4']"],t:"Pick <b>Tomasz</b>. He goes from Undecided to Leaning.",done:g=>g.workers[4].disp>=2},
+ {h:"Influence chains",allow:["[data-wk='4']"],t:"Dev just signed too, and Dev has 1 influence of his own. Pick <b>Tomasz</b> again and he signs. One action, three signatures.",done:g=>g.workers[4].disp>=3},
+ {h:"Three Signed workers who share Crunch",next:true,spot:"[data-issue=crunch]",t:"That unlocks a <b>Small Win</b>. Each Issue on the right needs 3 Signed or Steward workers who share its icon. Winning one moves every worker with that icon up a step, lowers Fear, and changes a rule for the rest of the game. The price: management draws an extra card next round. You get three Small Wins per game."},
+ {h:"Click Small Win",allow:["[data-act=win]"],t:"It costs 1 action, 2 when Fear is 8 or higher.",done:()=>armed==="win"},
+ {h:"Win End Crunch",allow:["[data-issue=crunch]"],t:"Click <b>End Crunch</b> in the Issues panel.",done:g=>won(g,"crunch")},
+ {h:"No actions left. End your turn.",allow:["[data-act=end]"],t:"Then comes the <b>status check</b>: Fear 7 or more burns every organizer, Fear 10 ends the drive. Then management plays again.",done:g=>g.round===2},
+ {h:"Round 2: two cards",next:true,spot:".mpanel",t:"Because you won an Issue, management drew two cards: <b>Town Hall</b> (Fear +1, and your next One-on-One costs 2) and <b>Captive-Audience Meeting</b>, which found no Undecided workers to hit. Watch the Management panel each round: it shows what was played and how many cards come next."},
+ {h:"Build Committee",allow:["[data-act=com]"],t:"A Signed <b>Leader</b> (star) can become a <b>Steward</b> for 2 actions. Stewards are how you hold ground. Click <b>Build Committee</b>.",done:()=>armed==="com"},
+ {h:"Make Priya a Steward",allow:["[data-wk='1']"],t:"Click Priya's card.",done:g=>g.workers[1].disp===4},
+ {h:"What a Steward does",next:true,spot:"[data-wk='1']",t:"Three things. Every round, one <b>free One-on-One</b> in her department. At the start of every round, she <b>brings one worker up</b> a step. And <b>once per game</b> she can <b>absorb</b> a management card aimed at her department. Her card shows which of these are still ready."},
+ {h:"Overwork",allow:["[data-act=ow]"],t:"Overwork gives +1 action this round for +1 Burnout. Burnout 2 means 2 actions a round; Burnout 3 means 1 action and no ability. You won End Crunch, so right now it's <b>free</b>. Click <b>Overwork</b>.",done:g=>g.orgs[0].overworked},
+ {h:"Map again",allow:["[data-act=map]"],t:"Click <b>Map</b>.",done:()=>armed==="map"},
+ {h:"Click the Engineering pile",allow:["[data-pile=Eng]"],t:"",done:g=>g.workers[2].onBoard},
+ {h:"Marcus is a holdout",next:true,spot:"[data-wk='2']",t:"The lock means Marcus will <b>not sign until Pay Transparency is won</b>. One-on-Ones take him to Leaning and no further. Pay Transparency needs 3 Signed workers with Pay. Dev is one. Keep an eye out for two more."},
+ {h:"Reassure",allow:["[data-act=re]"],t:"1 action, Fear −1, once per round for the whole committee. Fear is 4 after Town Hall. Click <b>Reassure</b>.",done:g=>g.reassuredRound},
+ {h:"End your turn",allow:["[data-act=end]"],t:"Round 3 is coming, and this time management will aim at Engineering.",done:g=>g.round===3&&g.phase==="absorb"},
+ {h:"A Steward's absorb decision",allow:["[data-act=absorb]"],absorb:[],t:"<b>Open Door Policy</b> would pull your highest-influence Leaning worker, Marcus, back to Undecided. Priya could absorb it, but a Steward absorbs <b>once per game</b>. This one is small. Let it through and save the absorb. Click <b>Resolve the card</b>.",done:g=>g.phase==="steward"},
+ {h:"Steward phase",allow:["[data-wk='2']"],t:"At the start of each round, each Steward brings one worker in her department up a step. Marcus got knocked down, so pick <b>Marcus</b> to bring him back to Leaning.",done:g=>g.workers[2].disp===2&&g.phase==="org"},
+ {h:"Town Hall is still in effect",allow:["[data-act=map]"],t:"Your next paid One-on-One costs 2, so Map first for 1 action. Click <b>Map</b>.",done:()=>armed==="map"},
+ {h:"Click the Engineering pile",allow:["[data-pile=Eng]"],t:"",done:g=>g.workers[7].onBoard},
+ {h:"Sam: a contract worker with Pay",allow:["[data-act=one]"],t:"Contract workers can be removed from the board by a <b>Contract Ends</b> card, so sign them while you can. Click <b>One-on-One</b>.",done:()=>armed==="one"},
+ {h:"Talk to Sam, for free",allow:["[data-wk='7']"],t:"Priya is a Steward in Engineering, so one One-on-One there each round costs <b>0</b>, Town Hall or not. Click Sam's card. That makes two Pay signatures: Dev and Sam.",done:g=>g.workers[7].disp>=3},
+ {h:"Two actions left. Go find the third Pay signature.",allow:["[data-act=map]"],t:"Mapping another department costs 2 actions. Click <b>Map</b>.",done:()=>armed==="map"},
+ {h:"Click the Production pile",allow:["[data-pile=Prod]"],t:"",done:g=>g.workers[26].onBoard},
+ {h:"Esteban, Associate Producer. End your turn.",allow:["[data-act=end]"],t:"Pay and Credit, Leaning, and a Leader. No actions left to talk to him now. Round 4 starts <b>tier 2</b>: management's cards get nastier. Tier 3 starts in round 7.",done:g=>g.round===4&&g.phase==="absorb"},
+ {h:"This one is worth the absorb",allow:["[data-act=absorb]"],absorb:[1],t:"<b>Supervisor Pressure</b> hits every department with a Steward and would knock Marcus down again. Priya's absorb is ticked. Click <b>Resolve the card</b> and nothing happens in Engineering. Her absorb is now spent for the game.",done:g=>g.round===4&&g.phase==="org"},
+ {h:"Talk to Esteban",allow:["[data-act=one]"],t:"Town Hall is still waiting for a paid One-on-One, so this one costs 2. Click <b>One-on-One</b>.",done:()=>armed==="one"},
+ {h:"Click Esteban",allow:["[data-wk='26']"],t:"Three Pay signatures: Pay Transparency is ready.",done:g=>g.workers[26].disp>=3},
+ {h:"One action left: Reassure",allow:["[data-act=re]"],t:"Fear is 4. Spare actions are best spent keeping Fear down; it only gets harder to lower later. Click <b>Reassure</b>.",done:g=>g.reassuredRound},
+ {h:"End your turn",allow:["[data-act=end]"],t:"",done:g=>g.round===5&&g.phase==="org"},
+ {h:"Mandatory Meeting with HR",next:true,spot:".org",t:"That card gives one organizer Burnout and costs them an action. Your ability is <b>immune to the first Burnout-dealing card</b>, so you shrugged it off, but you still lose the action: 2 this round. Every organizer has one ability like this, and loses it at Burnout 3."},
+ {h:"Click Small Win",allow:["[data-act=win]"],t:"",done:()=>armed==="win"},
+ {h:"Win Pay Transparency",allow:["[data-issue=pay]"],t:"Click <b>Pay Transparency</b>. Watch Marcus.",done:g=>won(g,"pay")},
+ {h:"Marcus signed",next:true,spot:"[data-wk='2']",t:"Winning Pay Transparency unlocked every Pay holdout and moved every Pay worker up a step. You have 6 Signed or Steward of the 21 you need, with the rest of this round and three more to get there. From here the game is yours: tier 3 cards arrive in round 7 and the vote is at the end of round 8. The <b>Rules</b> button up top has everything on one page, and the game will keep pointing things out the first time they happen. Good luck."},
+];
+function startTutorial(){
+  if(unsub){unsub();unsub=null;} code=null; try{ if(location.hash)history.replaceState(null,"",location.pathname+location.search); }catch(e){}
+  const seats=[{k:"senior",playerId:myId}];
+  const g=newGame(seats,7,TUT_SCRIPT); g.hotseat=true; g.local=true; g.seats=seats; g.tutorial={step:0,done:false};
+  setupFlips(g); startRound(g); armed=null; write(g);
+}
+function tutorialAdvance(g){ const t=g.tutorial; if(!t||t.done)return; let guard=0;
+  while(guard++<20&&t.step<TUT.length&&!TUT[t.step].next&&TUT[t.step].done&&TUT[t.step].done(g))t.step++;
+  if(t.step>=TUT.length)t.done=true; }
+function tutorialNext(){ const g=G; if(!g.tutorial)return; g.tutorial.step++; if(g.tutorial.step>=TUT.length){g.tutorial.done=true; CALLOUTS.forEach(c=>seen(c.k,"1"));} armed=null; write(g); }
+function tutorialSkip(){ const g=G; if(!g.tutorial)return; g.tutorial.done=true; armed=null; write(g); }
+function gate(root,step){
+  const allow=step.allow||[]; const ok=e=>allow.some(sel=>e.matches(sel));
+  root.querySelectorAll("button").forEach(b=>{ if(b.hasAttribute("data-always")||b.closest(".tut"))return; if(ok(b))b.classList.add("tut-target"); else b.disabled=true; });
+  root.querySelectorAll(".wk.sel").forEach(e=>{ if(ok(e))e.classList.add("tut-target"); else {e.classList.remove("sel");e.onclick=null;} });
+  root.querySelectorAll(".pile.ok").forEach(e=>{ if(ok(e))e.classList.add("tut-target"); else {e.classList.remove("ok");e.onclick=null;} });
+  root.querySelectorAll(".issue").forEach(e=>{ if(!e.onclick)return; if(ok(e))e.classList.add("tut-target"); else {e.onclick=null;e.style.cursor="";e.style.boxShadow="";} });
+  if(step.absorb){ root.querySelectorAll("#abs input").forEach(i=>{ i.checked=step.absorb.includes(+i.dataset.id); i.disabled=true; }); }
+  if(step.spot){ const e=root.querySelector(step.spot); if(e)e.classList.add("tut-spot"); }
+}
+/* first-time notes for real games: shown once per device, when the thing first happens */
+const CALLOUTS=[
+ {k:"mgmt",h:"Management moves first",when:g=>g.round===1&&g.phase==="org",t:"Every round starts with management playing a card (more as you grow, and after each Small Win). The Management panel below the board shows what was played. Then you act: 3 actions per organizer, minus Burnout."},
+ {k:"influence",h:"Influence: choose who they bring along",when:g=>g.pending&&g.pending.some(p=>p.type==="influence"),t:"A worker who signs pulls colleagues in their department up one step, as many as their influence dots. Click the highlighted workers on the board, or skip the rest."},
+ {k:"absorb",h:"A Steward can absorb this card",when:g=>g.phase==="absorb",t:"Each Steward can absorb one management card per game, cancelling its effect in their department. Tick the Stewards allowed to spend it if this card hits them, then resolve. Save it for the cards that hurt."},
+ {k:"stewardphase",h:"Steward phase",when:g=>g.phase==="steward",t:"At the start of each round, every Steward brings one worker in their department up a step. Click a highlighted worker, or make no move."},
+ {k:"holdout",h:"Holdouts",when:g=>onBoard(g).some(w=>locked(g,w)),t:"A worker with a lock will not sign until the Issue they care about is won (Pay Transparency or End Crunch). One-on-Ones take them to Leaning and stop. Win the Issue and they all move up at once."},
+ {k:"plant",h:"A Plant took the empty desk",when:g=>onBoard(g).some(w=>w.reserve),t:"Whenever a worker is removed from the board, management fills the desk with a Plant: Hostile, immovable, and every One-on-One in that department costs +1 while it sits there."},
+ {k:"fear7",h:"Fear is 7 or higher",when:g=>g.fear>=7,t:"One-on-Ones now cost 2, and every organizer takes +1 Burnout at the end of the round. Reassure (Fear −1, once per round) or win a Small Win to bring it down. At 10 the drive collapses."},
+ {k:"burnout",h:"Burnout",when:g=>g.orgs.some(o=>o.burnout>0),t:"Burnout 1 and 2 still give 3 and 2 actions; at 3 an organizer has 1 action and loses their ability. Reset costs an action and removes one Burnout. If every organizer burns out, the drive is over."},
+ {k:"smallwin",h:"Small Win: now management reacts",when:g=>g.issues.some(i=>i.state==="done"),t:"Each Issue you win changes a rule for the rest of the game, moves every worker with its icon up, and lowers Fear. It also adds a card to management's next draw. Three Small Wins per game."},
+];
+let lastTutStep=-1;
+function seen(k,v){ return ls("cc_seen_"+k,v); }
+function renderGuide(root,g){
+  if(g.phase==="over")return;
+  const grid=root.querySelector(".grid");
+  if(g.tutorial&&!g.tutorial.done){
+    tutorialAdvance(g); if(g.local)ls("cc_local",JSON.stringify(g));
+    if(g.tutorial.done)return;
+    const st=TUT[g.tutorial.step];
+    const card=$(`<div class="tut"><div class="th"><h2>${st.h}</h2><span class="step">step ${g.tutorial.step+1} of ${TUT.length}</span></div>${st.t?`<p>${st.t}</p>`:""}
+      <div class="row">${st.next?`<button class="primary" data-always onclick="tutorialNext()">${g.tutorial.step===TUT.length-1?"Finish the tutorial":"Next"}</button>`:`<span class="small" style="margin-left:0">Do the highlighted action to continue.</span>`}<button class="ghost" data-always onclick="tutorialSkip()">Skip tutorial</button></div></div>`);
+    root.insertBefore(card,grid);
+    gate(root,st);
+    document.body.classList.add("tut-on");
+    if(lastTutStep!==g.tutorial.step){ lastTutStep=g.tutorial.step; const t=root.querySelector(".tut-target,.tut-spot"); if(t&&t.scrollIntoView){ const r=t.getBoundingClientRect(); const lim=window.innerWidth<=700?window.innerHeight*0.55:window.innerHeight; if(r.top<0||r.bottom>lim)t.scrollIntoView({block:"center",behavior:"smooth"}); } }
+    return;
+  }
+  document.body.classList.remove("tut-on");
+  const c=CALLOUTS.find(c=>!seen(c.k)&&c.when(g));
+  if(!c)return;
+  const card=$(`<div class="callout"><h2>${c.h}</h2><p>${c.t}</p><div class="row"><button class="primary" data-always>Got it</button><span class="small">Shown once, the first time it happens.</span></div></div>`);
+  card.querySelector("button").onclick=()=>{ seen(c.k,"1"); render(); };
+  root.insertBefore(card,grid);
+}
+/* rules reference, generated from the same tables the engine plays by */
+function openRules(){
+  if(document.querySelector(".rules"))return;
+  const tier=t=>MGMT.filter(m=>m[1]===t).map(m=>`<tr><td class="k">${esc(m[2])}</td><td>${esc(m[3])}</td></tr>`).join("");
+  const el=$(`<div class="rules" role="dialog" aria-label="Rules"><div class="sheet">
+    <div class="sh"><h1 style="font-size:28px">Card Check: the rules</h1><span class="spacer"></span><button class="primary" id="rclose">Close</button></div>
+    <p>A cooperative game for 1 to 6 organizers running a union drive inside a game studio. Everyone wins or loses together.</p>
+    <h2>The goal</h2>
+    <p>Get a majority of the 32 workers to <b>Signed</b> or <b>Steward</b> before the vote at the end of round 8: <b>21</b> with one to three organizers, <b>24</b> with four or more. You lose at once if every organizer burns out, and at the end of any round where Fear is 10.</p>
+    <h2>The board</h2>
+    <p>Four departments (Engineering, Art, QA, Production), eight workers each. Workers start face down in their department pile; Map reveals them. Every worker has a disposition: <b>Hostile, Undecided, Leaning, Signed, Steward</b>.</p>
+    <ul><li><b>Dots</b> are influence. When a worker reaches Signed, you move up to that many colleagues in their department up one step.</li>
+    <li><b>★</b> marks a Leader. Only Signed Leaders can become Stewards. A <b>Hostile</b> Leader drags one worker in their department down a step every round.</li>
+    <li><b>Issues</b> on the card (Pay, Crunch, Layoffs, Credit, Harassment) are what the worker cares about. A worker with no issues is immovable.</li>
+    <li><b>🔒 Holdouts</b> stop at Leaning until the matching Issue (Pay Transparency or End Crunch) is won.</li>
+    <li><b>Contract</b> workers can be removed by Contract Ends. A removed worker's desk is filled by a <b>Plant</b>: Hostile, immovable, and +1 to every One-on-One in that department.</li></ul>
+    <h2>A round</h2>
+    <ol style="padding-left:20px"><li><b>Management</b> draws and resolves cards: 1 per round, +1 from round 7, +1 at 12 and again at 20 Signed, +1 for each Small Win you took last round. Tier 1 cards in rounds 1 to 3, tier 2 from round 4, tier 3 from round 7. Before an absorbable card resolves, you choose which Stewards may spend their absorb on it.</li>
+    <li><b>Stewards</b> each bring one worker in their department up a step.</li>
+    <li><b>Hostile Leaders</b> each drag one worker down.</li>
+    <li><b>Organizers</b> take turns spending actions. First player rotates each round.</li>
+    <li><b>Status check.</b> Fear 10: the drive collapses. Fear 7 to 9: every organizer takes +1 Burnout. After round 8, the vote.</li></ol>
+    <h2>Actions</h2>
+    <table><tr><th>Action</th><th>Cost</th><th>Effect</th></tr>
+    <tr><td class="k">Map</td><td>1 in your home department. 2 elsewhere, or 1 once someone there is Signed.</td><td>Reveal the top worker of a department pile.</td></tr>
+    <tr><td class="k">One-on-One</td><td>1. 2 when Fear is 7+, under a Union Avoidance Consultant, or after a Town Hall. +1 per Plant in the department. 0 once per round in a department with a Steward.</td><td>Move a revealed worker up one step.</td></tr>
+    <tr><td class="k">Small Win</td><td>1. 2 when Fear is 8+.</td><td>Resolve an Issue whose requirement is met: 3 Signed or Steward workers sharing its icon (4 for Just Cause). Every worker with that icon moves up a step, Fear −1, its rule applies for the rest of the game, and management draws +1 next round. Three per game.</td></tr>
+    <tr><td class="k">Build Committee</td><td>2</td><td>A Signed Leader becomes a Steward.</td></tr>
+    <tr><td class="k">Reassure</td><td>1, once per round for the committee</td><td>Fear −1.</td></tr>
+    <tr><td class="k">Reset</td><td>1</td><td>Remove one Burnout from yourself.</td></tr>
+    <tr><td class="k">Overwork</td><td>+1 Burnout, once per round (free once End Crunch is won)</td><td>+1 action this round.</td></tr></table>
+    <h2>Fear and Burnout</h2>
+    <p><b>Fear</b> starts at 3. Management cards raise it; Reassure and Small Wins lower it. At 7, One-on-Ones cost 2 and everyone takes Burnout at round end. At 8, Small Wins cost 2. At 10, you lose at the status check.</p>
+    <p><b>Burnout</b> per organizer: 0 or 1 gives 3 actions, 2 gives 2 actions, 3 gives 1 action and no ability. All organizers at 3 is a loss.</p>
+    <h2>Stewards</h2>
+    <p>A Steward gives one free One-on-One in their department per round, brings one worker up at the start of each round, and can <b>absorb</b> one management card per game to cancel its effect in their department. Stewards cannot be moved down.</p>
+    <h2>Organizers</h2>
+    <table>${ORGS.map(o=>`<tr><td class="k">${esc(o.n)}</td><td>${DEPTS[o.d][0]}</td><td>${esc(o.a)}</td></tr>`).join("")}</table>
+    <h2>Issues</h2>
+    <table>${ISSUES.map(i=>`<tr><td class="k">${esc(i.n)}</td><td>${i.icon==="any"?"4 sharing any one icon":"3 with "+i.icon}</td><td>${esc(i.x)}</td></tr>`).join("")}</table>
+    <h2>Management cards</h2>
+    <h3>Tier 1 (rounds 1 to 3)</h3><table>${tier(1)}</table>
+    <h3>Tier 2 (from round 4)</h3><table>${tier(2)}</table>
+    <h3>Tier 3 (from round 7)</h3><table>${tier(3)}</table>
+    <h2>Symbols</h2>
+    <p>● influence · ★ Leader · 🔒 holdout · ⛨ Steward absorb ready · ⊘ absorb spent · ⟲ department reorganized this round · ✕ department decertified</p>
+    <div class="row" style="margin-top:16px"><button class="primary" id="rclose2">Close</button></div>
+  </div></div>`);
+  const close=()=>{el.remove();document.removeEventListener("keydown",onk);};
+  const onk=e=>{if(e.key==="Escape")close();};
+  el.querySelector("#rclose").onclick=close; el.querySelector("#rclose2").onclick=close;
+  el.addEventListener("click",e=>{if(e.target===el)close();});
+  document.addEventListener("keydown",onk);
+  document.body.appendChild(el);
 }
 function arm(a){armed=armed===a?null:a;render();}
 async function act(fn){ const g=clone(G); const err=fn(g); if(err){toast(err);return;} armed=null; afterAction(g); await write(g); }

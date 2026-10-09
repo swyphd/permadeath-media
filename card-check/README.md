@@ -22,3 +22,17 @@ devices by five-character code.
 
 Deploy as normal. The lobby shows "Join a game" and a share link once
 sync is live, and falls back to device-only play if the SDK fails to load.
+
+## Onboarding
+
+- **Learn to play** on the start screen runs a scripted solo game: a fixed
+  opening (`TUT_SCRIPT`) and a step list (`TUT`) in `index.html`. Each step
+  names the one allowed target and a condition on game state; everything
+  else is disabled until the condition holds. The game stays on the device
+  and resumes after a reload.
+- **First-time callouts** (`CALLOUTS`) appear once per device the first time
+  a mechanic shows up in a real game. Finishing the tutorial marks them seen.
+- **Rules** in the header is generated from the engine's own data tables.
+
+If a rule changes, replay the tutorial (`scratchpad/tutorial.js` drives it
+headlessly in Playwright) and adjust the step list where the script stalls.
