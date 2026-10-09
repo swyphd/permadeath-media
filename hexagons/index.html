@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>⬡ Hexagons</title>
+  <meta name="description" content="A daily hexagonal number puzzle. Place 1–6 around each dot with no repeats."/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #fff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+    #root { min-height: 100vh; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script type="text/babel">
+    const { useState, useEffect, useRef, useCallback } = React;
+
+    // ── Supabase ──────────────────────────────────────────────────────
+    const SUPABASE_URL = 'https://kmxkuyloybrdtcdiiqwo.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_RI26gdJieUSoWA68DsfwwQ_qYte5CLj';
+    const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    // ── Geometry ──────────────────────────────────────────────────────
+    const R3 = Math.sqrt(3);
+    const T = 42;
+    const SVG_W = 360, SVG_H = 340;
+    const DX = T, DY = T * R3 / 2, DXOFF = T / 2;
+    const OX = (SVG_W - 3 * DX) / 2, OY = 42;
+
+    const DOT_POSITIONS = [
+      [[OX + 1.5*DX, OY]],
+      [[OX, OY+DY], [OX+DX, OY+DY], [OX+2*DX, OY+DY], [OX+3*DX, OY+DY]],
+      [[OX+DXOFF, OY+2*DY], [OX+DXOFF+DX, OY+2*DY], [OX+DXOFF+2*DX, OY+2*DY]],
+      [[OX, OY+3*DY], [OX+DX, OY+3*DY], [OX+2*DX, OY+3*DY], [OX+3*DX, OY+3*DY]],
+      [[OX + 1.5*DX, OY+4*DY]],
+    ];
+
+    const DOTS = DOT_POSITIONS.flatMap(row => row.map(([x,y]) => ({x,y})));
+    const SHAPE_CX = DOTS.reduce((s,d)=>s+d.x,0)/DOTS.length;
+    const SHAPE_CY = DOTS.reduce((s,d)=>s+d.y,0)/DOTS.length;
+    const DOT_DIST_FROM_CENTER = DOTS.map(d => Math.hypot(d.x-SHAPE_CX, d.y-SHAPE_CY));
+    const MAX_DOT_DIST = Math.max(...DOT_DIST_FROM_CENTER);
+
+    function dotVerts(dot) {
+      return Array.from({length:6}, (_,i) => ({
+        x: dot.x + T * Math.cos(i * Math.PI / 3),
+        y: dot.y + T * Math.sin(i * Math.PI / 3),
+      }));
+    }
+
+    function ptKey(p) { return `${Math.round(p.x*10)},${Math.round(p.y*10)}`; }
+    function triKey(a,b,c) { return [ptKey(a),ptKey(b),ptKey(c)].sort().join('|'); }
+
+    const ALL_TRIS = [];
+    const triMap = {};
+    DOTS.forEach((dot, di) => {
+      const v = dotVerts(dot);
+      for (let s = 0; s < 6; s++) {
+        const v0 = v[s], v1 = v[(s+1)%6];
+        const key = triKey(dot, v0, v1);
+        if (triMap[key] !== undefined) {
+          if (!ALL_TRIS[triMap[key]].dots.includes(di)) ALL_TRIS[triMap[key]].dots.push(di);
+        } else {
+          triMap[key] = ALL_TRIS.length;
+          ALL_TRIS.push({ points:[dot,v0,v1], dots:[di], center:{x:(dot.x+v0.x+v1.x)/3, y:(dot.y+v0.y+v1.y)/3} });
+        }
+      }
+    });
+
+    const N_TRIS = ALL_TRIS.length;
+    const DOT_TO_TRIS = DOTS.map((_,di) =>
+      ALL_TRIS.reduce((acc,_t,ti) => { if(ALL_TRIS[ti].dots.includes(di)) acc.push(ti); return acc; }, [])
+    );
+
+    // ── Border notch groups ───────────────────────────────────────────
+    function privateTrisOf(di) {
+      return DOT_TO_TRIS[di].filter(ti => ALL_TRIS[ti].dots.length === 1);
+    }
+    function sharesEdge(tiA, tiB) {
+      const pA = ALL_TRIS[tiA].points.map(ptKey);
+      const pB = ALL_TRIS[tiB].points.map(ptKey);
+      return pA.filter(p => pB.includes(p)).length === 2;
+    }
+    function notchTris(di1, di2) {
+      const mx = (DOTS[di1].x+DOTS[di2].x)/2, my = (DOTS[di1].y+DOTS[di2].y)/2;
+      function closest1private(di) {
+        const pvt = privateTrisOf(di);
+        if (!pvt.length) return null;
+        return pvt.map(ti => ({ti, dist:Math.hypot(ALL_TRIS[ti].center.x-mx, ALL_TRIS[ti].center.y-my)}))
+          .sort((a,b)=>a.dist-b.dist)[0].ti;
+      }
+      const priv1 = closest1private(di1), priv2 = closest1private(di2);
+      if (priv1 === null || priv2 === null) return [];
+      const adj1 = ALL_TRIS.map((_,ti)=>ti)
+        .filter(ti=>ti!==priv1&&ti!==priv2&&sharesEdge(ti,priv1))
+        .sort((a,b)=>{const c=ALL_TRIS[priv2].center; return Math.hypot(ALL_TRIS[a].center.x-c.x,ALL_TRIS[a].center.y-c.y)-Math.hypot(ALL_TRIS[b].center.x-c.x,ALL_TRIS[b].center.y-c.y);})[0];
+      const adj2 = ALL_TRIS.map((_,ti)=>ti)
+        .filter(ti=>ti!==priv1&&ti!==priv2&&ti!==adj1&&sharesEdge(ti,priv2))
+        .sort((a,b)=>{const c=ALL_TRIS[priv1].center; return Math.hypot(ALL_TRIS[a].center.x-c.x,ALL_TRIS[a].center.y-c.y)-Math.hypot(ALL_TRIS[b].center.x-c.x,ALL_TRIS[b].center.y-c.y);})[0];
+      return [priv1, priv2, adj1, adj2].filter(x => x !== undefined);
+    }
+    const BORDER_GROUPS = [[0,1],[0,4],[1,8],[4,11],[8,12],[11,12]].map(([a,b])=>notchTris(a,b));
+    const TRI_BORDER_GROUPS = ALL_TRIS.map((_,ti) => BORDER_GROUPS.filter(g => g.includes(ti)));
+
+    // ── Constraints ───────────────────────────────────────────────────
+    function isValid(grid, ti, val) {
+      for (const di of ALL_TRIS[ti].dots)
+        for (const oti of DOT_TO_TRIS[di])
+          if (oti !== ti && grid[oti] === val) return false;
+      for (const group of TRI_BORDER_GROUPS[ti])
+        for (const oti of group)
+          if (oti !== ti && grid[oti] === val) return false;
+      return true;
+    }
+
+    // ── RNG & solver ──────────────────────────────────────────────────
+    function mulberry32(seed) {
+      let s = seed>>>0;
+      return () => { s=(s+0x6D2B79F5)>>>0; let t=Math.imul(s^s>>>15,1|s); t=(t+Math.imul(t^t>>>7,61|t))^t; return ((t^t>>>14)>>>0)/4294967296; };
+    }
+    function dateSeed(str) {
+      let h=0x811c9dc5>>>0;
+      for(let i=0;i<str.length;i++) h=Math.imul(h^str.charCodeAt(i),0x01000193)>>>0;
+      return h;
+    }
+    function shuffle(arr, rng) {
+      const a=[...arr];
+      for(let i=a.length-1;i>0;i--){const j=Math.floor(rng()*(i+1));[a[i],a[j]]=[a[j],a[i]];}
+      return a;
+    }
+    function solve(grid, pos, rng, lim) {
+      if (!lim) lim = {n:0, max:2, calls:0};
+      if (++lim.calls > 200000) return false;
+      while (pos < N_TRIS && grid[pos] !== 0) pos++;
+      if (pos === N_TRIS) { lim.n++; return lim.n < lim.max; }
+      const nums = rng ? shuffle([1,2,3,4,5,6],rng) : [1,2,3,4,5,6];
+      for (const n of nums) {
+        if (isValid(grid, pos, n)) {
+          grid[pos] = n;
+          if (!solve(grid, pos+1, rng, lim)) return false;
+          grid[pos] = 0;
+        }
+      }
+      return true;
+    }
+    // Mon→Sun: medium, medium, medium, hard, hard, hard, extra-hard
+    const WEEKLY_DIFFICULTY = [
+      { name:'Medium',     hexes:1, removals:14 },
+      { name:'Medium',     hexes:1, removals:14 },
+      { name:'Medium',     hexes:1, removals:14 },
+      { name:'Hard',       hexes:2, removals:18 },
+      { name:'Hard',       hexes:2, removals:18 },
+      { name:'Hard',       hexes:2, removals:18 },
+      { name:'Extra Hard', hexes:3, removals:22 },
+    ];
+
+    function getTodayDifficulty() {
+      const dow = (getDayNum() % 7 + 7) % 7;
+      return WEEKLY_DIFFICULTY[dow];
+    }
+
+    function generatePuzzle(dateStr, maxRemovals) {
+      const sol = Array(N_TRIS).fill(0);
+      solve(sol, 0, mulberry32(dateSeed(dateStr)), {n:0,max:1,calls:0});
+      const puzzle = [...sol];
+      let removed = 0;
+      for (const idx of shuffle(Array.from({length:N_TRIS},(_,i)=>i), mulberry32(dateSeed(dateStr+"clues")))) {
+        if (removed >= maxRemovals) break;
+        const prev = puzzle[idx]; puzzle[idx] = 0;
+        const lim = {n:0, max:2, calls:0};
+        solve([...puzzle], 0, null, lim);
+        if (lim.n !== 1) puzzle[idx] = prev; else removed++;
+      }
+      return { puzzle, solution: sol };
+    }
+
+    // ── Helpers ───────────────────────────────────────────────────────
+    function getTodayStr() {
+      const d = new Date();
+      return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    }
+    function getDayNum() {
+      const d = new Date();
+      const y = d.getFullYear(), m = d.getMonth(), day = d.getDate();
+      const today = Date.UTC(y, m, day);
+      const epoch = Date.UTC(2026, 0, 1);
+      return (today - epoch) / 86400000 + 1;
+    }
+    function fmtTime(s) {
+      return `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;
+    }
+    function dateStrFromCursor(cursor) {
+      return `${cursor.getFullYear()}-${String(cursor.getMonth()+1).padStart(2,'0')}-${String(cursor.getDate()).padStart(2,'0')}`;
+    }
+    function computeStreak(history, todayStr) {
+      const dates = new Set(history);
+      let count = 0;
+      const cursor = new Date();
+      if (!dates.has(todayStr)) cursor.setDate(cursor.getDate()-1);
+      while (dates.has(dateStrFromCursor(cursor))) {
+        count++;
+        cursor.setDate(cursor.getDate()-1);
+      }
+      return count;
+    }
+    function computeBestStreak(solvedDates) {
+      if (!solvedDates.length) return 0;
+      const sorted = [...new Set(solvedDates)].sort();
+      let best = 1, current = 1;
+      for (let i = 1; i < sorted.length; i++) {
+        const prev = new Date(sorted[i-1] + 'T00:00:00');
+        const curr = new Date(sorted[i] + 'T00:00:00');
+        if ((curr - prev) / 86400000 === 1) { current++; best = Math.max(best, current); }
+        else current = 1;
+      }
+      return best;
+    }
+
+    // ── Shared styles ─────────────────────────────────────────────────
+    const OVERLAY = {
+      position:'fixed',inset:0,background:'rgba(0,0,0,0.4)',
+      display:'flex',alignItems:'center',justifyContent:'center',
+      zIndex:1000,padding:'1rem',animation:'fadeIn 0.15s ease-out',
+    };
+    const MODAL = {
+      background:'#fff',borderRadius:12,padding:'1.5rem',
+      width:'100%',maxWidth:380,maxHeight:'90vh',overflowY:'auto',
+      animation:'slideUp 0.2s ease-out',
+    };
+    const INPUT = {
+      width:'100%',padding:'10px 12px',fontSize:14,borderRadius:8,
+      border:'1px solid #d1d5db',marginBottom:10,outline:'none',
+      fontFamily:'inherit',
+    };
+    const BTN_PRIMARY = {
+      width:'100%',padding:'10px',fontSize:14,fontWeight:600,
+      borderRadius:8,border:'none',background:'#3b82f6',color:'#fff',
+      cursor:'pointer',fontFamily:'inherit',
+    };
+
+    // ── AuthModal ─────────────────────────────────────────────────────
+    function AuthModal({ onClose }) {
+      const [mode, setMode] = useState('signin');
+      const [email, setEmail] = useState('');
+      const [password, setPassword] = useState('');
+      const [loading, setLoading] = useState(false);
+      const [error, setError] = useState('');
+      const [message, setMessage] = useState('');
+
+      async function handleSubmit(e) {
+        e.preventDefault();
+        setError(''); setMessage(''); setLoading(true);
+        try {
+          if (mode === 'magic') {
+            const { error: err } = await sb.auth.signInWithOtp({ email, options: { emailRedirectTo: 'https://permadeathmedia.com/hexagons/' } });
+            if (err) throw err;
+            setMessage('Check your email for a login link!');
+          } else if (mode === 'signup') {
+            const { error: err } = await sb.auth.signUp({ email, password, options: { emailRedirectTo: 'https://permadeathmedia.com/hexagons/' } });
+            if (err) throw err;
+            setMessage('Check your email to confirm your account!');
+          } else {
+            const { error: err } = await sb.auth.signInWithPassword({ email, password });
+            if (err) throw err;
+            onClose();
+          }
+        } catch(err) {
+          setError(err.message || 'Something went wrong');
+        }
+        setLoading(false);
+      }
+
+      const tabs = [
+        { key:'signin', label:'Sign In' },
+        { key:'signup', label:'Sign Up' },
+        { key:'magic', label:'Magic Link' },
+      ];
+
+      return (
+        <div style={OVERLAY} onClick={onClose}>
+          <div style={MODAL} onClick={e=>e.stopPropagation()}>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:16}}>
+              <div style={{fontSize:18,fontWeight:600}}>
+                {mode==='signin'?'Sign In':mode==='signup'?'Create Account':'Magic Link'}
+              </div>
+              <button onClick={onClose} style={{background:'none',border:'none',fontSize:22,
+                cursor:'pointer',color:'#6b7280',lineHeight:1}}>×</button>
+            </div>
+
+            <div style={{display:'flex',gap:4,marginBottom:16}}>
+              {tabs.map(t=>(
+                <button key={t.key} onClick={()=>{setMode(t.key);setError('');setMessage('');}}
+                  style={{flex:1,padding:'6px 0',fontSize:13,fontWeight:mode===t.key?600:400,
+                    borderRadius:6,border:'none',cursor:'pointer',fontFamily:'inherit',
+                    background:mode===t.key?'#eff6ff':'#f9fafb',
+                    color:mode===t.key?'#1d4ed8':'#6b7280'}}>
+                  {t.label}
+                </button>
+              ))}
+            </div>
+
+            <form onSubmit={handleSubmit}>
+              <input type="email" placeholder="Email address" value={email}
+                onChange={e=>setEmail(e.target.value)} style={INPUT} required autoFocus/>
+              {mode !== 'magic' && (
+                <input type="password" placeholder="Password (min 6 characters)" value={password}
+                  onChange={e=>setPassword(e.target.value)} style={INPUT} required minLength={6}/>
+              )}
+              {error && <div style={{color:'#dc2626',fontSize:13,marginBottom:8,padding:'6px 8px',
+                background:'#fef2f2',borderRadius:6}}>{error}</div>}
+              {message && <div style={{color:'#16a34a',fontSize:13,marginBottom:8,padding:'6px 8px',
+                background:'#f0fdf4',borderRadius:6}}>{message}</div>}
+              <button type="submit" disabled={loading}
+                style={{...BTN_PRIMARY,opacity:loading?0.7:1}}>
+                {loading?'Please wait...':mode==='signin'?'Sign In':mode==='signup'?'Create Account':'Send Magic Link'}
+              </button>
+            </form>
+
+            <div style={{marginTop:12,fontSize:12,color:'#9ca3af',textAlign:'center'}}>
+              {mode==='signin'?'No account? Switch to Sign Up or use Magic Link.'
+                :mode==='signup'?'Already have an account? Switch to Sign In.'
+                :'We\'ll email you a one-click login link.'}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // ── StatBox ───────────────────────────────────────────────────────
+    function StatBox({ label, value }) {
+      return (
+        <div style={{background:'#f9fafb',borderRadius:8,padding:'10px 12px',textAlign:'center'}}>
+          <div style={{fontSize:20,fontWeight:600}}>{value}</div>
+          <div style={{fontSize:11,color:'#6b7280',marginTop:2}}>{label}</div>
+        </div>
+      );
+    }
+
+    // ── StatsModal ────────────────────────────────────────────────────
+    function StatsModal({ stats, user, onClose, onSignOut }) {
+      return (
+        <div style={OVERLAY} onClick={onClose}>
+          <div style={MODAL} onClick={e=>e.stopPropagation()}>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:16}}>
+              <div style={{fontSize:18,fontWeight:600}}>Your Stats</div>
+              <button onClick={onClose} style={{background:'none',border:'none',fontSize:22,
+                cursor:'pointer',color:'#6b7280',lineHeight:1}}>×</button>
+            </div>
+
+            {stats ? (
+              <React.Fragment>
+                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginBottom:16}}>
+                  <StatBox label="Current Streak" value={stats.currentStreak}/>
+                  <StatBox label="Best Streak" value={stats.bestStreak}/>
+                  <StatBox label="Puzzles Solved" value={stats.totalSolved}/>
+                  <StatBox label="Competitive Wins" value={stats.totalCompetitive}/>
+                  {stats.bestTime !== null && <StatBox label="Best Time" value={fmtTime(stats.bestTime)}/>}
+                  {stats.avgTime !== null && <StatBox label="Avg Time" value={fmtTime(stats.avgTime)}/>}
+                </div>
+
+                {stats.recentGames.length > 0 && (
+                  <React.Fragment>
+                    <div style={{fontSize:14,fontWeight:600,marginBottom:8}}>Recent Games</div>
+                    <div style={{marginBottom:12}}>
+                      {stats.recentGames.map(g=>(
+                        <div key={g.puzzle_date} style={{display:'flex',justifyContent:'space-between',
+                          fontSize:13,padding:'6px 0',borderBottom:'1px solid #f3f4f6'}}>
+                          <span style={{color:'#374151'}}>{g.puzzle_date}</span>
+                          <span style={{color:'#6b7280'}}>
+                            {g.competitive
+                              ? `${fmtTime(g.elapsed_seconds)} · ${g.mistakes} mistake${g.mistakes===1?'':'s'}`
+                              : 'Relaxed'}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </React.Fragment>
+                )}
+              </React.Fragment>
+            ) : (
+              <div style={{padding:'2rem 0',textAlign:'center',color:'#6b7280',fontSize:14}}>
+                Loading stats...
+              </div>
+            )}
+
+            <div style={{paddingTop:12,borderTop:'1px solid #e5e7eb',
+              display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+              <span style={{fontSize:13,color:'#6b7280',overflow:'hidden',
+                textOverflow:'ellipsis',whiteSpace:'nowrap',maxWidth:200}}>{user.email}</span>
+              <button onClick={onSignOut} style={{fontSize:13,color:'#dc2626',background:'none',
+                border:'none',cursor:'pointer',fontFamily:'inherit',fontWeight:500}}>Sign Out</button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // ── App ───────────────────────────────────────────────────────────
+    function App() {
+      const todayStr = getTodayStr();
+      const savedKey = `hexagons-${todayStr}`;
+
+      const [ready, setReady] = useState(false);
+      const [error, setError] = useState(null);
+      const [cells, setCells] = useState([]);
+      const [selected, setSelected] = useState(null);
+      const [solved, setSolved] = useState(false);
+      const [copied, setCopied] = useState(false);
+      const [celebrate, setCelebrate] = useState(false);
+      const [streak, setStreak] = useState(0);
+      const [diffInfo, setDiffInfo] = useState({text:'', hexes:'', level:0});
+      const [competitive, setCompetitive] = useState(false);
+      const [modeChosen, setModeChosen] = useState(false);
+      const [elapsed, setElapsed] = useState(0);
+      const [mistakes, setMistakes] = useState(0);
+      const intervalRef = useRef(null);
+
+      // Auth & stats state
+      const [user, setUser] = useState(null);
+      const [authLoading, setAuthLoading] = useState(true);
+      const [showAuth, setShowAuth] = useState(false);
+      const [showStats, setShowStats] = useState(false);
+      const [cloudStats, setCloudStats] = useState(null);
+      const [resultSaved, setResultSaved] = useState(false);
+
+      function chooseMode(comp) {
+        setCompetitive(comp);
+        setModeChosen(true);
+      }
+
+      // ── Auth listener ───────────────────────────────────────────────
+      useEffect(() => {
+        sb.auth.getSession().then(({data:{session}}) => {
+          setUser(session?.user ?? null);
+          setAuthLoading(false);
+        });
+        const {data:{subscription}} = sb.auth.onAuthStateChange((_event, session) => {
+          setUser(session?.user ?? null);
+        });
+        return () => subscription.unsubscribe();
+      }, []);
+
+      // ── Fetch cloud stats when user changes ────────────────────────
+      const fetchStats = useCallback(async (uid) => {
+        try {
+          const {data, error: err} = await sb.from('game_results')
+            .select('*').eq('user_id', uid).order('puzzle_date', {ascending:false});
+          if (err) throw err;
+          if (!data) return;
+          const solvedGames = data.filter(g => g.solved);
+          const solvedDates = solvedGames.map(g => g.puzzle_date);
+          const compGames = solvedGames.filter(g => g.competitive);
+          const currentStreak = computeStreak(solvedDates, todayStr);
+          const bestStreak = computeBestStreak(solvedDates);
+          const bestTime = compGames.length
+            ? Math.min(...compGames.map(g => g.elapsed_seconds)) : null;
+          const avgTime = compGames.length
+            ? Math.round(compGames.reduce((s,g) => s+g.elapsed_seconds, 0) / compGames.length) : null;
+          setCloudStats({
+            currentStreak, bestStreak,
+            totalSolved: solvedGames.length,
+            totalCompetitive: compGames.length,
+            bestTime, avgTime,
+            recentGames: data.slice(0, 10),
+          });
+          setStreak(currentStreak);
+        } catch(e) { /* cloud stats unavailable, local streak still works */ }
+      }, [todayStr]);
+
+      async function migrateLocalHistory(uid) {
+        try {
+          const history = JSON.parse(localStorage.getItem('hexagons-history') || '[]');
+          if (!history.length) return;
+          const rows = history.map(date => ({
+            user_id: uid,
+            puzzle_date: date,
+            solved: true,
+            competitive: false,
+            elapsed_seconds: 0,
+            mistakes: 0,
+          }));
+          await sb.from('game_results').upsert(rows, { onConflict: 'user_id,puzzle_date', ignoreDuplicates: true });
+        } catch(e) {}
+      }
+
+      useEffect(() => {
+        if (user) migrateLocalHistory(user.id).then(() => fetchStats(user.id));
+        else { setCloudStats(null); }
+      }, [user, fetchStats]);
+
+      // ── Save result to Supabase ─────────────────────────────────────
+      async function saveResult(uid) {
+        try {
+          await sb.from('game_results').upsert({
+            user_id: uid,
+            puzzle_date: todayStr,
+            puzzle_number: getDayNum(),
+            solved: true,
+            competitive,
+            elapsed_seconds: elapsed,
+            mistakes,
+            difficulty: diffInfo.text,
+            difficulty_level: diffInfo.level,
+          }, { onConflict: 'user_id,puzzle_date' });
+          setResultSaved(true);
+          fetchStats(uid);
+        } catch(e) { /* save failed silently — localStorage still has the data */ }
+      }
+
+      // ── Sync local solve to cloud on sign-in ───────────────────────
+      useEffect(() => {
+        if (!user || !solved || resultSaved) return;
+        saveResult(user.id);
+      }, [user, solved]);
+
+      // ── Puzzle init ─────────────────────────────────────────────────
+      useEffect(() => {
+        setTimeout(() => {
+          try {
+            const diff = getTodayDifficulty();
+            const { puzzle } = generatePuzzle(todayStr, diff.removals);
+            let initCells;
+            try {
+              const raw = localStorage.getItem(savedKey);
+              const saved = raw ? JSON.parse(raw) : null;
+              initCells = saved?.cells || puzzle.map(v=>({value:v||null,given:v!==0,error:false}));
+              if (saved?.solved) setSolved(true);
+            } catch(e) {
+              initCells = puzzle.map(v=>({value:v||null,given:v!==0,error:false}));
+            }
+            setCells(initCells);
+            setDiffInfo({
+              text: diff.name,
+              hexes: Array.from({length:4},(_,i)=>i<diff.hexes?'⬢':'⬡').join(''),
+              level: diff.hexes,
+            });
+            try {
+              const history = JSON.parse(localStorage.getItem('hexagons-history')||'[]');
+              setStreak(computeStreak(history, todayStr));
+            } catch(e) {}
+            setReady(true);
+          } catch(e) {
+            setError(e.message);
+          }
+        }, 50);
+      }, []);
+
+      // ── Persist to localStorage ─────────────────────────────────────
+      useEffect(() => {
+        if (!ready) return;
+        try { localStorage.setItem(savedKey, JSON.stringify({cells, solved})); } catch(e) {}
+      }, [cells, solved, ready]);
+
+      // ── On solve: update localStorage history + save to cloud ───────
+      useEffect(() => {
+        if (!solved) return;
+        try {
+          const history = JSON.parse(localStorage.getItem('hexagons-history')||'[]');
+          if (!history.includes(todayStr)) {
+            const next = [...history, todayStr];
+            localStorage.setItem('hexagons-history', JSON.stringify(next));
+            if (!user) setStreak(computeStreak(next, todayStr));
+          }
+        } catch(e) {}
+        if (user && !resultSaved) saveResult(user.id);
+      }, [solved]);
+
+      // ── Live date rollover ──────────────────────────────────────────
+      useEffect(() => {
+        const id = setInterval(() => {
+          if (getTodayStr() !== todayStr) window.location.reload();
+        }, 60000);
+        return () => clearInterval(id);
+      }, []);
+
+      // ── Timer ───────────────────────────────────────────────────────
+      useEffect(() => {
+        clearInterval(intervalRef.current);
+        if (competitive && !solved && ready && modeChosen) {
+          intervalRef.current = setInterval(() => setElapsed(e => e+1), 1000);
+        }
+        return () => clearInterval(intervalRef.current);
+      }, [competitive, solved, ready, modeChosen]);
+
+      // ── Game logic ──────────────────────────────────────────────────
+      function checkErrors(nc) {
+        return nc.map((c,ti) => {
+          if (!c.value) return {...c, error:false};
+          const dotErr = ALL_TRIS[ti].dots.some(di=>DOT_TO_TRIS[di].some(oti=>oti!==ti&&nc[oti].value===c.value));
+          const borderErr = TRI_BORDER_GROUPS[ti].some(g=>g.some(oti=>oti!==ti&&nc[oti].value===c.value));
+          return {...c, error:dotErr||borderErr};
+        });
+      }
+
+      function checkSolved(nc) {
+        if (nc.some(c=>!c.value)) return false;
+        return DOT_TO_TRIS.every(tris=>new Set(tris.map(ti=>nc[ti].value)).size===6) &&
+               BORDER_GROUPS.every(g=>new Set(g.map(ti=>nc[ti].value)).size===g.length);
+      }
+
+      function handleInput(num) {
+        if (selected===null||!cells[selected]||cells[selected].given||solved) return;
+        const next = cells.map((c,i)=>i===selected?{...c,value:num}:c);
+        const we = checkErrors(next);
+        if (competitive && we[selected]?.error) setMistakes(m=>m+1);
+        setCells(we);
+        if (checkSolved(we)) { setSolved(true); setCelebrate(true); }
+      }
+
+      function handleClear() {
+        if (selected===null||solved) return;
+        setCells(prev=>{
+          if (prev[selected]?.given) return prev;
+          return checkErrors(prev.map((c,i)=>i===selected?{...c,value:null,error:false}:c));
+        });
+      }
+
+      function handleClearAll() {
+        if (solved) return;
+        setCells(prev => prev.map(c => c.given ? c : {...c, value:null, error:false}));
+      }
+
+      function handleShare() {
+        const streakLine = streak>0 ? `🔥 ${streak} day${streak===1?'':'s'}\n` : '';
+        const compLine = competitive && solved ? `⏱️ ${fmtTime(elapsed)}  ❌ ${mistakes} mistake${mistakes===1?'':'s'}\n` : '';
+        const text = `⬡ Hexagons #${getDayNum()}\n📅 ${todayStr}\n${diffInfo.hexes} ${diffInfo.text}\n${compLine}${streakLine}\n${solved?'✅ Solved!':'🔄 In progress'}`;
+        navigator.clipboard.writeText(text).then(()=>{setCopied(true);setTimeout(()=>setCopied(false),2000);});
+      }
+
+      async function handleSignOut() {
+        await sb.auth.signOut();
+        setShowStats(false);
+        setCloudStats(null);
+        setResultSaved(false);
+        try {
+          const history = JSON.parse(localStorage.getItem('hexagons-history')||'[]');
+          setStreak(computeStreak(history, todayStr));
+        } catch(e) { setStreak(0); }
+      }
+
+      // ── Rendering helpers ───────────────────────────────────────────
+      function insetPts(pts, amt=1.8) {
+        const cx=pts.reduce((s,p)=>s+p.x,0)/3, cy=pts.reduce((s,p)=>s+p.y,0)/3;
+        return pts.map(p=>{const dx=cx-p.x,dy=cy-p.y,d=Math.hypot(dx,dy)||1;return{x:p.x+dx*amt/d,y:p.y+dy*amt/d};});
+      }
+
+      function triFill(i) {
+        if (i===selected) return '#dbeafe';
+        if (!cells[i]) return '#f5f3ff';
+        if (cells[i].error) return '#fee2e2';
+        if (cells[i].given) return '#ede9f8';
+        return '#f5f3ff';
+      }
+
+      const dotProgress = ready ? DOT_TO_TRIS.map(tris=>{
+        const vals=tris.map(ti=>cells[ti]?.value);
+        if (vals.some(v=>!v)) return 'incomplete';
+        return new Set(vals).size===6?'complete':'error';
+      }) : DOTS.map(()=>'incomplete');
+
+      // ── Error state ─────────────────────────────────────────────────
+      if (error) return (
+        <div style={{padding:'2rem',color:'#dc2626'}}>
+          <strong>Error:</strong> {error}
+        </div>
+      );
+
+      // ── Loading state ───────────────────────────────────────────────
+      if (!ready) return (
+        <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',
+          height:'100vh',color:'#6b7280',gap:12}}>
+          <div style={{fontSize:32}}>⬡</div>
+          <div>Generating puzzle…</div>
+        </div>
+      );
+
+      // ── Mode selection ──────────────────────────────────────────────
+      if (!modeChosen) return (
+        <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',
+          minHeight:'100vh',padding:'2rem',gap:20,textAlign:'center'}}>
+          <style>{`
+            @keyframes fadeIn  { from{opacity:0} to{opacity:1} }
+            @keyframes slideUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+            button:hover { filter: brightness(0.96); }
+          `}</style>
+          <div style={{fontSize:32}}>⬡</div>
+          <div style={{fontSize:22,fontWeight:600}}>Hexagons #{getDayNum()}</div>
+          <div style={{fontSize:14,color:'#6b7280'}}>How would you like to play today?</div>
+          <div style={{display:'flex',flexDirection:'column',gap:12,width:'100%',maxWidth:300}}>
+            <button onClick={()=>chooseMode(false)}
+              style={{padding:'16px 20px',fontSize:15,fontWeight:500,borderRadius:10,
+                border:'1px solid #d1d5db',background:'#f9fafb',cursor:'pointer',textAlign:'left'}}>
+              <div>🧘 Relaxed</div>
+              <div style={{fontSize:12,color:'#6b7280',marginTop:4}}>No timer, no pressure. Just the puzzle.</div>
+            </button>
+            <button onClick={()=>chooseMode(true)}
+              style={{padding:'16px 20px',fontSize:15,fontWeight:500,borderRadius:10,
+                border:'1px solid #3b82f6',background:'#eff6ff',cursor:'pointer',textAlign:'left'}}>
+              <div>🏆 Competitive</div>
+              <div style={{fontSize:12,color:'#6b7280',marginTop:4}}>Track your time and mistakes. Share your score.</div>
+            </button>
+          </div>
+          {!authLoading && !user && (
+            <button onClick={()=>setShowAuth(true)}
+              style={{fontSize:13,color:'#3b82f6',background:'none',border:'none',
+                cursor:'pointer',fontFamily:'inherit',marginTop:4}}>
+              Sign in to track your stats across devices
+            </button>
+          )}
+          {!authLoading && user && (
+            <div style={{fontSize:13,color:'#6b7280'}}>
+              Signed in as {user.email}
+            </div>
+          )}
+          {showAuth && <AuthModal onClose={()=>setShowAuth(false)}/>}
+        </div>
+      );
+
+      // ── Main game ───────────────────────────────────────────────────
+      return (
+        <div style={{padding:'1.25rem 1rem',maxWidth:480,margin:'0 auto'}}>
+          <style>{`
+            @keyframes dotPulse { 0%{r:5;opacity:1} 40%{r:11;opacity:0.6} 100%{r:5;opacity:1} }
+            @keyframes triPulse  { 0%{transform:scale(1)} 40%{transform:scale(1.12)} 100%{transform:scale(1)} }
+            @keyframes bannerIn  { 0%{opacity:0;transform:translateY(-6px) scale(0.96)} 100%{opacity:1;transform:translateY(0) scale(1)} }
+            @keyframes fadeIn  { from{opacity:0} to{opacity:1} }
+            @keyframes slideUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+            button:hover { filter: brightness(0.96); }
+          `}</style>
+
+          {/* Header */}
+          <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:'0.75rem'}}>
+            <div>
+              <div style={{fontSize:18,fontWeight:600}}>⬡ Hexagons</div>
+              <div style={{fontSize:12,color:'#6b7280'}}>#{getDayNum()} · {todayStr}</div>
+              <div style={{fontSize:13,marginTop:2}}>
+                <span style={{letterSpacing:2}}>{diffInfo.hexes}</span>
+                <span style={{color:'#6b7280',fontSize:12}}> {diffInfo.text}</span>
+              </div>
+            </div>
+            <div style={{display:'flex',flexDirection:'column',alignItems:'flex-end',gap:6}}>
+              {/* Auth button */}
+              {!authLoading && (
+                user ? (
+                  <button onClick={()=>{fetchStats(user.id);setShowStats(true);}}
+                    style={{fontSize:12,color:'#3b82f6',background:'#eff6ff',border:'1px solid #bfdbfe',
+                      borderRadius:6,padding:'3px 8px',cursor:'pointer',fontFamily:'inherit',
+                      display:'flex',alignItems:'center',gap:4}}>
+                    <span style={{width:18,height:18,borderRadius:'50%',background:'#3b82f6',color:'#fff',
+                      display:'inline-flex',alignItems:'center',justifyContent:'center',fontSize:10,fontWeight:700}}>
+                      {(user.email||'?')[0].toUpperCase()}
+                    </span>
+                    Stats
+                  </button>
+                ) : (
+                  <button onClick={()=>setShowAuth(true)}
+                    style={{fontSize:12,color:'#3b82f6',background:'none',border:'1px solid #bfdbfe',
+                      borderRadius:6,padding:'3px 8px',cursor:'pointer',fontFamily:'inherit'}}>
+                    Sign In
+                  </button>
+                )
+              )}
+              {streak>0 && <div style={{fontSize:12,color:'#6b7280'}}>🔥 {streak} day{streak===1?'':'s'}</div>}
+              <div style={{display:'flex',alignItems:'center',gap:6,fontSize:12,color:competitive?'#1d4ed8':'#6b7280'}}>
+                <span>{competitive ? '🏆' : '🧘'} {competitive ? 'Competitive' : 'Relaxed'}</span>
+                <div style={{width:36,height:20,borderRadius:10,background:competitive?'#3b82f6':'#d1d5db',
+                  position:'relative',opacity:0.6}}>
+                  <div style={{width:16,height:16,borderRadius:'50%',background:'#fff',
+                    position:'absolute',top:2,left:competitive?18:2}}/>
+                </div>
+              </div>
+              {competitive && (
+                <div style={{fontSize:12,color:'#1d4ed8'}}>
+                  ⏱️ {fmtTime(elapsed)} · ❌ {mistakes}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Dot progress */}
+          <div style={{display:'flex',gap:6,justifyContent:'center',marginBottom:'0.5rem'}}>
+            {dotProgress.map((s,i)=>(
+              <div key={i} style={{width:10,height:10,borderRadius:'50%',
+                background:s==='complete'?'#16a34a':s==='error'?'#dc2626':'#d1d5db'}}/>
+            ))}
+          </div>
+
+          {/* Solved banner */}
+          {solved && (
+            <div style={{background:'#f0fdf4',border:'1px solid #86efac',borderRadius:8,
+              padding:'0.5rem 1rem',marginBottom:'0.75rem',fontSize:14,color:'#166534',
+              textAlign:'center',animation:celebrate?'bannerIn 0.4s ease-out':'none'}}>
+              ✅ Solved!{competitive ? ` ⏱️ ${fmtTime(elapsed)}  ❌ ${mistakes} mistake${mistakes===1?'':'s'}` : ''}
+            </div>
+          )}
+
+          {/* Sign-in prompt after solve */}
+          {solved && !user && !authLoading && (
+            <div style={{background:'#eff6ff',border:'1px solid #bfdbfe',borderRadius:8,
+              padding:'0.5rem 1rem',marginBottom:'0.75rem',fontSize:13,color:'#1d4ed8',
+              textAlign:'center',animation:'bannerIn 0.4s ease-out 0.3s both',
+              display:'flex',alignItems:'center',justifyContent:'center',gap:8}}>
+              <span>Sign in to save your stats and streak</span>
+              <button onClick={()=>setShowAuth(true)}
+                style={{fontSize:12,fontWeight:600,color:'#fff',background:'#3b82f6',
+                  border:'none',borderRadius:6,padding:'4px 10px',cursor:'pointer',fontFamily:'inherit'}}>
+                Sign In
+              </button>
+            </div>
+          )}
+
+          {/* Result saved confirmation */}
+          {solved && user && resultSaved && (
+            <div style={{fontSize:12,color:'#16a34a',textAlign:'center',marginBottom:'0.5rem'}}>
+              Result saved to your account
+            </div>
+          )}
+
+          {/* Puzzle SVG */}
+          <svg viewBox={`0 0 ${SVG_W} ${SVG_H}`} width="100%" style={{display:'block'}}>
+            {ALL_TRIS.map((tri,i)=>{
+              const ins=insetPts(tri.points);
+              const pts=ins.map(p=>`${p.x},${p.y}`).join(' ');
+              const c=tri.center;
+              const triDist=tri.dots.reduce((s,di)=>s+DOT_DIST_FROM_CENTER[di],0)/tri.dots.length;
+              const delay=(triDist/MAX_DOT_DIST)*0.5;
+              return (
+                <g key={i} onClick={()=>!solved&&setSelected(i===selected?null:i)} style={{cursor:'pointer'}}>
+                  <polygon points={pts} fill={triFill(i)}
+                    stroke={i===selected?'#3b82f6':'#9d8ec7'}
+                    strokeWidth={i===selected?1.5:0.6}
+                    style={celebrate?{transformBox:'fill-box',transformOrigin:'center',animation:`triPulse 0.6s ease-out ${delay}s`}:undefined}/>
+                  {cells[i]?.value&&(
+                    <text x={c.x} y={c.y+1} textAnchor="middle" dominantBaseline="middle"
+                      fontSize={11} fontWeight={cells[i].given?700:400}
+                      fill={cells[i].error?'#dc2626':cells[i].given?'#1e1b4b':'#1d4ed8'}
+                      style={celebrate?{transformBox:'fill-box',transformOrigin:'center',animation:`triPulse 0.6s ease-out ${delay}s`}:undefined}>
+                      {cells[i].value}
+                    </text>
+                  )}
+                </g>
+              );
+            })}
+            {DOTS.map((d,i)=>{
+              const delay=(DOT_DIST_FROM_CENTER[i]/MAX_DOT_DIST)*0.5;
+              return (
+                <circle key={i} cx={d.x} cy={d.y} r={5}
+                  fill={celebrate?'#d4af37':'#1e1b4b'}
+                  style={celebrate?{animation:`dotPulse 0.6s ease-out ${delay}s`}:undefined}
+                  onAnimationEnd={i===DOTS.length-1?()=>setCelebrate(false):undefined}/>
+              );
+            })}
+          </svg>
+
+          {/* Number buttons */}
+          <div style={{display:'flex',gap:8,justifyContent:'center',marginTop:'-1.5rem'}}>
+            {[1,2,3,4,5,6].map(n=>(
+              <button key={n} onClick={()=>handleInput(n)}
+                style={{width:42,height:42,fontSize:17,fontWeight:500,borderRadius:8,
+                  border:'1px solid #d1d5db',background:'#fff',cursor:'pointer'}}>
+                {n}
+              </button>
+            ))}
+          </div>
+
+          {/* Action buttons */}
+          <div style={{display:'flex',gap:8,marginTop:'0.75rem',justifyContent:'center'}}>
+            <button onClick={handleClear}
+              style={{padding:'6px 16px',fontSize:13,borderRadius:8,border:'1px solid #d1d5db',
+                background:'#fff',color:'#6b7280',cursor:'pointer'}}>Clear</button>
+            <button onClick={handleClearAll}
+              style={{padding:'6px 16px',fontSize:13,borderRadius:8,border:'1px solid #d1d5db',
+                background:'#fff',color:'#6b7280',cursor:'pointer'}}>Clear All</button>
+            <button onClick={handleShare}
+              style={{padding:'6px 16px',fontSize:13,borderRadius:8,border:'1px solid #d1d5db',
+                background:'#fff',color:'#6b7280',cursor:'pointer'}}>
+              {copied?'✅ Copied!':'📤 Share'}
+            </button>
+          </div>
+
+          {/* How to play */}
+          <div style={{marginTop:'1rem',padding:'0.75rem 1rem',background:'#f9fafb',borderRadius:8,
+            fontSize:13,color:'#6b7280',lineHeight:1.6}}>
+            <strong style={{color:'#111'}}>How to play:</strong> Tap a triangle, then tap a digit 1–6. The 6 triangles around each black dot must use each of 1–6 exactly once. Triangles shared between two dots must satisfy both. No number can be repeated in any partial hexagon shape along the border.
+          </div>
+
+          {/* Footer */}
+          <div style={{marginTop:'1.5rem',textAlign:'center',fontSize:11,color:'#d1d5db'}}>
+            A <a href="https://permadeathmedia.com" target="_blank" rel="noopener noreferrer" style={{color:'inherit'}}>Permadeath Studio</a> game · More games coming soon
+          </div>
+
+          {/* Modals */}
+          {showAuth && <AuthModal onClose={()=>setShowAuth(false)}/>}
+          {showStats && user && (
+            <StatsModal stats={cloudStats} user={user}
+              onClose={()=>setShowStats(false)} onSignOut={handleSignOut}/>
+          )}
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+  </script>
+</body>
+</html>
