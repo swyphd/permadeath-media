@@ -250,7 +250,7 @@ const MGMT=[
  [1,1,"Open Door Policy","Fear +1. One Leaning worker moves to Undecided."],
  [2,1,"Captive-Audience Meeting","One department: all Undecided move to Hostile."],
  [3,1,"Surprise Bonus","Two Leaning workers with Pay move to Undecided."],
- [4,1,"Town Hall","Fear +1. Each organizer's next One-on-One costs 2."],
+ [4,1,"Town Hall","Fear +1. Each organizer's next paid One-on-One costs 2. A Steward's free One-on-One doesn't count."],
  [5,1,"Culture Survey","Fear +1. One Undecided worker moves to Hostile."],
  [6,1,"Pizza Friday","No Map actions next round."],
  [7,1,"New Hire","A Plant joins the department with the most Signed workers, Hostile. Each Plant adds +1 to One-on-One costs in its department."],
@@ -893,7 +893,7 @@ function openRules(){
     <div class="sh"><h1 style="font-size:28px">Card Check: the rules</h1><span class="spacer"></span><button class="primary" id="rclose">Close</button></div>
     <p>A cooperative game for 1 to 6 organizers running a union drive inside a game studio. Everyone wins or loses together.</p>
     <h2>The goal</h2>
-    <p>Get a majority of the 32 workers to <b>Signed</b> or <b>Steward</b> before the vote at the end of round 8: <b>21</b> with one to three organizers, <b>24</b> with four or more. You lose at once if every organizer burns out, and at the end of any round where Fear is 10.</p>
+    <p>Get a majority of the 32 workers to <b>Signed</b> or <b>Steward</b> by the vote, which happens after round 8's organizer phase and status check: <b>21</b> with one to three organizers, <b>24</b> with four or more. You lose at once if every organizer burns out, and at the end of any round where Fear is 10.</p>
     <h2>The board</h2>
     <p>Four departments (Engineering, Art, QA, Production), eight workers each. Workers start face down in their department pile; Map reveals them. Every worker has a disposition: <b>Hostile, Undecided, Leaning, Signed, Steward</b>.</p>
     <ul><li><b>Dots</b> are influence. When a worker reaches Signed, you move up to that many colleagues in their department up one step.</li>
@@ -910,13 +910,13 @@ function openRules(){
     <li><b>Status check.</b> Fear 10: the drive collapses. Fear 7 to 9: every organizer takes +1 Burnout. After round 8, the vote.</li></ol>
     <h2>Actions</h2>
     <table><tr><th>Action</th><th>Cost</th><th>Effect</th></tr>
-    <tr><td class="k">Map</td><td>1 in your home department. 2 elsewhere, or 1 once someone there is Signed.</td><td>Reveal the top worker of a department pile.</td></tr>
+    <tr><td class="k">Map</td><td>1 in your home department. 2 elsewhere, or 1 once someone there is Signed, while Pete is Signed, or after Convert the Contractors.</td><td>Reveal the top worker of any department pile.</td></tr>
     <tr><td class="k">One-on-One</td><td>1. 2 when Fear is 7+, under a Union Avoidance Consultant, or after a Town Hall. +1 per Plant in the department. 0 once per round in a department with a Steward.</td><td>Move a revealed worker up one step.</td></tr>
     <tr><td class="k">Small Win</td><td>1. 2 when Fear is 8+.</td><td>Resolve an Issue whose requirement is met: 3 Signed or Steward workers sharing its icon (4 for Just Cause). Every worker with that icon moves up a step, Fear −1, its rule applies for the rest of the game, and management draws +1 next round. Three per game.</td></tr>
     <tr><td class="k">Build Committee</td><td>2</td><td>A Signed Leader becomes a Steward.</td></tr>
     <tr><td class="k">Reassure</td><td>1, once per round for the committee</td><td>Fear −1.</td></tr>
     <tr><td class="k">Reset</td><td>1</td><td>Remove one Burnout from yourself.</td></tr>
-    <tr><td class="k">Overwork</td><td>+1 Burnout, once per round (free once End Crunch is won)</td><td>+1 action this round.</td></tr></table>
+    <tr><td class="k">Overwork</td><td>+1 Burnout, once per round (free once End Crunch is won). Not available at Burnout 3.</td><td>+1 action this round.</td></tr></table>
     <h2>Fear and Burnout</h2>
     <p><b>Fear</b> starts at 3. Management cards raise it; Reassure and Small Wins lower it. At 7, One-on-Ones cost 2 and everyone takes Burnout at round end. At 8, Small Wins cost 2. At 10, you lose at the status check.</p>
     <p><b>Burnout</b> per organizer: 0 or 1 gives 3 actions, 2 gives 2 actions, 3 gives 1 action and no ability. All organizers at 3 is a loss.</p>
