@@ -197,7 +197,7 @@ const W=[
 [3,"Dev",0,"Eng","Junior engineer",1,["Pay","Crunch"],2],
 [4,"Tomasz",0,"Eng","Tools engineer",1,["Crunch"],1],
 [5,"Aiko",0,"Eng","Graphics programmer",0,["Credit"],1],
-[6,"Reggie",0,"Eng","Build engineer",1,["Layoffs"],0],
+[6,"Reggie",0,"Eng","Build engineer",1,["Layoffs"],0,0,"While Hostile: Fear +1 at every status check."],
 [7,"Sam",0,"Eng","Contract engineer",0,["Pay","Layoffs"],2,1],
 [8,"Gordon",0,"Eng","Principal engineer",1,[],0],
 [9,"Lena",1,"Art","Art director's deputy",2,["Credit","Harassment"],1],
@@ -214,7 +214,7 @@ const W=[
 [20,"Moira",0,"QA","Tester",0,["Pay","Crunch"],1],
 [21,"Luis",0,"QA","Contract tester",0,["Layoffs"],2,1],
 [22,"Hana",0,"QA","Contract tester",0,["Layoffs","Pay"],1,1],
-[23,"Pete",0,"QA","Embedded tester",1,["Credit"],1],
+[23,"Pete",0,"QA","Embedded tester",1,["Credit"],1,0,"While Signed: Mapping any department costs 1 action."],
 [24,"Vic",0,"QA","Test automation",1,[],0],
 [25,"Noor",1,"Prod","Producer",2,["Crunch"],1],
 [26,"Esteban",1,"Prod","Associate producer",2,["Pay","Credit"],2],
@@ -224,10 +224,10 @@ const W=[
 [30,"Yusuf",0,"Prod","Data analyst",0,["Credit"],1],
 [31,"Rachel",0,"Prod","Executive producer",1,[],0],
 [32,"Trent",0,"Prod","Release manager",0,["Crunch"],0],
-[33,"New hire",0,"",  "New hire",0,["Pay"],1,1],
-[34,"New hire",0,"",  "New hire",0,["Crunch"],1,1],
-[35,"New hire",0,"",  "New hire",0,["Layoffs"],1,1],
-[36,"New hire",0,"",  "New hire",0,["Credit"],1,1],
+[33,"New hire",0,"",  "New hire",0,[],1,0],
+[34,"New hire",0,"",  "New hire",0,[],1,0],
+[35,"New hire",0,"",  "New hire",0,[],1,0],
+[36,"New hire",0,"",  "New hire",0,[],1,0],
 ];
 const LOCKS={2:"Pay",19:"Pay",20:"Pay",22:"Pay",29:"Pay",11:"Crunch",14:"Crunch",25:"Crunch",32:"Crunch"};
 const ORGS=[
@@ -266,7 +266,7 @@ const MGMT=[
  [16,2,"Supervisor Pressure","Each department with a Steward: two Leaning workers move to Undecided unless the Steward absorbs."],
  [17,3,"Fire the Organizer","The organizer with the most Signed workers in their department gains 2 Burnout."],
  [18,3,"Delay the Election","Add a round 9. Management draws two cards in it."],
- [19,3,"Mandatory Overtime","Every organizer has one fewer action next round."],
+ [19,3,"Mandatory Overtime","Every organizer has 2 actions this round instead of 3."],
  [20,3,"Decertify the Unit","One department's workers don't count at the vote unless two are Stewards."],
  [21,3,"Threat to Close the Studio","Fear +3. (Fear only ends the game at the end-of-round status check.)"],
  [22,3,"Buy Off the Hostiles","Each Hostile worker pulls one Undecided worker in its department down one."],
@@ -284,9 +284,9 @@ function newGame(seats,seed,script){
   const r=rng(seed);
   const two=false;
   const workers={};
-  W.forEach(w=>{const [id,name,leader,dept,role,infl,issues,start,contract]=w;
+  W.forEach(w=>{const [id,name,leader,dept,role,infl,issues,start,contract,trait]=w;
     if(two&&[8,16,24,32].includes(id))return;
-    workers[id]={id,name,leader:!!leader,dept,role,infl,issues,disp:id>32?-1:start,start,contract:!!contract,onBoard:false,inoc:false,reserve:id>32,absorbUsed:false,freeUsed:false,lock:LOCKS[id]||null};
+    workers[id]={id,name,leader:!!leader,dept,role,infl,issues,disp:id>32?-1:start,start,contract:!!contract,trait:trait||null,onBoard:false,inoc:false,reserve:id>32,absorbUsed:false,freeUsed:false,lock:LOCKS[id]||null};
   });
   const piles={};
   Object.keys(DEPTS).forEach(d=>{piles[d]=shuffle(Object.values(workers).filter(w=>w.dept===d).map(w=>w.id),r);});
@@ -302,7 +302,7 @@ function newGame(seats,seed,script){
     fear:3,workers,piles,reserve:Object.values(workers).filter(w=>w.reserve).map(w=>w.id),
     deck,row:[],orgs,cur:0,first:0,
     issues:ISSUES.map(i=>({id:i.id,state:"open"})),
-    flags:{consultant:false,overtime:false,reorg:null,decert:null,delayed:false,vdc:null,skipHeat:false,contractImmune:false},won:{},unlocked:{},
+    flags:{consultant:false,overtime:false,reorg:null,decert:null,delayed:false,vdc:null,contractImmune:false},won:{},unlocked:{},
     pending:null,log:[],result:null,
   };
 }
@@ -318,7 +318,6 @@ function immovable(w){return !w.issues.length;}
 function locked(g,w){return !!(w.lock&&!(g.unlocked&&g.unlocked[w.lock]));}
 function unlockIcon(g,ic){ g.unlocked=g.unlocked||{}; if(!g.unlocked[ic]){g.unlocked[ic]=true; logit(g,`${ic} holdouts will now sign.`);} }
 function moveUp(g,w,n=1){ if(!w.onBoard||immovable(w))return; const was=w.disp; w.disp=Math.min(locked(g,w)?2:3,w.disp+n); if(was<3&&w.disp===3){ queueInfluence(g,w);} }
-function moveDown(g,w,n=1){ if(!w.onBoard||immovable(w))return; if(w.disp===4){return;} w.disp=Math.max(0,w.disp-n); }
 function queueInfluence(g,w){
   const inf=infl(g,w); if(g.flags.reorg===w.dept||inf===0)return;
   const cands=onBoard(g,w.dept).filter(x=>x.id!==w.id&&x.disp<3&&!immovable(x)&&!(x.disp===2&&locked(g,x)));
@@ -326,11 +325,10 @@ function queueInfluence(g,w){
   g.pending=g.pending||[]; if(!Array.isArray(g.pending))g.pending=[g.pending];
   g.pending.push({type:"influence",dept:w.dept,n:Math.min(inf,cands.length),from:w.name});
 }
-function addPlant(g,d){ const rid=g.reserve.shift(); if(rid==null){logit(g,"No Plants left in reserve.");return null;} const p=g.workers[rid]; p.dept=d; p.onBoard=true; p.disp=0; p.name="Plant"; p.role="Management plant"; logit(g,`A Plant takes the empty desk in ${DEPTS[d][0]}. One-on-Ones there cost +1.`); return p; }
+function addPlant(g,d){ const rid=g.reserve.shift(); if(rid==null){logit(g,"No Plants left in reserve.");return null;} const p=g.workers[rid]; p.dept=d; p.onBoard=true; p.disp=0; p.name="Plant"; p.role="Management plant"; p.issues=[]; p.contract=false; p.infl=0; p.leader=false; p.lock=null; logit(g,`A Plant takes the empty desk in ${DEPTS[d][0]}. One-on-Ones there cost +1.`); return p; }
 function plantsIn(g,d){return onBoard(g,d).filter(w=>w.reserve).length;}
 function removeWorker(g,w){ if(won(g,"wild")){logit(g,`Just Cause protects ${w.name}: nobody is removed.`);return;} const d=w.dept; w.onBoard=false; w.disp=-2; w.inoc=false; addPlant(g,d); }
-function protectedDept(g,d){ return false; }
-const ABSORBABLE=new Set([1,2,3,5,8,9,10,12,16,22,25]);
+const ABSORBABLE=new Set([1,2,3,5,9,10,12,16,22,25]);
 function stewardsAvail(g){return onBoard(g).filter(w=>w.disp===4&&!w.absorbUsed&&g.flags.reorg!==w.dept);}
 function stewardAbsorb(g,d,excludeId){
   if(g.flags.reorg===d)return false;
@@ -341,7 +339,6 @@ function stewardAbsorb(g,d,excludeId){
 }
 /* a management effect that would move workers down / remove in dept d */
 function hitDept(g,d,fn,excludeId){
-  if(protectedDept(g,d))return;
   if(stewardAbsorb(g,d,excludeId))return;
   fn();
 }
@@ -370,34 +367,35 @@ function resolveMgmt(g,id){
     case 2:{ const [d,n]=deptsSortedBy(g,d=>onBoard(g,d).filter(w=>w.disp===1&&canDrop(g,w)).length)[0];
       if(n>0) hitDept(g,d,()=>{onBoard(g,d).filter(w=>w.disp===1&&canDrop(g,w)).forEach(w=>w.disp=0);logit(g,`Undecided in ${DEPTS[d][0]} turn Hostile.`);});
       else logit(g,"No Undecided workers to target."); break;}
-    case 3:{ const cs=ob.filter(w=>w.disp===2&&w.issues.includes("Pay")).sort((a,b)=>infl(g,b)-infl(g,a)).slice(0,2);
-      cs.forEach(c=>hitDept(g,c.dept,()=>{c.disp=1;logit(g,`${c.name} takes the bonus and slips to Undecided.`);})); break;}
+    case 3:{ const cs=ob.filter(w=>w.disp===2&&w.issues.includes("Pay")&&canDrop(g,w)).sort((a,b)=>infl(g,b)-infl(g,a)).slice(0,2);
+      const byDept={}; cs.forEach(c=>{(byDept[c.dept]=byDept[c.dept]||[]).push(c);});
+      Object.keys(byDept).forEach(d=>hitDept(g,d,()=>{byDept[d].forEach(c=>{c.disp=1;logit(g,`${c.name} takes the bonus and slips to Undecided.`);});})); break;}
     case 4: addFear(g,1); g.orgs.forEach(o=>o.townhall=true); break;
     case 5:{ addFear(g,1); const c=ob.filter(w=>w.disp===1&&canDrop(g,w)).sort((a,b)=>infl(g,b)-infl(g,a))[0]; if(c) hitDept(g,c.dept,()=>{c.disp=0;logit(g,`${c.name} turns Hostile after the survey.`);}); break;}
     case 6: g.flags.noMapNext=true; logit(g,"Nobody will Map next round."); break;
     case 7:{ const [d]=deptsSortedBy(g,d=>signedCount(g,d))[0]; addPlant(g,d); break;}
     case 8: Object.keys(DEPTS).forEach(d=>{ if(onBoard(g,d).some(w=>w.disp===4))return; const ls=onBoard(g,d).filter(w=>w.disp===2&&canDrop(g,w)); if(ls.length) hitDept(g,d,()=>{ls.forEach(w=>w.disp=1);logit(g,`Leaning workers in ${DEPTS[d][0]} drift to Undecided.`);}); }); break;
     case 9: addFear(g,2); Object.keys(DEPTS).forEach(d=>{const ss=onBoard(g,d).filter(w=>w.disp===3&&w.issues.includes("Layoffs")&&canDrop(g,w)); if(ss.length) hitDept(g,d,()=>{ss.forEach(w=>w.disp=2);logit(g,`Layoff rumor shakes ${ss.map(w=>w.name).join(", ")}.`);});}); break;
-    case 10:{ const c=ob.filter(w=>w.leader&&w.disp>=3).sort((a,b)=>b.disp-a.disp)[0];
+    case 10:{ if(won(g,"wild")){logit(g,"Just Cause: nobody can be removed from the board.");break;} const c=ob.filter(w=>w.leader&&w.disp>=3).sort((a,b)=>b.disp-a.disp)[0];
       if(c) hitDept(g,c.dept,()=>{removeWorker(g,c);logit(g,`${c.name} is promoted into management.`);},c.id); else logit(g,"No signed Leader to promote."); break;}
     case 11: addFear(g,1); g.flags.consultant=true; break;
-    case 12:{ if(g.flags.contractImmune||won(g,"layoffs")){logit(g,"Contractors are converted; nothing happens.");break;}
+    case 12:{ if(won(g,"wild")){logit(g,"Just Cause: nobody can be removed from the board.");break;} if(g.flags.contractImmune||won(g,"layoffs")){logit(g,"Contractors are converted; nothing happens.");break;}
       const c=ob.filter(w=>w.contract&&w.disp<4&&!(w.disp===3&&g.orgs.some(o=>o.k==="contract"&&hasAbility(g,o)))).sort((a,b)=>b.disp-a.disp)[0];
       if(c) hitDept(g,c.dept,()=>{removeWorker(g,c);logit(g,`${c.name}'s contract ends.`);},c.id); else logit(g,"No contract worker to cut."); break;}
     case 13:{ const [d]=deptsSortedBy(g,d=>onBoard(g,d).filter(w=>w.disp===4).length*10+signedCount(g,d))[0];
-      if(!protectedDept(g,d)){g.flags.reorg=d;logit(g,`${DEPTS[d][0]} is reorganized this round.`);} break;}
+      g.flags.reorg=d;logit(g,`${DEPTS[d][0]} is reorganized this round.`); break;}
     case 14:{ const o=g.orgs.filter(o=>o.burnout<3).sort((a,b)=>signedCount(g,b.d)-signedCount(g,a.d))[0]||g.orgs[0];
       addBurnout(g,o,1,true); o.skip=1; logit(g,`${o.n} is called into HR.`); break;}
     case 15:{ const open=g.issues.filter(i=>i.state==="open"&&i.id!=="wild").map(i=>({i,n:readyCount(g,i.id)})).sort((a,b)=>b.n-a.n)[0];
       if(open){open.i.state="gone";const icn=ISSUES.find(x=>x.id===open.i.id).icon;logit(g,`Management grants "${ISSUES.find(x=>x.id===open.i.id).n}" on its own terms. That Small Win is gone.`); if(icn==="Pay"||icn==="Crunch")unlockIcon(g,icn);} else logit(g,"Nothing to counter."); break;}
-    case 25:{ const c=ob.filter(w=>w.leader&&w.disp===3).sort((a,b)=>infl(g,b)-infl(g,a))[0];
+    case 25:{ const c=ob.filter(w=>w.leader&&w.disp===3&&canDrop(g,w)).sort((a,b)=>infl(g,b)-infl(g,a))[0];
       if(!c){logit(g,"No Signed Leader to turn.");break;}
-      hitDept(g,c.dept,()=>{ c.disp=0; logit(g,`${c.name} turns coat.`); const pulls=onBoard(g,c.dept).filter(w=>w.disp>0&&w.disp<4&&w.id!==c.id&&canDrop(g,w)).sort((a,b)=>b.disp-a.disp).slice(0,c.infl); pulls.forEach(w=>{w.disp--;}); if(pulls.length)logit(g,`${c.name} drags ${pulls.map(w=>w.name).join(", ")} down.`); },c.id); break;}
+      hitDept(g,c.dept,()=>{ c.disp=0; logit(g,`${c.name} turns coat.`); const pulls=onBoard(g,c.dept).filter(w=>w.disp>0&&w.disp<4&&w.id!==c.id&&canDrop(g,w)).sort((a,b)=>b.disp-a.disp).slice(0,infl(g,c)); pulls.forEach(w=>{w.disp--;}); if(pulls.length)logit(g,`${c.name} drags ${pulls.map(w=>w.name).join(", ")} down.`); },c.id); break;}
     case 16: Object.keys(DEPTS).forEach(d=>{ if(!onBoard(g,d).some(w=>w.disp===4))return; const ls=onBoard(g,d).filter(w=>w.disp===2&&canDrop(g,w)).slice(0,2); if(ls.length) hitDept(g,d,()=>{ls.forEach(l=>l.disp=1);logit(g,`${ls.map(l=>l.name).join(" and ")} wilt under supervisor pressure.`);}); }); break;
     case 17:{ const o=g.orgs.slice().sort((a,b)=>signedCount(g,b.d)-signedCount(g,a.d))[0]; addBurnout(g,o,2,true); logit(g,`${o.n} is targeted for firing.`); break;}
     case 18: g.maxRound=9; g.flags.delayed=true; logit(g,"The election is delayed to round 9."); break;
     case 19: g.flags.overtime=true; break;
-    case 20:{ const [d]=deptsSortedBy(g,d=>signedCount(g,d))[0]; if(!protectedDept(g,d)){g.flags.decert=d;logit(g,`${DEPTS[d][0]} is carved out of the unit.`);} break;}
+    case 20:{ const [d]=deptsSortedBy(g,d=>signedCount(g,d))[0]; g.flags.decert=d;logit(g,`${DEPTS[d][0]} is carved out of the unit.`); break;}
     case 21: addFear(g,3); break;
     case 22: Object.keys(DEPTS).forEach(d=>{ const hs=onBoard(g,d).filter(w=>w.disp===0).length; if(!hs)return; const us=onBoard(g,d).filter(w=>w.disp===1&&canDrop(g,w)).slice(0,hs); if(us.length) hitDept(g,d,()=>{us.forEach(w=>w.disp=0);logit(g,`Hostiles in ${DEPTS[d][0]} pull ${us.map(w=>w.name).join(", ")} down.`);}); }); break;
     case 23: if(g.issues.some(i=>i.state==="open"))addFear(g,2); else addFear(g,-2); break;
@@ -416,7 +414,7 @@ function startRound(g){
   g.row[g.round-1]=slot;
   const sc=signedCount(g);
   let n=1+(g.round>=7?1:0);
-  let heat=(sc>=12?1:0)+(sc>=20?1:0); if(g.flags.skipHeat&&heat>0){heat--;g.flags.skipHeat=false;}
+  const heat=(sc>=12?1:0)+(sc>=20?1:0);
   n+=heat+slot.issues.length;
   logit(g,`Round ${g.round} — management draws ${n} card${n>1?"s":""}.`,true);
   g.mgmt={left:n,card:null,decided:false,allow:{}};
@@ -453,14 +451,14 @@ function finishRoundStart(g){
     const c=onBoard(g,d).filter(w=>w.disp>0&&w.disp<4&&w.id!==h.id&&canDrop(g,w)).sort((a,b)=>b.disp-a.disp||infl(g,b)-infl(g,a))[0];
     if(c){c.disp--;logit(g,`${h.name} (Hostile Leader) drags ${c.name} down to ${DISP[c.disp]}.`);} }); });
   // organizer phase
-  g.orgs.forEach(o=>{o.actions=actionsFor(o)-(g.flags.overtime?1:0)-o.skip; if(o.actions<0)o.actions=0; o.skip=0; o.overworked=false; o.apFree=false; o.done=false; o.turnTotal=o.actions; o.reassured=0;});
+  g.orgs.forEach(o=>{o.actions=(g.flags.overtime?Math.min(actionsFor(o),2):actionsFor(o))-o.skip; if(o.actions<0)o.actions=0; o.skip=0; o.overworked=false; o.apFree=false; o.done=false; o.turnTotal=o.actions; o.reassured=0;});
   g.flags.overtime=false;
   g.phase="org"; g.cur=g.first; cleanPending(g);
   skipDone(g);
 }
 function doAbsorbDecision(g,allow){ if(g.phase!=="absorb")return "Nothing to decide."; g.mgmt.allow=allow||{}; g.mgmt.decided=true; g.phase="mgmt"; continueRound(g); return null; }
 function tierFor(g){return g.round>=7?3:g.round>=4?2:1;}
-function drawMgmt(g){ for(let t=tierFor(g);t<=3;t++){ if(g.deck[t]&&g.deck[t].length)return g.deck[t].shift(); } for(let t=tierFor(g)-1;t>=1;t--){ if(g.deck[t]&&g.deck[t].length)return g.deck[t].shift(); } return null; }
+function drawMgmt(g){ for(let t=tierFor(g);t<=3;t++){ if(g.deck[t]&&g.deck[t].length)return g.deck[t].shift(); } logit(g,"Management has no cards left at this tier or above."); return null; }
 function deckLeft(g){return [1,2,3].reduce((a,t)=>a+((g.deck[t]||[]).length),0);}
 function checkLoss(g,roundEnd){
   if(roundEnd&&g.fear>=10){g.phase="over";g.result="loss";g.why="Fear hit 10 before the vote. The drive collapsed.";logit(g,"Fear hits 10. The drive collapses.");return true;}
@@ -471,6 +469,7 @@ function checkLoss(g,roundEnd){
 function skipDone(g){ let guard=0; while(guard++<10&&g.orgs[g.cur].done&&g.orgs.some(o=>!o.done)){g.cur=(g.cur+1)%g.orgs.length;} if(g.orgs.every(o=>o.done)&&!(g.pending&&g.pending.length))endRound(g); }
 function endRound(g){
   logit(g,"Status check.");
+  { const reg=g.workers[6]; if(reg&&reg.onBoard&&reg.disp===0){ addFear(g,1); logit(g,"Reggie is still Hostile: Fear +1."); } }
   if(checkLoss(g,true))return;
   if(g.fear>=7){ if(won(g,"harass"))logit(g,"Fear is high, but the Harassment Procedure holds: no Burnout."); else {g.orgs.forEach(o=>addBurnout(g,o,1,false));logit(g,"Fear is high: everyone takes +1 Burnout.");} }
   if(checkLoss(g,true))return;
@@ -487,7 +486,7 @@ function oneCost(g,o,w){ if(o.k==="animator"&&hasAbility(g,o)&&w.issues.includes
   const st=onBoard(g,w.dept).find(x=>x.disp===4&&!x.freeUsed); if(st&&g.flags.reorg!==w.dept)return 0;
   let c=1; if(g.fear>=7||g.flags.consultant||o.townhall)c=2; return c+plantsIn(g,w.dept); }
 function spend(g,o,n){ o.actions-=n; }
-function mapCost(g,o,d){ const c=(won(g,"layoffs")||d===o.d||onBoard(g,d).some(w=>w.disp>=3))?1:2; return g.flags.consultant?Math.max(2,c):c; }
+function mapCost(g,o,d){ const pete=g.workers[23]; const c=(won(g,"layoffs")||(pete&&pete.onBoard&&pete.disp>=3)||d===o.d||onBoard(g,d).some(w=>w.disp>=3))?1:2; return g.flags.consultant?Math.max(2,c):c; }
 function doMap(g,oi,d){ const o=g.orgs[oi]; if(g.flags.noMap)return "Pizza Friday: no Map actions this round."; const c=mapCost(g,o,d); if(o.actions<c)return c===2?"Mapping another department costs 2 actions (1 once someone there is Signed).":"No actions left.";
   if(!g.piles[d].length)return "That pile is empty.";
   const k=(o.k==="tester"&&hasAbility(g,o))?2:1; spend(g,o,c);
@@ -499,14 +498,14 @@ function doOne(g,oi,wid){ const o=g.orgs[oi]; const w=g.workers[wid]; if(!w.onBo
   moveUp(g,w); logit(g,`${o.n} talks with ${w.name}: now ${DISP[w.disp]}.`); return null; }
 function doSmallWin(g,oi,iid,icon){ const o=g.orgs[oi]; const is=g.issues.find(i=>i.id===iid); if(is.state!=="open")return "That Issue is no longer available.";
   const def=ISSUES.find(i=>i.id===iid); const ic=def.icon==="any"?icon:def.icon;
-  if(def.icon==="any"&&!ic){g.pending=[{type:"icon",issue:iid}];return null;}
   if(winsLeft(g)<=0)return "All three Small Win slots are used.";
   const needN=iid==="wild"?reqN(g)+1:reqN(g);
+  if(def.icon==="any"&&!ic){ if(readyCount(g,iid)<needN)return `Requirement not met: ${needN} Signed or Steward workers sharing one icon.`; const cost0=g.fear>=8?2:1; if(o.actions<cost0)return `A Small Win costs ${cost0} right now.`; g.pending=[{type:"icon",issue:iid}];return null;}
   if(onBoard(g).filter(w=>w.disp>=3&&w.issues.includes(ic)).length<needN)return `Requirement not met: ${needN} Signed or Steward workers with that icon.`;
   const cost=g.fear>=8?2:1; if(o.actions<cost)return `A Small Win costs ${cost} right now.`;
   spend(g,o,cost); is.state="done"; g.won=g.won||{}; g.won[iid]=true; if(ic==="Pay"||ic==="Crunch")unlockIcon(g,ic);
   const ups=onBoard(g).filter(w=>w.issues.includes(ic)&&w.disp<3); ups.forEach(w=>{moveUp(g,w);});
-  let f=-1; if(iid==="harass")f=-2; if(g.orgs.some(x=>x.k==="cm"&&hasAbility(g,x)))f-=1; addFear(g,f);
+  let f=(iid==="harass"||won(g,"harass"))?-2:-1; if(g.orgs.some(x=>x.k==="cm"&&hasAbility(g,x)))f-=1; addFear(g,f);
   if(iid==="layoffs")g.flags.contractImmune=true;
   if(iid==="wild"){g.orgs.forEach(x=>x.burnout=Math.max(0,x.burnout-1)); unlockIcon(g,"Pay"); unlockIcon(g,"Crunch");}
   { const slot=g.round<g.row.length?g.row[g.round]:(g.row[g.round]={cards:[],issues:[]}); slot.issues.push(iid); }
@@ -557,12 +556,24 @@ function genCode(){const a="ABCDEFGHJKLMNPQRSTUVWXYZ23456789";let s="";for(let i
 function docRef(){return db.doc("games/"+code);}
 function expiresAt(){ return (window.firebase&&firebase.firestore)?firebase.firestore.Timestamp.fromMillis(Date.now()+GAME_TTL_DAYS*864e5):null; }
 async function write(g){ G=g; if(g&&g.local){ ls("cc_local",JSON.stringify(g)); render(); return; } if(db&&!offline){ try{ const doc=clone(g); const x=expiresAt(); if(x)doc.expires=x; await docRef().set(doc); }catch(e){ toast("Could not sync: "+(e.code||e.message)); } } render(); }
+/* Apply a change to the latest state. Online, the change is re-run inside a transaction on the server's copy,
+   so two devices acting at once cannot overwrite each other. fn(g) mutates g and returns an error string or null. */
+async function mutate(fn,after){
+  if(!G)return;
+  if(G.local||offline||!db){ const g=clone(G); const err=fn(g); if(err){toast(err);return;} if(after)after(g); await write(g); return; }
+  try{
+    let toastErr=null;
+    const ref=docRef();
+    const result=await db.runTransaction(async tx=>{ const snap=await tx.get(ref); if(!snap.exists)throw new Error("This game no longer exists."); const g=snap.data(); const err=fn(g); if(err){toastErr=err;return null;} if(after)after(g); const doc=clone(g); const x=expiresAt(); if(x)doc.expires=x; tx.set(ref,doc); return g; });
+    if(toastErr){toast(toastErr);render();return;}
+    if(result){G=result;render();}
+  }catch(e){ toast("Could not sync: "+(e.code||e.message)); }
+}
 function controls(oi){ const o=G.orgs[oi]; if(G.hotseat||G.local||offline||!myId)return true; return o.playerId===myId; }
 
 async function init(){
   myId=localId();
   try{ db=await connectFirestore(); }catch(e){ toast("Online play unavailable: "+e.message); }
-  if(!db){ try{ db=await window.claude.use("db"); userApi=await window.claude.use("user"); if(userApi){const id=await userApi.id(); if(id)myId=id;} }catch(e){} }
   if(!db)offline=true;
   const h=location.hash.replace("#","").toUpperCase();
   if(h&&/^[A-Z0-9]{5}$/.test(h)&&!offline){ join(h); } else renderLobby();
@@ -596,7 +607,7 @@ function renderLobby(){
   app.querySelectorAll("a[data-c]").forEach(a=>a.onclick=(e)=>{e.preventDefault();location.hash=a.dataset.c;join(a.dataset.c);});
 }
 function remember(c){const r=(ls("cc_recent")||"").split(",").filter(x=>x&&x!==c);r.unshift(c);ls("cc_recent",r.slice(0,8).join(","));}
-async function join(c){ code=c; remember(c); const snap=await docRef().get(); if(!snap.exists){toast("No game with code "+c);location.hash="";renderLobby();return;} G=snap.data(); render(); subscribe(); }
+async function join(c){ code=c; remember(c); let snap; try{ snap=await docRef().get(); }catch(e){ toast("Could not open that game: "+(e.code||e.message)); code=null; location.hash=""; renderLobby(); return; } if(!snap.exists){toast("No game with code "+c);code=null;location.hash="";renderLobby();return;} G=snap.data(); render(); subscribe(); }
 function subscribe(){ if(unsub)unsub(); unsub=docRef().onSnapshot(s=>{ if(s.exists){G=s.data();render();} },e=>toast("Sync error: "+e.code)); }
 
 /* ---- lobby in game doc ---- */
@@ -614,16 +625,17 @@ function renderSeats(){
   app.appendChild(el);
   const sc=el.querySelector("#seats");
   ORGS.forEach(o=>{ const s=G.seats.find(x=>x.k===o.k); const isMine=s&&s.playerId===myId; const d=$(`<div class="seat ${isMine?"mine":s?"taken":""}"><b>${o.n}</b><small>${DEPTS[o.d][0]}</small><small>${o.a}</small><small>${s?(isMine?"Yours · click to release":"Claimed"):"Open"}</small></div>`);
-    d.onclick=async()=>{ if(s&&!isMine)return; const g=clone(G); if(isMine)g.seats=g.seats.filter(x=>x.k!==o.k); else { if(!G.hotseat&&mine>=1&&!offline){toast("One seat per person in this game.");return;} g.seats.push({k:o.k,playerId:myId}); } await write(g); };
+    d.onclick=()=>{ if(s&&!isMine)return; if(!isMine&&!G.hotseat&&mine>=1&&!offline){toast("One seat per person in this game.");return;}
+      mutate(g=>{ if(g.phase!=="lobby")return "The game already started."; const cur=g.seats.find(x=>x.k===o.k); if(isMine){ g.seats=g.seats.filter(x=>x.k!==o.k); } else { if(cur)return "Someone just claimed that seat."; if(!g.hotseat&&g.seats.some(x=>x.playerId===myId))return "One seat per person in this game."; g.seats.push({k:o.k,playerId:myId}); } return null; }); };
     sc.appendChild(d); });
-  el.querySelector("#start").onclick=async()=>{ const g=newGame(G.seats,G.seed); g.hotseat=G.hotseat; g.seats=G.seats; setupFlips(g); startRound(g); await write(g); };
+  el.querySelector("#start").onclick=()=>{ mutate(g=>{ if(g.phase!=="lobby")return "The game already started."; if(!g.seats.length)return "Claim a seat first."; const ng=newGame(g.seats,g.seed); ng.hotseat=g.hotseat; ng.seats=g.seats; ng.host=g.host; setupFlips(ng); startRound(ng); Object.keys(g).forEach(k=>delete g[k]); Object.assign(g,ng); return null; }); };
 }
 
 /* ---- game render ---- */
 function render(){
   if(!G){renderLobby();return;}
   if(G.phase==="lobby"){renderSeats();return;}
-  const g=G; const me=g.orgs.findIndex((o,i)=>i===g.cur); const cur=g.orgs[g.cur]; const pend=g.pending&&g.pending[0];
+  const g=G; const pend=g.pending&&g.pending[0];
   const sc=signedCount(g); const vc=voteCount(g);
   app.innerHTML="";
   const why=[]; if(g.flags.decert){const d=g.flags.decert; const lost=onBoard(g,d).filter(w=>w.disp>=3).length; const st=onBoard(g,d).filter(w=>w.disp===4).length; if(st<2)why.push(`${DEPTS[d][0]} is decertified: its ${lost} Signed/Steward don't count unless two are Stewards (has ${st}).`);}
@@ -650,7 +662,7 @@ function render(){
   renderRight(root.querySelector("#right"),g);
   renderGuide(root,g);
   if(g.phase==="over"){const b=$(`<div class="panel"><button class="primary" id="again">Back to lobby (same seats)</button></div>`); root.querySelector("#side").appendChild(b);
-    b.querySelector("#again").onclick=async()=>{ if(g.local){ try{localStorage.removeItem("cc_local");}catch(e){} G=null; renderLobby(); return; } const ng={phase:"lobby",seats:g.seats,hotseat:g.hotseat,host:g.host,seed:Math.floor(Math.random()*1e9)};await write(ng);};}
+    b.querySelector("#again").onclick=()=>{ if(g.local){ try{localStorage.removeItem("cc_local");}catch(e){} G=null; renderLobby(); return; } mutate(x=>{ const ng={phase:"lobby",seats:x.seats,hotseat:x.hotseat,host:x.host,seed:Math.floor(Math.random()*1e9)}; Object.keys(x).forEach(k=>delete x[k]); Object.assign(x,ng); return null; }); };}
 }
 function fearSvg(f){ const ang=v=>-120+24*v; const pt=(v,r)=>{const a=ang(v)*Math.PI/180;return [46+r*Math.sin(a),50-r*Math.cos(a)];};
   const [x7,y7]=pt(7,38),[x10,y10]=pt(10,38); const tick=v=>{const [a,b]=pt(v,31),[c,d]=pt(v,45);return `<line x1="${a.toFixed(1)}" y1="${b.toFixed(1)}" x2="${c.toFixed(1)}" y2="${d.toFixed(1)}" stroke="var(--red)" stroke-width="2"/>`;};
@@ -678,14 +690,14 @@ function renderSide(el,g,pend){
     if(active&&mine&&g.phase==="org"){
       if(pend){ d.appendChild($(`<div class="prompt">${pend.type==="influence"?`${pend.from}'s influence: pick ${pend.n} more in ${DEPTS[pend.dept][0]} to move up.`:"Just Cause: choose an icon."}</div>`));
         if(pend.type==="influence"){const b=$(`<button style="margin-top:6px">Skip remaining</button>`);b.onclick=()=>act(g=>doSkipInfluence(g));d.appendChild(b);}
-        if(pend.type==="icon"){const row=$(`<div class="actions"></div>`);["Crunch","Pay","Layoffs","Credit","Harassment"].forEach(ic=>{const b=$(`<button>${ic}</button>`);b.onclick=()=>act(g=>{g.pending=[];return doSmallWin(g,g.cur,"wild",ic);});row.appendChild(b);});d.appendChild(row);}
+        if(pend.type==="icon"){const row=$(`<div class="actions"></div>`);["Crunch","Pay","Layoffs","Credit","Harassment"].forEach(ic=>{const ok=onBoard(g).filter(w=>w.disp>=3&&w.issues.includes(ic)).length>=reqN(g)+1; const b=$(`<button ${ok?"":"disabled"}>${ic}</button>`);b.onclick=()=>act(g=>{g.pending=[];return doSmallWin(g,g.cur,"wild",ic);});row.appendChild(b);});const c=$(`<button data-act="cancel">Cancel</button>`);c.onclick=()=>act(g=>{g.pending=[];return null;});row.appendChild(c);d.appendChild(row);}
       } else {
         const a=$(`<div class="actions"></div>`);
         const mk=(id,label,fn,dis)=>{const b=$(`<button data-act="${id}" class="${armed===id?"armed":""}" ${dis?"disabled":""}>${label}</button>`);b.onclick=fn;a.appendChild(b);return b;};
         mk("map","Map",()=>arm("map"),o.actions<1||g.flags.noMap);
         mk("one","One-on-One",()=>arm("one"),o.actions<1);
         mk("win","Small Win",()=>arm("win"),o.actions<1);
-        mk("com","Build Committee",()=>arm("com"),o.actions<2);
+        mk("com","Build Committee",()=>arm("com"),o.actions<2||!onBoard(g).some(w=>w.leader&&w.disp===3));
         mk("re",`Reassure (Fear −1)`,()=>act(g=>doReassure(g,g.cur)),(g.reassuredRound&&!(o.k==="ap"&&!o.apFree&&hasAbility(g,o)))||(o.actions<1&&!(o.k==="ap"&&!o.apFree&&hasAbility(g,o)))||g.fear<=0);
         mk("reset","Reset",()=>act(g=>doReset(g,g.cur)),o.actions<1||o.burnout===0);
         mk("ow",won(g,"crunch")?"Overwork (free)":"Overwork (+1 Burnout)",()=>act(g=>doOverwork(g,g.cur)),o.overworked||o.burnout>=3);
@@ -706,9 +718,8 @@ function renderBoard(el,g,pend){
   Object.keys(DEPTS).forEach(d=>{
     const [label,color]=DEPTS[d]; const n=g.piles[d].length;
         const canMap=mine&&armed==="map"&&n>0&&cur.actions>=mapCost(g,cur,d)&&!pend;
-    const canInoc=false;
     const p=$(`<div class="pile ${canMap?"ok":""}" data-pile="${d}"><span class="n">${n}</span><span>${n===1?"card":"cards"}</span>${mine&&armed==="map"&&n>0?`<span>${mapCost(g,cur,d)} act.</span>`:""}</div>`);
-    p.onclick=()=>{ if(canMap)act(g=>doMap(g,g.cur,d)); else if(canInoc)act(g=>doInoc(g,g.cur,d)); };
+    p.onclick=()=>{ if(canMap)act(g=>doMap(g,g.cur,d)); };
     b.appendChild(p);
     b.appendChild($(`<div class="deptlab" style="background:${color}">${label}${g.flags.reorg===d?" ⟲":""}${g.flags.decert===d?" ✕":""}</div>`));
     for(let s=0;s<5;s++){
@@ -718,8 +729,8 @@ function renderBoard(el,g,pend){
         if(mine&&!pend){ if(armed==="one"&&s<3&&!immovable(w)&&!(s===2&&locked(g,w)))sel=true; if(armed==="com"&&w.leader&&s===3)sel=true; }
         if(pend&&pend.type==="influence"&&(mine||g.phase==="steward"&&anySeat)&&w.dept===pend.dept&&s<3&&!immovable(w)&&!(s===2&&locked(g,w)))sel=true;
         if(pend&&pend.type==="steward"&&anySeat&&w.dept===pend.dept&&stewardTargets(g,pend.dept).some(x=>x.id===w.id))sel=true;
-        const e=$(`<div class="wk ${sel?"sel":""} ${w.contract?"contract":""}" data-wk="${w.id}"><b><span class="nm">${esc(w.name)}</span><span class="st">${w.leader?"★":""}${locked(g,w)?"🔒":""}${w.disp===4?(w.absorbUsed?"⊘":"⛨"):""}</span><span class="inf">${"●".repeat(infl(g,w))}${"○".repeat(Math.max(0,2-infl(g,w)))}</span></b><span class="r">${esc(w.role)}</span><span class="i" ${immovable(w)?'style="color:var(--red);font-weight:600"':w.disp===4?'style="color:var(--ok);font-weight:600"':""}>${w.disp===4?`free 1-on-1 ${w.freeUsed?"used":"ready"} · absorb ${w.absorbUsed?"spent":"ready"}`:w.reserve?"+1 One-on-One cost here · immovable":(w.issues.join(", ")||"no issues · immovable")}</span></div>`);
-        e.title=`${w.name} — ${w.role}${w.contract?" (contract)":""}\n${w.leader?"Leader. ":""}Influence ${infl(g,w)}${infl(g,w)!==w.infl?" (Credit Policy)":""}.\nIssues: ${w.reserve?"none — a management Plant. Immovable; every One-on-One in this department costs +1.":(w.issues.join(", ")||"none — immovable: no grievance, no leverage")}.\nDisposition: ${DISP[w.disp]}.${w.lock?(locked(g,w)?`\nHoldout: won't sign until ${w.lock==="Pay"?"Pay Transparency":"End Crunch"} is won.`:"\nFormer holdout, now willing to sign."):""}${w.disp===4?(w.absorbUsed?"\nSteward; absorb spent.":"\nSteward; one absorb available.")+(w.freeUsed?" Free One-on-One used this round.":" Free One-on-One available this round."):""}`;
+        const e=$(`<div class="wk ${sel?"sel":""} ${w.contract?"contract":""}" data-wk="${w.id}"><b><span class="nm">${esc(w.name)}</span><span class="st">${w.leader?"★":""}${w.trait?"⚑":""}${locked(g,w)?"🔒":""}${w.disp===4?(w.absorbUsed?"⊘":"⛨"):""}</span><span class="inf">${"●".repeat(infl(g,w))}${"○".repeat(Math.max(0,2-infl(g,w)))}</span></b><span class="r">${esc(w.role)}</span><span class="i" ${immovable(w)?'style="color:var(--red);font-weight:600"':w.disp===4?'style="color:var(--ok);font-weight:600"':""}>${w.disp===4?`free 1-on-1 ${w.freeUsed?"used":"ready"} · absorb ${w.absorbUsed?"spent":"ready"}`:w.reserve?"+1 One-on-One cost here · immovable":(w.issues.join(", ")||"no issues · immovable")}</span></div>`);
+        e.title=`${w.name} — ${w.role}${w.contract?" (contract)":""}\n${w.leader?"Leader. ":""}Influence ${infl(g,w)}${infl(g,w)!==w.infl?" (Credit Policy)":""}.\nIssues: ${w.reserve?"none — a management Plant. Immovable; every One-on-One in this department costs +1.":(w.issues.join(", ")||"none — immovable: no grievance, no leverage")}.\nDisposition: ${DISP[w.disp]}.${w.trait?`\n${w.trait}`:""}${w.lock?(locked(g,w)?`\nHoldout: won't sign until ${w.lock==="Pay"?"Pay Transparency":"End Crunch"} is won.`:"\nFormer holdout, now willing to sign."):""}${w.disp===4?(w.absorbUsed?"\nSteward; absorb spent.":"\nSteward; one absorb available.")+(w.freeUsed?" Free One-on-One used this round.":" Free One-on-One available this round."):""}`;
         if(sel)e.onclick=()=>{ if(pend&&pend.type==="steward")act(g=>doStewardPick(g,w.id)); else if(pend)act(g=>doInfluencePick(g,w.id)); else if(armed==="one")act(g=>doOne(g,g.cur,w.id)); else if(armed==="com")act(g=>doCommittee(g,g.cur,w.id)); };
         c.appendChild(e);
       });
@@ -727,7 +738,7 @@ function renderBoard(el,g,pend){
     }
   });
   el.appendChild(b);
-  el.appendChild($(`<div class="small" style="margin-top:6px">● influence · ★ leader (a Hostile ★ pulls one worker down each round) · 🔒 holdout: stops at Leaning until their demand is won · ⛨ Steward absorb ready · ⊘ absorb spent · ⟲ reorganized this round · ✕ decertified</div>`));
+  el.appendChild($(`<div class="small" style="margin-top:6px">● influence · ★ leader (a Hostile ★ pulls one worker down each round) · ⚑ special rule (hover or tap the card) · 🔒 holdout: stops at Leaning until their demand is won · ⛨ Steward absorb ready · ⊘ absorb spent · ⟲ reorganized this round · ✕ decertified</div>`));
 }
 function renderMgmt(el,g){
   const n=signedCount(g); const nextDraw=1+(g.round+1>=7?1:0)+(n>=12?1:0)+(n>=20?1:0)+((g.row[g.round]&&g.row[g.round].issues.length)||0);
@@ -750,7 +761,7 @@ function renderMgmt(el,g){
   const slot=g.row[g.round-1];
   if(slot&&slot.cards.length){ el.appendChild($(`<h3 style="margin-top:10px">This round management played</h3>`)); const cs=$(`<div class="mcards"></div>`);
     slot.cards.forEach(id=>{const m=MGMT.find(x=>x[0]===id);cs.appendChild($(`<div class="mcard t${m[1]}"><div class="tier">TIER ${m[1]}</div><b>${m[2]}</b><div class="how">${m[3]}</div></div>`));}); el.appendChild(cs); }
-  const fl=[]; if(g.flags.consultant)fl.push("Consultant: One-on-Ones and Maps cost 2 this round"); if(g.flags.noMap)fl.push("Pizza Friday: no Map actions this round"); if(g.flags.noMapNext)fl.push("Pizza Friday: no Map actions next round"); if(g.flags.reorg)fl.push(`${DEPTS[g.flags.reorg][0]} reorganized: no Steward or Influence there this round`); if(g.flags.decert)fl.push(`${DEPTS[g.flags.decert][0]} decertified`); if(g.flags.vdc)fl.push("Vote Delay Challenge in effect"); if(g.flags.overtime)fl.push("Mandatory Overtime: one fewer action next round"); if(g.orgs.some(o=>o.townhall))fl.push("Town Hall: each organizer's next One-on-One costs 2");
+  const fl=[]; if(g.flags.consultant)fl.push("Consultant: One-on-Ones and Maps cost 2 this round"); if(g.flags.noMap)fl.push("Pizza Friday: no Map actions this round"); if(g.flags.noMapNext)fl.push("Pizza Friday: no Map actions next round"); if(g.flags.reorg)fl.push(`${DEPTS[g.flags.reorg][0]} reorganized: no Steward or Influence there this round`); if(g.flags.decert)fl.push(`${DEPTS[g.flags.decert][0]} decertified`); if(g.flags.vdc)fl.push("Vote Delay Challenge in effect"); if(g.flags.overtime)fl.push("Mandatory Overtime: 2 actions this round instead of 3"); if(g.orgs.some(o=>o.townhall))fl.push("Town Hall: each organizer's next One-on-One costs 2");
   if(fl.length)el.appendChild($(`<div class="small" style="margin-top:8px;color:var(--red)">${fl.map(esc).join(" · ")}</div>`));
 }
 function renderRight(el,g){
@@ -770,7 +781,6 @@ function renderRight(el,g){
   const lg=$(`<div class="panel"><h2>Log</h2><div class="log"></div></div>`); const L=lg.querySelector(".log");
   g.log.slice().reverse().forEach(x=>L.appendChild($(`<div class="${x.r?"r":""}">${esc(x.r||x.t)}</div>`)));
   el.appendChild(lg);
-  function sc(g){const n=signedCount(g);return `next round draws ${1+(g.round+1>=7?1:0)+(n>=12?1:0)+(n>=20?1:0)+((g.row[g.round]&&g.row[g.round].issues.length)||0)}`;}
 }
 /* ============ TUTORIAL / CALLOUTS / RULES ============ */
 /* A fixed opening so the guided game plays out the same way every time. */
@@ -890,7 +900,8 @@ function openRules(){
     <li><b>★</b> marks a Leader. Only Signed Leaders can become Stewards. A <b>Hostile</b> Leader drags one worker in their department down a step every round.</li>
     <li><b>Issues</b> on the card (Pay, Crunch, Layoffs, Credit, Harassment) are what the worker cares about. A worker with no issues is immovable.</li>
     <li><b>🔒 Holdouts</b> stop at Leaning until the matching Issue (Pay Transparency or End Crunch) is won.</li>
-    <li><b>Contract</b> workers can be removed by Contract Ends. A removed worker's desk is filled by a <b>Plant</b>: Hostile, immovable, and +1 to every One-on-One in that department.</li></ul>
+    <li><b>Contract</b> workers can be removed by Contract Ends. A removed worker's desk is filled by a <b>Plant</b>: Hostile, immovable, and +1 to every One-on-One in that department.</li>
+    <li><b>⚑ Two workers change the rules by where they sit.</b> Reggie (Engineering): while Hostile, Fear +1 at every status check. Pete (QA): while Signed, Mapping any department costs 1 action.</li></ul>
     <h2>A round</h2>
     <ol style="padding-left:20px"><li><b>Management</b> draws and resolves cards: 1 per round, +1 from round 7, +1 at 12 and again at 20 Signed, +1 for each Small Win you took last round. Tier 1 cards in rounds 1 to 3, tier 2 from round 4, tier 3 from round 7. Before an absorbable card resolves, you choose which Stewards may spend their absorb on it.</li>
     <li><b>Stewards</b> each bring one worker in their department up a step.</li>
@@ -920,7 +931,7 @@ function openRules(){
     <h3>Tier 2 (from round 4)</h3><table>${tier(2)}</table>
     <h3>Tier 3 (from round 7)</h3><table>${tier(3)}</table>
     <h2>Symbols</h2>
-    <p>● influence · ★ Leader · 🔒 holdout · ⛨ Steward absorb ready · ⊘ absorb spent · ⟲ department reorganized this round · ✕ department decertified</p>
+    <p>● influence · ★ Leader · ⚑ special rule · 🔒 holdout · ⛨ Steward absorb ready · ⊘ absorb spent · ⟲ department reorganized this round · ✕ department decertified</p>
     <div class="row" style="margin-top:16px"><button class="primary" id="rclose2">Close</button></div>
   </div></div>`);
   const close=()=>{el.remove();document.removeEventListener("keydown",onk);};
@@ -931,7 +942,8 @@ function openRules(){
   document.body.appendChild(el);
 }
 function arm(a){armed=armed===a?null:a;render();}
-async function act(fn){ const g=clone(G); const err=fn(g); if(err){toast(err);return;} armed=null; afterAction(g); await write(g); }
+async function act(fn){ if(G.phase==="org"&&!controls(G.cur)){toast("Not your turn.");return;} if(G.phase!=="org"&&!g0AnySeat()){toast("Only a seated player can do that.");return;} await mutate(g=>{ const err=fn(g); if(err)return err; armed=null; return null; },g=>afterAction(g)); }
+function g0AnySeat(){ return G.orgs?G.orgs.some((o,i)=>controls(i)):true; }
 window.addEventListener("hashchange",()=>{const h=location.hash.replace("#","").toUpperCase(); if(h&&h!==code&&/^[A-Z0-9]{5}$/.test(h)&&!offline)join(h);});
 init();
 </script>
