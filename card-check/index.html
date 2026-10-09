@@ -155,6 +155,11 @@ input{font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:6
 .tut .th{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
 .tut h2,.callout h2{font-size:20px}
 .tut .step{font-size:12px;color:var(--muted);margin-left:auto;white-space:nowrap}
+.tprog{display:flex;align-items:center;gap:4px;margin-bottom:8px;flex-wrap:wrap}
+.tprog .seg{flex:1 1 36px;max-width:64px;height:6px;border-radius:3px;background:var(--line)}
+.tprog .seg.done{background:var(--ok)}
+.tprog .seg.now{background:var(--sel)}
+.tprog .plab{font-family:"Barlow Condensed";font-weight:700;font-size:14px;letter-spacing:.03em;margin-left:8px;white-space:nowrap}
 .tut p,.callout p{margin:6px 0 0;font-size:14px;max-width:72ch}
 .tut .row,.callout .row{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;align-items:center}
 .tut .row .small{margin-left:auto}
@@ -165,7 +170,9 @@ button.tut-target{border-color:var(--sel)}
 @media (max-width:700px){
   .tut{position:fixed;top:auto;bottom:0;left:0;right:0;margin:0;border-radius:12px 12px 0 0;max-height:42vh;overflow:auto;border-left-width:1px;border-top:5px solid var(--sel);padding-bottom:calc(12px + env(safe-area-inset-bottom,0px))}
   body.tut-on{padding-bottom:44vh}
-  .tut .step{margin-left:0;width:100%}
+  .tut .step{margin-left:auto;margin-top:4px}
+  .tprog .seg{flex:1 1 40px;max-width:none}
+  .tprog .plab{flex:1;margin:4px 0 0}
 }
 button.ghost{background:transparent}
 .rules{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:20;overflow:auto;padding:16px;padding-top:calc(16px + env(safe-area-inset-top,0px))}
@@ -829,6 +836,8 @@ const TUT=[
  {h:"Win Pay Transparency",allow:["[data-issue=pay]"],t:"Click <b>Pay Transparency</b>. Watch Marcus.",done:g=>won(g,"pay")},
  {h:"Marcus signed",next:true,spot:"[data-wk='2']",t:"Winning Pay Transparency unlocked every Pay holdout and moved every Pay worker up a step. You have 6 Signed or Steward of the 21 you need, with the rest of this round and three more to get there. From here the game is yours: Management starts playing tier 3 cards in round 7 and the vote to unionize is at the end of round 8. The <b>Rules</b> button up top has everything on one page, and the game will keep pointing things out the first time they happen. Good luck!"},
 ];
+const TUT_PARTS=[{n:"The basics",from:0},{n:"Stewards",from:14},{n:"Management pushes back",from:24},{n:"Hold the line",from:33},{n:"Unlock the holdouts",from:38}];
+function tutPart(step){ let i=0; TUT_PARTS.forEach((p,k)=>{ if(step>=p.from)i=k; }); const from=TUT_PARTS[i].from, to=i+1<TUT_PARTS.length?TUT_PARTS[i+1].from:TUT.length; return {i,n:TUT_PARTS[i].n,local:step-from+1,len:to-from}; }
 function startTutorial(){
   if(unsub){unsub();unsub=null;} code=null; try{ if(location.hash)history.replaceState(null,"",location.pathname+location.search); }catch(e){}
   const seats=[{k:"senior",playerId:myId}];
@@ -870,7 +879,8 @@ function renderGuide(root,g){
     tutorialAdvance(g); if(g.local)ls("cc_local",JSON.stringify(g));
     if(g.tutorial.done)return;
     const st=TUT[g.tutorial.step];
-    const card=$(`<div class="tut"><div class="th"><h2>${st.h}</h2><span class="step">step ${g.tutorial.step+1} of ${TUT.length}</span></div>${st.t?`<p>${st.t}</p>`:""}
+    const pt=tutPart(g.tutorial.step);
+    const card=$(`<div class="tut"><div class="tprog" aria-label="Tutorial progress">${TUT_PARTS.map((p,k)=>`<span class="seg ${k<pt.i?"done":k===pt.i?"now":""}" title="${esc(p.n)}"></span>`).join("")}<span class="plab">Part ${pt.i+1} of ${TUT_PARTS.length}: ${pt.n}</span><span class="step">step ${pt.local} of ${pt.len}</span></div><div class="th"><h2>${st.h}</h2></div>${st.t?`<p>${st.t}</p>`:""}
       <div class="row">${st.next?`<button class="primary" data-always onclick="tutorialNext()">${g.tutorial.step===TUT.length-1?"Finish the tutorial":"Next"}</button>`:`<span class="small" style="margin-left:0">Do the highlighted action to continue.</span>`}<button class="ghost" data-always onclick="tutorialSkip()">Skip tutorial</button></div></div>`);
     root.insertBefore(card,grid);
     gate(root,st);
