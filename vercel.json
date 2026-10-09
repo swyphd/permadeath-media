@@ -1,0 +1,10 @@
+{
+  "redirects": [
+    { "source": "/guild-rising", "destination": "/guild-rising/", "permanent": true },
+    { "source": "/union-up", "destination": "/union-up/", "permanent": true }
+  ],
+  "rewrites": [
+    { "source": "/guild-rising/(.*)", "destination": "https://guild-rising.vercel.app/$1" },
+    { "source": "/union-up/(.*)", "destination": "https://union-up.vercel.app/$1" }
+  ]
+}
