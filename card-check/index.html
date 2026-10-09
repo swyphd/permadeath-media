@@ -48,6 +48,19 @@ input{font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:6
 .wrap{max-width:1360px;margin:0 auto;padding:14px}
 .credit a{color:var(--accent);font-weight:600}
 .credit{max-width:1360px;margin:0 auto;padding:4px 14px 20px;font-size:12px;color:var(--muted)}
+/* mailing list */
+.signup{max-width:1360px;margin:0 auto;padding:0 14px}
+.signup .box{border:1px solid var(--line);border-radius:10px;background:var(--panel);padding:12px 14px;display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center}
+.signup .txt{flex:1 1 260px;min-width:0}
+.signup h3{color:var(--ink);font-family:"Barlow Condensed","IBM Plex Sans",sans-serif;font-size:18px;font-weight:700}
+.signup p{margin:2px 0 0;font-size:13px;color:var(--muted)}
+.signup form{display:flex;flex-wrap:wrap;gap:8px;flex:1 1 300px;align-items:center}
+.signup input[type=email]{flex:1 1 180px;min-width:0}
+.signup .hp{position:absolute;left:-9999px;width:1px;height:1px;opacity:0}
+.signup .msg{flex:1 1 100%;font-size:13px;color:var(--muted);min-height:1.2em;margin:0}
+.signup .msg.ok{color:var(--ok)}
+.signup .msg.err{color:var(--red)}
+.signup .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .top{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;margin-bottom:12px}
 .top .sub{color:var(--muted)}
 .top .spacer{flex:1}
@@ -192,6 +205,21 @@ button.ghost{background:transparent}
 </head>
 <body>
 <div class="wrap" id="app"></div>
+<div class="signup" id="signup">
+  <div class="box">
+    <div class="txt">
+      <h3>Hear when Card Check changes</h3>
+      <p>New playtest builds, new games and the occasional note from Permadeath Media. A few emails a year.</p>
+    </div>
+    <form id="signup-form" novalidate>
+      <label class="sr" for="signup-email">Email address</label>
+      <input id="signup-email" name="email" type="email" inputmode="email" autocomplete="email" placeholder="you@example.com" required>
+      <input class="hp" name="website" type="text" tabindex="-1" autocomplete="off" aria-hidden="true">
+      <button class="primary" type="submit">Sign up</button>
+      <p class="msg" id="signup-msg" role="status" aria-live="polite"></p>
+    </form>
+  </div>
+</div>
 <p class="credit">Card Check is a <a href="/">Permadeath Media</a> playtest build. Rules and cards are subject to change.</p>
 <div class="toast" id="toast"></div>
 <script>
@@ -956,6 +984,37 @@ async function act(fn){ if(G.phase==="org"&&!controls(G.cur)){toast("Not your tu
 function g0AnySeat(){ return G.orgs?G.orgs.some((o,i)=>controls(i)):true; }
 window.addEventListener("hashchange",()=>{const h=location.hash.replace("#","").toUpperCase(); if(h&&h!==code&&/^[A-Z0-9]{5}$/.test(h)&&!offline)join(h);});
 init();
+</script>
+<script>
+/* ============ MAILING LIST ============ */
+/* Addresses go to the newsletter_signups table in the studio's Supabase project
+   (insert-only from the public API). See ../README.md. */
+(function(){
+  const SIGNUP_URL="https://kmxkuyloybrdtcdiiqwo.supabase.co/rest/v1/newsletter_signups";
+  const SIGNUP_KEY="sb_publishable_RI26gdJieUSoWA68DsfwwQ_qYte5CLj";
+  const SOURCE="card-check";
+  const DONE_KEY="cc-newsletter";
+  const EMAIL_RE=/^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+  async function subscribe(email){
+    const res=await fetch(SIGNUP_URL,{method:"POST",headers:{apikey:SIGNUP_KEY,Authorization:"Bearer "+SIGNUP_KEY,"Content-Type":"application/json",Prefer:"return=minimal"},body:JSON.stringify({email,source:SOURCE})});
+    if(res.ok||res.status===409)return; // 409: already on the list
+    throw new Error("HTTP "+res.status);
+  }
+  const form=document.getElementById("signup-form"),input=document.getElementById("signup-email"),msg=document.getElementById("signup-msg"),btn=form.querySelector("button");
+  function say(t,c){msg.textContent=t;msg.className="msg"+(c?" "+c:"");}
+  function done(addr){say("You're on the list."+(addr?" Updates go to "+addr+".":""),"ok");input.disabled=true;btn.disabled=true;}
+  let prior=null; try{prior=localStorage.getItem(DONE_KEY);}catch(e){}
+  if(prior){input.value=prior;done(prior);}
+  form.addEventListener("submit",async e=>{
+    e.preventDefault();
+    const email=input.value.trim().toLowerCase();
+    if(!EMAIL_RE.test(email)){say("That doesn't look like an email address.","err");input.focus();return;}
+    if(form.elements.website.value){done(email);return;} // honeypot: bots fill this, people can't
+    btn.disabled=true;say("Saving\u2026");
+    try{await subscribe(email);try{localStorage.setItem(DONE_KEY,email);}catch(e){}done(email);}
+    catch(err){say("Something went wrong. Try again in a minute.","err");btn.disabled=false;}
+  });
+})();
 </script>
 </body>
 </html>

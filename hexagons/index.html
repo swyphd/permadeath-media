@@ -25,6 +25,94 @@
     const SUPABASE_KEY = 'sb_publishable_RI26gdJieUSoWA68DsfwwQ_qYte5CLj';
     const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+    // ── Mailing list ──────────────────────────────────────────────────
+    // Addresses go to the newsletter_signups table (insert-only from the
+    // public API). See ../README.md.
+    const SIGNUP_URL = `${SUPABASE_URL}/rest/v1/newsletter_signups`;
+    const SIGNUP_KEY = SUPABASE_KEY;
+    const SIGNUP_SOURCE = 'hexagons';
+    const SIGNUP_DONE_KEY = 'hexagons-newsletter';
+    const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+
+    async function subscribe(email) {
+      const res = await fetch(SIGNUP_URL, {
+        method: 'POST',
+        headers: {
+          apikey: SIGNUP_KEY,
+          Authorization: `Bearer ${SIGNUP_KEY}`,
+          'Content-Type': 'application/json',
+          Prefer: 'return=minimal',
+        },
+        body: JSON.stringify({ email, source: SIGNUP_SOURCE }),
+      });
+      if (res.ok || res.status === 409) return; // 409: already on the list
+      throw new Error(`HTTP ${res.status}`);
+    }
+
+    function Newsletter({ user }) {
+      const [done, setDone] = useState(() => {
+        try { return !!localStorage.getItem(SIGNUP_DONE_KEY); } catch (e) { return false; }
+      });
+      const [email, setEmail] = useState('');
+      const [hp, setHp] = useState('');
+      const [busy, setBusy] = useState(false);
+      const [error, setError] = useState('');
+
+      useEffect(() => { if (user?.email && !email) setEmail(user.email); }, [user]);
+
+      async function handleSubmit(e) {
+        e.preventDefault();
+        const addr = email.trim().toLowerCase();
+        if (!EMAIL_RE.test(addr)) { setError("That doesn't look like an email address."); return; }
+        setError('');
+        if (hp) { setDone(true); return; } // honeypot: bots fill this, people can't
+        setBusy(true);
+        try {
+          await subscribe(addr);
+          try { localStorage.setItem(SIGNUP_DONE_KEY, addr); } catch (e) {}
+          setDone(true);
+        } catch (err) {
+          setError('Something went wrong. Try again in a minute.');
+        } finally {
+          setBusy(false);
+        }
+      }
+
+      if (done) {
+        return (
+          <div style={{marginTop:'0.75rem',padding:'0.75rem 1rem',background:'#f0fdf4',borderRadius:8,
+            fontSize:13,color:'#166534',lineHeight:1.6}}>
+            ✅ You're on the Permadeath Media list. New games and playtests, a few emails a year.
+          </div>
+        );
+      }
+      return (
+        <form onSubmit={handleSubmit} noValidate
+          style={{marginTop:'0.75rem',padding:'0.75rem 1rem',background:'#f9fafb',borderRadius:8,
+            fontSize:13,color:'#6b7280',lineHeight:1.6}}>
+          <strong style={{color:'#111'}}>Get the next game first:</strong> new games, playtests and
+          the occasional note from Permadeath Media. A few emails a year.
+          <div style={{display:'flex',gap:8,marginTop:8}}>
+            <label htmlFor="newsletter-email" style={{position:'absolute',width:1,height:1,overflow:'hidden',clip:'rect(0 0 0 0)'}}>Email address</label>
+            <input id="newsletter-email" type="email" inputMode="email" autoComplete="email"
+              placeholder="you@example.com" value={email} onChange={e=>setEmail(e.target.value)} required
+              style={{flex:1,minWidth:0,padding:'8px 10px',fontSize:14,borderRadius:8,
+                border:'1px solid #d1d5db',outline:'none',fontFamily:'inherit',background:'#fff'}}/>
+            <input type="text" name="website" value={hp} onChange={e=>setHp(e.target.value)} tabIndex={-1}
+              autoComplete="off" aria-hidden="true"
+              style={{position:'absolute',left:-9999,width:1,height:1,opacity:0}}/>
+            <button type="submit" disabled={busy}
+              style={{padding:'8px 14px',fontSize:13,fontWeight:600,borderRadius:8,border:'none',
+                background:'#3b82f6',color:'#fff',cursor:busy?'wait':'pointer',fontFamily:'inherit',
+                opacity:busy?0.7:1,whiteSpace:'nowrap'}}>
+              {busy?'Saving…':'Sign up'}
+            </button>
+          </div>
+          {error && <div role="alert" style={{marginTop:6,color:'#dc2626',fontSize:12}}>{error}</div>}
+        </form>
+      );
+    }
+
     // ── Geometry ──────────────────────────────────────────────────────
     const R3 = Math.sqrt(3);
     const T = 42;
@@ -888,6 +976,9 @@
             fontSize:13,color:'#6b7280',lineHeight:1.6}}>
             <strong style={{color:'#111'}}>How to play:</strong> Tap a triangle, then tap a digit 1–6. The 6 triangles around each black dot must use each of 1–6 exactly once. Triangles shared between two dots must satisfy both. No number can be repeated in any partial hexagon shape along the border.
           </div>
+
+          {/* Mailing list */}
+          <Newsletter user={user}/>
 
           {/* Footer */}
           <div style={{marginTop:'1.5rem',textAlign:'center',fontSize:11,color:'#d1d5db'}}>
