@@ -514,26 +514,20 @@
   </div>
 
   <script>
-    // Mailing list: addresses go to the newsletter_signups table in the
-    // Supabase project the games use. See README.md.
+    // Mailing list: /api/subscribe adds the address to Buttondown (which
+    // sends the welcome email) and keeps a backup row in Supabase. See README.md.
     (function () {
-      const SIGNUP_URL = 'https://kmxkuyloybrdtcdiiqwo.supabase.co/rest/v1/newsletter_signups';
-      const SIGNUP_KEY = 'sb_publishable_RI26gdJieUSoWA68DsfwwQ_qYte5CLj';
+      const SIGNUP_URL = '/api/subscribe';
       const SOURCE = 'site';
       const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 
       async function subscribe(email) {
         const res = await fetch(SIGNUP_URL, {
           method: 'POST',
-          headers: {
-            apikey: SIGNUP_KEY,
-            Authorization: 'Bearer ' + SIGNUP_KEY,
-            'Content-Type': 'application/json',
-            Prefer: 'return=minimal',
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, source: SOURCE }),
         });
-        if (res.ok || res.status === 409) return; // 409: already on the list
+        if (res.ok) return;
         throw new Error('HTTP ' + res.status);
       }
 

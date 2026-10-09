@@ -987,17 +987,16 @@ init();
 </script>
 <script>
 /* ============ MAILING LIST ============ */
-/* Addresses go to the newsletter_signups table in the studio's Supabase project
-   (insert-only from the public API). See ../README.md. */
+/* /api/subscribe adds the address to Buttondown (which sends the welcome email)
+   and keeps a backup row in Supabase. See ../README.md. */
 (function(){
-  const SIGNUP_URL="https://kmxkuyloybrdtcdiiqwo.supabase.co/rest/v1/newsletter_signups";
-  const SIGNUP_KEY="sb_publishable_RI26gdJieUSoWA68DsfwwQ_qYte5CLj";
+  const SIGNUP_URL="/api/subscribe";
   const SOURCE="card-check";
   const DONE_KEY="cc-newsletter";
   const EMAIL_RE=/^[^@\s]+@[^@\s]+\.[^@\s]+$/;
   async function subscribe(email){
-    const res=await fetch(SIGNUP_URL,{method:"POST",headers:{apikey:SIGNUP_KEY,Authorization:"Bearer "+SIGNUP_KEY,"Content-Type":"application/json",Prefer:"return=minimal"},body:JSON.stringify({email,source:SOURCE})});
-    if(res.ok||res.status===409)return; // 409: already on the list
+    const res=await fetch(SIGNUP_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email,source:SOURCE})});
+    if(res.ok)return;
     throw new Error("HTTP "+res.status);
   }
   const form=document.getElementById("signup-form"),input=document.getElementById("signup-email"),msg=document.getElementById("signup-msg"),btn=form.querySelector("button");
