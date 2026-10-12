@@ -33,11 +33,11 @@
     const SIGNUP_DONE_KEY = 'hexagons-newsletter';
     const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 
-    async function subscribe(email) {
+    async function subscribe(email, tag) {
       const res = await fetch(SIGNUP_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, source: SIGNUP_SOURCE }),
+        body: JSON.stringify({ email, source: SIGNUP_SOURCE, tag }),
       });
       if (res.ok) return;
       throw new Error(`HTTP ${res.status}`);
@@ -333,6 +333,20 @@
       const [loading, setLoading] = useState(false);
       const [error, setError] = useState('');
       const [message, setMessage] = useState('');
+      // Opt-in to the mailing list, offered when creating an account or
+      // asking for a login link. Unticked: an account is not consent to news.
+      const [optIn, setOptIn] = useState(false);
+      const [alreadyListed] = useState(() => {
+        try { return !!localStorage.getItem(SIGNUP_DONE_KEY); } catch (e) { return false; }
+      });
+
+      function joinListIfAsked() {
+        const addr = email.trim().toLowerCase();
+        if (!optIn || alreadyListed || !EMAIL_RE.test(addr)) return;
+        subscribe(addr, 'hexagons-account')
+          .then(() => { try { localStorage.setItem(SIGNUP_DONE_KEY, addr); } catch (e) {} })
+          .catch(() => {}); // the account matters more; the footer form is still there
+      }
 
       async function handleSubmit(e) {
         e.preventDefault();
@@ -341,10 +355,12 @@
           if (mode === 'magic') {
             const { error: err } = await sb.auth.signInWithOtp({ email, options: { emailRedirectTo: 'https://permadeathmedia.com/hexagons/' } });
             if (err) throw err;
+            joinListIfAsked();
             setMessage('Check your email for a login link!');
           } else if (mode === 'signup') {
             const { error: err } = await sb.auth.signUp({ email, password, options: { emailRedirectTo: 'https://permadeathmedia.com/hexagons/' } });
             if (err) throw err;
+            joinListIfAsked();
             setMessage('Check your email to confirm your account!');
           } else {
             const { error: err } = await sb.auth.signInWithPassword({ email, password });
@@ -392,6 +408,14 @@
               {mode !== 'magic' && (
                 <input type="password" placeholder="Password (min 6 characters)" value={password}
                   onChange={e=>setPassword(e.target.value)} style={INPUT} required minLength={6}/>
+              )}
+              {mode !== 'signin' && !alreadyListed && (
+                <label style={{display:'flex',gap:8,alignItems:'flex-start',fontSize:13,color:'#4b5563',
+                  margin:'2px 0 10px',cursor:'pointer',lineHeight:1.4}}>
+                  <input type="checkbox" checked={optIn} onChange={e=>setOptIn(e.target.checked)}
+                    style={{marginTop:2}}/>
+                  <span>Also send me news from Permadeath Media: new games and playtests. A few emails a year.</span>
+                </label>
               )}
               {error && <div style={{color:'#dc2626',fontSize:13,marginBottom:8,padding:'6px 8px',
                 background:'#fef2f2',borderRadius:6}}>{error}</div>}

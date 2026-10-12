@@ -1,6 +1,6 @@
 // Mailing list signup for permadeathmedia.com and the games under it.
 //
-// POST /api/subscribe  { email, source, website }
+// POST /api/subscribe  { email, source, tag?, website }
 //   -> 200 { ok: true }            subscribed (or already was)
 //   -> 400 { ok: false, error }    not a usable address
 //   -> 502 { ok: false, error }    neither Buttondown nor the backup accepted it
@@ -16,6 +16,13 @@ const BUTTONDOWN_URL = 'https://api.buttondown.com/v1/subscribers';
 const SUPABASE_URL = 'https://kmxkuyloybrdtcdiiqwo.supabase.co/rest/v1/newsletter_signups';
 const SUPABASE_KEY = 'sb_publishable_RI26gdJieUSoWA68DsfwwQ_qYte5CLj';
 const SOURCES = new Set(['site', 'hexagons', 'card-check', 'guild-rising', 'union-up', 'hedy-plant']);
+// Optional second tag: which ask the address came from, so Buttondown can
+// show which moments convert. `founding` is the founding playtesters list.
+const TAGS = new Set([
+  'founding',
+  'hedy-buyout', 'hedy-ending', 'hedy-plant-save',
+  'hexagons-account',
+]);
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 const TIMEOUT_MS = 8000;
 
@@ -47,12 +54,14 @@ async function fetchWithTimeout(url, init) {
 
 // Returns 'subscribed', 'exists', 'blocked' (Buttondown's spam firewall said
 // no), 'skipped' (no key) or throws.
-async function addToButtondown(email, source, apiKey) {
+async function addToButtondown(email, source, tag, apiKey) {
   if (!apiKey) return 'skipped';
+  const tags = tag ? [source, tag] : [source];
+  const metadata = tag ? { source, tag } : { source };
   const res = await fetchWithTimeout(BUTTONDOWN_URL, {
     method: 'POST',
     headers: { Authorization: `Token ${apiKey}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email_address: email, tags: [source], metadata: { source } }),
+    body: JSON.stringify({ email_address: email, tags, metadata }),
   });
   if (res.ok) return 'subscribed';
   let detail = null;
@@ -94,6 +103,7 @@ module.exports = async function handler(req, res) {
   const body = readBody(req);
   const email = String(body.email || '').trim().toLowerCase();
   const source = SOURCES.has(body.source) ? body.source : 'unknown';
+  const tag = TAGS.has(body.tag) ? body.tag : null;
 
   // Honeypot: bots fill the hidden field, people cannot. Say yes, do nothing.
   if (body.website) return send(res, 200, { ok: true });
@@ -102,7 +112,7 @@ module.exports = async function handler(req, res) {
   }
 
   const [mailer, backup] = await Promise.allSettled([
-    addToButtondown(email, source, process.env.BUTTONDOWN_API_KEY),
+    addToButtondown(email, source, tag, process.env.BUTTONDOWN_API_KEY),
     addToSupabase(email, source),
   ]);
   const mailerOk = mailer.status === 'fulfilled';

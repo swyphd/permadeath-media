@@ -398,6 +398,32 @@
       </p>
     </section>
 
+    <section id="dispatches">
+      <span class="section-label mono">Founding Playtesters</span>
+
+      <div class="file-card signup-card">
+        <div class="file-card-top">
+          <span class="file-id mono">FILE NO. 000 / COMMUNICATIONS DIV.</span>
+          <span class="status mono">STATUS: RECRUITING</span>
+        </div>
+        <div class="file-title">Help decide what we build</div>
+        <p class="file-desc mono">
+          Founding playtesters get new builds first, vote on what we build
+          next, and hear about the Kickstarter or Patreon before anyone else.
+          Only when there's something to play or decide. Leave any time.
+        </p>
+        <form class="signup-form" id="signup-form" novalidate>
+          <label class="sr-only" for="signup-email">Email address</label>
+          <input id="signup-email" name="email" type="email" inputmode="email"
+                 autocomplete="email" placeholder="you@example.com" required>
+          <input class="signup-hp" name="website" type="text" tabindex="-1"
+                 autocomplete="off" aria-hidden="true">
+          <button class="signup-btn" type="submit">Join</button>
+        </form>
+        <p class="signup-msg mono" id="signup-msg" role="status" aria-live="polite"></p>
+      </div>
+    </section>
+
     <section id="operations">
       <span class="section-label mono">Current Operations</span>
 
@@ -473,31 +499,6 @@
       </div>
     </section>
 
-    <section id="dispatches">
-      <span class="section-label mono">Mailing List</span>
-
-      <div class="file-card signup-card">
-        <div class="file-card-top">
-          <span class="file-id mono">FILE NO. 006 / COMMUNICATIONS DIV.</span>
-          <span class="status mono">STATUS: OPEN</span>
-        </div>
-        <div class="file-title">Dispatches</div>
-        <p class="file-desc mono">
-          New games, playtests, and the occasional note on what we're
-          building. A few emails a year. Leave any time.
-        </p>
-        <form class="signup-form" id="signup-form" novalidate>
-          <label class="sr-only" for="signup-email">Email address</label>
-          <input id="signup-email" name="email" type="email" inputmode="email"
-                 autocomplete="email" placeholder="you@example.com" required>
-          <input class="signup-hp" name="website" type="text" tabindex="-1"
-                 autocomplete="off" aria-hidden="true">
-          <button class="signup-btn" type="submit">Sign up</button>
-        </form>
-        <p class="signup-msg mono" id="signup-msg" role="status" aria-live="polite"></p>
-      </div>
-    </section>
-
     <section id="principles">
       <span class="section-label mono">Design Principles</span>
 
@@ -540,7 +541,7 @@
         const res = await fetch(SIGNUP_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, source: SOURCE }),
+          body: JSON.stringify({ email, source: SOURCE, tag: 'founding' }),
         });
         if (res.ok) return;
         throw new Error('HTTP ' + res.status);
@@ -572,7 +573,7 @@
         say('Filing\u2026');
         try {
           await subscribe(email);
-          say('You\'re on the list. Dispatches to ' + email + '.', 'ok');
+          say('You\'re a founding playtester. Next build goes to ' + email + '.', 'ok');
           form.reset();
         } catch (err) {
           say('Something went wrong. Try again in a minute.', 'err');
