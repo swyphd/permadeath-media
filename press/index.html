@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Press Kit — Permadeath Media</title>
+<meta name="description" content="Press kit for Hedy Plant, a free browser idle game from Permadeath Media: fact sheet, screenshots, gameplay GIF, logos and contact.">
+<meta property="og:title" content="Hedy Plant press kit — Permadeath Media">
+<meta property="og:description" content="An idle factory game where the faster your plant gets, the more the parent company takes. Free in the browser.">
+<meta property="og:image" content="https://permadeathmedia.com/press/hedy-plant/key-art.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Stencil:wght@600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --soot: #1A1A18;
+    --soot-2: #232320;
+    --oxide: #C0392B;
+    --yellow: #F1C40F;
+    --teal: #1A7A6E;
+    --paper: #E9E4D8;
+    --paper-dim: #B8B2A2;
+    --line: rgba(233, 228, 216, 0.15);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--soot);
+    color: var(--paper);
+    font-family: "IBM Plex Sans", sans-serif;
+    line-height: 1.55;
+  }
+
+  a { color: var(--yellow); }
+
+  .mono { font-family: "IBM Plex Mono", monospace; }
+
+  .stencil {
+    font-family: "Big Shoulders Stencil", sans-serif;
+    text-transform: uppercase;
+  }
+
+  .hazard-rule {
+    height: 8px;
+    background: repeating-linear-gradient(135deg, var(--yellow) 0 16px, var(--soot) 16px 32px);
+  }
+
+  .wrap { max-width: 960px; margin: 0 auto; padding: 0 1.5rem; }
+
+  header {
+    padding: 2rem 0 1.75rem;
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 1rem;
+  }
+
+  .wordmark {
+    font-size: 2rem;
+    font-weight: 800;
+    line-height: 0.95;
+    color: var(--paper);
+    text-decoration: none;
+  }
+
+  .wordmark .hit { color: var(--oxide); }
+
+  .crumb { font-size: 0.78rem; letter-spacing: 0.12em; color: var(--paper-dim); }
+
+  section { padding: 3rem 0; border-bottom: 1px solid var(--line); }
+
+  .section-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-size: 0.78rem;
+    letter-spacing: 0.16em;
+    color: var(--soot);
+    background: var(--yellow);
+    padding: 0.3rem 0.7rem;
+    margin-bottom: 1.5rem;
+    text-transform: uppercase;
+  }
+
+  .section-label::before {
+    content: "";
+    width: 8px;
+    height: 8px;
+    background: var(--soot);
+  }
+
+  h1 {
+    font-size: clamp(2.6rem, 8vw, 4.5rem);
+    font-weight: 800;
+    line-height: 0.95;
+  }
+
+  h1 .accent { color: var(--oxide); }
+
+  .pitch {
+    margin-top: 1.25rem;
+    font-size: 1.15rem;
+    max-width: 44ch;
+  }
+
+  .actions { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: 1.75rem; }
+
+  .btn {
+    display: inline-block;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 0.85rem;
+    letter-spacing: 0.06em;
+    font-weight: 500;
+    padding: 0.65rem 1.1rem;
+    text-decoration: none;
+    color: var(--soot);
+    background: var(--yellow);
+  }
+
+  .btn:hover, .btn:focus-visible { background: var(--paper); }
+
+  .btn.ghost {
+    background: transparent;
+    color: var(--paper);
+    border: 1px solid rgba(233, 228, 216, 0.35);
+  }
+
+  .btn.ghost:hover, .btn.ghost:focus-visible { border-color: var(--yellow); color: var(--yellow); }
+
+  .hero-media {
+    margin-top: 2.25rem;
+    border: 1px solid rgba(233, 228, 216, 0.18);
+    background: var(--soot-2);
+  }
+
+  .hero-media img { display: block; width: 100%; height: auto; }
+
+  .caption { font-size: 0.78rem; color: var(--paper-dim); padding: 0.6rem 0.9rem; }
+
+  .two-col {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+    gap: 2.5rem;
+  }
+
+  .facts { align-self: start; border-left: 4px solid var(--teal); background: var(--soot-2); padding: 1.25rem 1.5rem; }
+
+  .facts dl { display: grid; grid-template-columns: auto 1fr; gap: 0.55rem 1rem; font-size: 0.88rem; }
+
+  .facts dt { color: var(--paper-dim); font-family: "IBM Plex Mono", monospace; font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; padding-top: 0.15rem; }
+
+  .prose p { margin-bottom: 1rem; color: var(--paper); max-width: 60ch; }
+
+  .prose h2, .block-title {
+    font-family: "Big Shoulders Stencil", sans-serif;
+    text-transform: uppercase;
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 1.75rem 0 0.75rem;
+  }
+
+  .prose h2:first-child { margin-top: 0; }
+
+  .prose ul { margin: 0 0 1rem 1.1rem; max-width: 60ch; }
+
+  .prose li { margin-bottom: 0.4rem; }
+
+  .copy-box {
+    background: var(--soot-2);
+    border: 1px dashed rgba(233, 228, 216, 0.3);
+    padding: 1rem 1.25rem;
+    margin-bottom: 1rem;
+  }
+
+  .copy-box .label { font-size: 0.72rem; letter-spacing: 0.12em; color: var(--paper-dim); text-transform: uppercase; margin-bottom: 0.35rem; }
+
+  .gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 1rem;
+  }
+
+  .shot {
+    background: var(--soot-2);
+    border: 1px solid rgba(233, 228, 216, 0.18);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .shot a.img { display: block; aspect-ratio: 16 / 10; overflow: hidden; background: #E8EBEE; }
+
+  .shot img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: top; }
+
+  .shot .caption { display: flex; justify-content: space-between; gap: 0.75rem; }
+
+  .logos { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem; }
+
+  .logo-tile { border: 1px solid rgba(233, 228, 216, 0.18); }
+
+  .logo-tile .pad { display: flex; align-items: center; justify-content: center; height: 130px; padding: 1rem; }
+
+  .logo-tile .pad img { max-width: 100%; max-height: 100%; }
+
+  .logo-tile.on-paper .pad { background: var(--paper); }
+
+  .other-games { display: grid; gap: 0.75rem; }
+
+  .other-games li { list-style: none; border-left: 3px solid var(--oxide); padding: 0.4rem 0 0.4rem 1rem; background: var(--soot-2); }
+
+  .other-games b { font-family: "Big Shoulders Stencil", sans-serif; text-transform: uppercase; font-size: 1.15rem; font-weight: 700; margin-right: 0.4rem; }
+
+  .contact-card { border-left: 4px solid var(--oxide); background: var(--soot-2); padding: 1.5rem 1.75rem; }
+
+  .contact-card .email { font-family: "IBM Plex Mono", monospace; font-size: 1.15rem; }
+
+  footer { padding: 2rem 0 2.5rem; text-align: center; }
+
+  footer p { font-size: 0.75rem; letter-spacing: 0.08em; color: var(--paper-dim); }
+
+  @media (max-width: 720px) {
+    .two-col { grid-template-columns: 1fr; gap: 2rem; }
+  }
+</style>
+</head>
+<body>
+
+  <div class="hazard-rule"></div>
+
+  <div class="wrap">
+    <header>
+      <a class="wordmark stencil" href="/">PERMA<span class="hit">DEATH</span></a>
+      <span class="crumb mono">PRESS KIT</span>
+    </header>
+
+    <section id="hedy-plant">
+      <span class="section-label mono">Featured game</span>
+      <h1 class="stencil">Hedy <span class="accent">Plant</span></h1>
+      <p class="pitch">An idle game about running an electric car factory for a parent company that keeps raising what it takes. The only way to win is to organize.</p>
+      <div class="actions">
+        <a class="btn" href="/hedy-plant/?ref=press">Play free in your browser &rarr;</a>
+        <a class="btn ghost" href="permadeath-hedy-plant-press-kit.zip" download>Download everything (.zip)</a>
+        <a class="btn ghost" href="#contact">Contact</a>
+      </div>
+      <figure class="hero-media">
+        <img src="hedy-plant/hedy-plant-gameplay.gif" width="800" height="500" alt="Gameplay: the plant passes 1,000 cars a minute, Hedy Motors adds a reinvestment levy and profit per car drops, then the crew petitions Hedy.">
+        <figcaption class="caption mono">Gameplay, 18 seconds. Also as <a href="hedy-plant/hedy-plant-gameplay.mp4">MP4</a> (1280&times;800).</figcaption>
+      </figure>
+    </section>
+
+    <section id="facts">
+      <div class="two-col">
+        <div class="facts">
+          <dl>
+            <dt>Developer</dt><dd>Permadeath Media, a solo studio</dd>
+            <dt>Genre</dt><dd>Idle / incremental, factory management</dd>
+            <dt>Platform</dt><dd>Web browser, desktop and mobile. No download or account.</dd>
+            <dt>Price</dt><dd>Free</dd>
+            <dt>Status</dt><dd>Open playtest, live since October 2026</dd>
+            <dt>Play time</dt><dd>First pricing letter in about 6 minutes; about an hour to buy the plant out</dd>
+            <dt>Saves</dt><dd>In the browser automatically; optional cloud save by email</dd>
+            <dt>Language</dt><dd>English</dd>
+            <dt>Link</dt><dd><a href="/hedy-plant/?ref=press">permadeathmedia.com/hedy-plant</a></dd>
+          </dl>
+        </div>
+
+        <div class="prose">
+          <h2>About the game</h2>
+          <p>You manage Plant 7, one of nine factories that build electric cars for Hedy Motors. Hedy buys every car you make at a price it sets, sells you the parts kit, and charges a fee on revenue. Hire workers, buy robots, bring in kaizen and kanban, and the line gets faster.</p>
+          <p>Then the letter comes. Every time Plant 7 crosses a new line rate, Hedy reviews the supply agreement and takes a bigger cut, each time with a reasonable-sounding corporate explanation. Output climbs while the plant's profit per car falls from $6,100 to under $1,000.</p>
+          <p>Visiting crews from the other plants reveal that everyone gets the same letter after their best quarter. From there the game becomes an organizing ladder: petition, a seat on the allocation committee, a federation of plants, and finally a buyout that turns Plant 7 into a worker co-op selling on the open market.</p>
+
+          <h2>Features</h2>
+          <ul>
+            <li>Profit per car is the hero number, and it goes down as you get better.</li>
+            <li>Five pricing reviews, each pulling a different lever: price, fees, parts, a new levy.</li>
+            <li>24 upgrades drawn from real lean manufacturing: 5S, kanban, kaizen, andon cords, the Toyota Production System.</li>
+            <li>An organizing ladder where the company can void your agreement when you grow past it.</li>
+            <li>A second act as a worker co-op: showrooms, fleet contracts, member votes, and freeing the other eight plants.</li>
+          </ul>
+
+          <h2>Ready-to-use copy</h2>
+          <div class="copy-box">
+            <p class="label mono">One line</p>
+            <p>An idle factory game where the faster your plant gets, the more the parent company takes, until you organize.</p>
+          </div>
+          <div class="copy-box">
+            <p class="label mono">Short (50 words)</p>
+            <p>Hedy Plant is a free browser idle game. You run an electric car factory for Hedy Motors, and every time the line gets faster, Hedy rewrites the deal. Output climbs, profit per car falls. Compare notes with the other plants, organize, and buy your factory out as a worker co-op.</p>
+          </div>
+
+          <h2>How it's made</h2>
+          <p>Designed and produced by Permadeath Media, built with the help of AI coding tools. The screenshots and GIF on this page are captures of the game itself.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="screenshots">
+      <span class="section-label mono">Screenshots</span>
+      <div class="gallery">
+        <figure class="shot">
+          <a class="img" href="hedy-plant/01-hedy-letter.png"><img src="hedy-plant/01-hedy-letter.png" loading="lazy" alt="A letter from Hedy Motors announcing a growth reinvestment contribution that cuts profit per car from $3,024 to $2,024."></a>
+          <figcaption class="caption mono"><span>Hedy's pricing letter</span><span>2560&times;1600</span></figcaption>
+        </figure>
+        <figure class="shot">
+          <a class="img" href="hedy-plant/02-plant-floor.png"><img src="hedy-plant/02-plant-floor.png" loading="lazy" alt="The main screen: profit per car in large red numbers, the supply agreement, and the spend list."></a>
+          <figcaption class="caption mono"><span>The plant floor</span><span>2560&times;1600</span></figcaption>
+        </figure>
+        <figure class="shot">
+          <a class="img" href="hedy-plant/04-supply-agreement.png"><img src="hedy-plant/04-supply-agreement.png" loading="lazy" alt="The supply agreement breakdown, the committee packet showing Hedy takes 67% of the value, and charts of line rate and profit with Hedy's letters marked."></a>
+          <figcaption class="caption mono"><span>Supply agreement and shift record</span><span>1096&times;1530</span></figcaption>
+        </figure>
+        <figure class="shot">
+          <a class="img" href="hedy-plant/03-organize.png"><img src="hedy-plant/03-organize.png" loading="lazy" alt="The organize panel: petition, committee seat, federation of plants and buyout."></a>
+          <figcaption class="caption mono"><span>The organizing ladder</span><span>1032&times;926</span></figcaption>
+        </figure>
+        <figure class="shot">
+          <a class="img" href="hedy-plant/05-worker-coop.png"><img src="hedy-plant/05-worker-coop.png" loading="lazy" alt="Plant 7 as a worker co-op: profit per car of $13,339 in green, sales channels, and the federation of freed plants."></a>
+          <figcaption class="caption mono"><span>After the buyout</span><span>2560&times;1600</span></figcaption>
+        </figure>
+        <figure class="shot">
+          <a class="img" href="hedy-plant/06-mobile.png"><img src="hedy-plant/06-mobile.png" loading="lazy" alt="Hedy Plant on a phone screen."></a>
+          <figcaption class="caption mono"><span>On mobile</span><span>780&times;1688</span></figcaption>
+        </figure>
+        <figure class="shot">
+          <a class="img" href="hedy-plant/key-art.png"><img src="hedy-plant/key-art.png" loading="lazy" alt="Key art: Plant 7 keeps $2,024 per car, with the Hedy Plant title and tagline."></a>
+          <figcaption class="caption mono"><span>Key art / header</span><span>1920&times;1080</span></figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section id="logos">
+      <span class="section-label mono">Logos</span>
+      <div class="logos">
+        <figure class="logo-tile on-paper">
+          <div class="pad"><img src="logos/hedy-plant-logo.png" alt="Hedy Plant logo, dark text"></div>
+          <figcaption class="caption mono"><a href="logos/hedy-plant-logo.png">Hedy Plant, for light backgrounds</a></figcaption>
+        </figure>
+        <figure class="logo-tile">
+          <div class="pad"><img src="logos/hedy-plant-logo-light.png" alt="Hedy Plant logo, light text"></div>
+          <figcaption class="caption mono"><a href="logos/hedy-plant-logo-light.png">Hedy Plant, for dark backgrounds</a></figcaption>
+        </figure>
+        <figure class="logo-tile on-paper">
+          <div class="pad"><img src="logos/permadeath-logo-dark.png" alt="Permadeath Game Studio logo, dark text"></div>
+          <figcaption class="caption mono"><a href="logos/permadeath-logo-dark.png">Studio, for light backgrounds</a></figcaption>
+        </figure>
+        <figure class="logo-tile">
+          <div class="pad"><img src="logos/permadeath-logo-light.png" alt="Permadeath Game Studio logo, light text"></div>
+          <figcaption class="caption mono"><a href="logos/permadeath-logo-light.png">Studio, for dark backgrounds</a></figcaption>
+        </figure>
+      </div>
+      <p class="caption mono" style="padding-left:0;margin-top:0.75rem">Transparent PNGs. All images on this page may be used in coverage of the games.</p>
+    </section>
+
+    <section id="studio">
+      <div class="two-col">
+        <div class="prose">
+          <h2>About Permadeath Media</h2>
+          <p>Permadeath Media makes games about systems, not villains. Each game puts you inside a structure (a supply chain, a workplace, a commons) and lets you feel how it works. Every game is free to play in the browser.</p>
+        </div>
+        <ul class="other-games">
+          <li><b>Guild Rising</b> A commons-building idle game where an assembly votes and crises hit. <a href="/guild-rising/?ref=press">Play</a></li>
+          <li><b>Union Up</b> A labor organizing strategy game set inside a game studio. <a href="/union-up/?ref=press">Play</a></li>
+          <li><b>Card Check</b> A cooperative card game of a union drive, solo or pass-and-play. <a href="/card-check/?ref=press">Play</a></li>
+          <li><b>Hexagons</b> A daily puzzle game. <a href="/hexagons/?ref=press">Play</a></li>
+        </ul>
+      </div>
+    </section>
+
+    <section id="contact">
+      <span class="section-label mono">Contact</span>
+      <div class="contact-card">
+        <p>For coverage, interviews, streaming questions or a build to review early:</p>
+        <p class="email"><a href="mailto:press@permadeathmedia.com">press@permadeathmedia.com</a></p>
+        <p class="mono" style="font-size:0.8rem;color:var(--paper-dim);margin-top:0.75rem">Streaming and video of all Permadeath Media games is welcome, including monetized videos. No need to ask.</p>
+      </div>
+    </section>
+
+    <footer>
+      <p class="mono">&copy; 2026 PERMADEATH MEDIA &middot; <a href="/">HOME</a></p>
+    </footer>
+  </div>
+
+</body>
+</html>

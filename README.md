@@ -19,6 +19,13 @@ addresses send visitors here. Adding another separately-built game is the
 same three steps: a rewrite here, a `base` there, a redirect on its old
 address.
 
+## Press kit
+
+`/press/` is the press kit: fact sheet, copy, screenshots, gameplay GIF and
+MP4, logos, and a zip of everything (`press/permadeath-hedy-plant-press-kit.zip`).
+The screenshots are captures of real Hedy Plant runs. Rebuild the zip after
+changing any image: `cd press && zip -qr permadeath-hedy-plant-press-kit.zip hedy-plant logos`.
+
 ## Mailing list
 
 Every page (the site, Hexagons, Card Check, Hedy Plant, Guild Rising, Union Up) carries
