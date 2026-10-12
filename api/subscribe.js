@@ -15,7 +15,7 @@
 const BUTTONDOWN_URL = 'https://api.buttondown.com/v1/subscribers';
 const SUPABASE_URL = 'https://kmxkuyloybrdtcdiiqwo.supabase.co/rest/v1/newsletter_signups';
 const SUPABASE_KEY = 'sb_publishable_RI26gdJieUSoWA68DsfwwQ_qYte5CLj';
-const SOURCES = new Set(['site', 'hexagons', 'card-check', 'guild-rising', 'union-up']);
+const SOURCES = new Set(['site', 'hexagons', 'card-check', 'guild-rising', 'union-up', 'hedy-plant']);
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 const TIMEOUT_MS = 8000;
 
