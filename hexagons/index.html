@@ -5,6 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>⬡ Hexagons</title>
   <meta name="description" content="A daily hexagonal number puzzle. Place 1–6 around each dot with no repeats."/>
+  <script>
+    window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+  </script>
+  <script defer src="/_vercel/insights/script.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body { background: #fff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
@@ -669,7 +673,7 @@
         return () => clearInterval(intervalRef.current);
       }, [competitive, solved, ready, modeChosen]);
 
-      // ── Game logic ──────────────────────────────────────────────────
+      // ── Game logic ───────────────────���──────────────────────────────
       function checkErrors(nc) {
         return nc.map((c,ti) => {
           if (!c.value) return {...c, error:false};
