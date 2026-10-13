@@ -8,6 +8,7 @@
 //   stats.choice('federation_terms', 'accept', { t });   a decision and what was picked
 //   stats.runEnd('win', { t, ending: 'buyout' });       'win' | 'loss' | 'quit' (gave up from a menu)
 //   stats.progress(() => ({ t: s.t, tier: s.tier }));   read when the tab closes mid-run
+//   stats.runStart(props, { id });                     a new run with an id chosen up front
 //
 // A run that starts and never ends is a player who left; the last milestone
 // before that is where they quit (see the read-outs in game-events.sql).
@@ -127,8 +128,10 @@ export function createAnalytics({
     get enabled() { return on(); },
     track,
     // A resumed save keeps its run id: pass it back as `resume` (store stats.run in the save).
-    runStart(props = {}, { resume = null } = {}) {
-      run = resume || newId();
+    // A shared game (an online table) can name a new run's id up front with `id`, so
+    // every device that later resumes it reports into the same run.
+    runStart(props = {}, { resume = null, id = null } = {}) {
+      run = resume || id || newId();
       runStartedAt = clock() - (props.t ?? 0) * 1000;
       track(resume ? 'run_resume' : 'run_start', props);
       return run;

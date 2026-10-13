@@ -53,6 +53,14 @@ suite('analytics', () => {
     eq(sent(fetch)[0].name, 'run_resume');
     eq(sent(fetch)[0].t, 600);
   });
+  test('a shared game can name its new run up front', async () => {
+    installStorage();
+    const { a, fetch } = make();
+    eq(a.runStart({}, { id: 'table-run' }), 'table-run');
+    await a.flush();
+    eq(sent(fetch)[0].name, 'run_start');
+    eq(sent(fetch)[0].run, 'table-run');
+  });
   test('batches: nothing goes out until a flush or a full batch', async () => {
     installStorage();
     const { a, fetch } = make({ batchSize: 3 });
