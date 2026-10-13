@@ -623,7 +623,7 @@ function renderLobby(){
     <div class="top"><h1>Card Check</h1><span class="sub">online playtest · v0.1</span><span class="spacer"></span>${HOME}</div>
     <div class="panel stack">
       <h2>First time here?</h2>
-      <p class="small">A guided game teaches every action, one click at a time, in about ten minutes. The Rules button up top is a full reference whenever you need it.</p>
+      <p class="small">A guided game sets you a few goals and lets you work out the route, in about fifteen minutes. The Rules button up top is a full reference whenever you need it.</p>
       <div class="row"><button class="primary" id="tut">Learn to play</button>${saved?`<button id="resume">Resume your ${saved.tutorial&&!saved.tutorial.done?"tutorial":"local game"} (round ${saved.round})</button>`:""}</div>
     </div>
     <div class="panel stack">
@@ -818,109 +818,54 @@ function renderRight(el,g){
   el.appendChild(lg);
 }
 /* ============ TUTORIAL / CALLOUTS / RULES ============ */
-/* A fixed opening so the guided game plays out the same way every time. */
-const TUT_SCRIPT={piles:{Eng:[1,3,4,2,7],Prod:[26]},deck:{1:[5,4,2,1],2:[16,14]}};
-const TUT=[
- {h:"Welcome to Card Check",next:true,spot:".board",t:"You are <b>The Senior Engineer</b> and you’re organizing a union at a video game studio. Your goal: <b>21 of 32 workers on board</b> before the union vote in round 8. The game board you see here is the studio: one row per department, one column per disposition from Hostile to Steward. Two Engineering workers are already known: Priya and Dev, both in the Leaning column."},
- {h:"Management moves first, every round",next:true,spot:".fear",t:"Management already played <b>Culture Survey</b>: Fear went from 3 to 4. Fear is the studio's anxiety meter. At <b>7</b> One-on-Ones cost double and every organizer takes Burnout at round end. At <b>10</b> the drive collapses. You will learn to push it back down."},
- {h:"You get 3 actions a round. Start with Map.",allow:["[data-act=map]"],t:"Map turns over the next card in a department pile: you learn who works there and how they feel. Click <b>Map</b>.",done:()=>armed==="map"},
- {h:"Click the Engineering pile",allow:["[data-pile=Eng]"],t:"Mapping your home department costs 1 action. Any other department costs 2, or 1 once somebody there is Signed.",done:g=>g.workers[4].onBoard},
- {h:"Meet Tomasz",next:true,spot:"[data-wk='4']",t:"Read a worker card: the dots are <b>influence</b>, a star marks a <b>Leader</b>, the words are the <b>issues</b> they care about. A worker with no issues can't be moved at all. Tomasz is Undecided and cares about Crunch."},
- {h:"One-on-One moves a worker one step up",allow:["[data-act=one]"],t:"It costs 1 action, 2 when Fear is 7 or higher. Click <b>One-on-One</b>.",done:()=>armed==="one"},
- {h:"Talk to Priya",allow:["[data-wk='1']"],t:"She is Leaning, so one conversation signs her. Click her card.",done:g=>g.workers[1].disp>=3},
- {h:"Influence",allow:["[data-wk='3']"],t:"Priya has 2 influence: when she signs she brings up to two colleagues in her department one step each, and you choose who. Pick <b>Dev</b>.",done:g=>g.workers[3].disp>=3},
- {h:"Priya's second pick",allow:["[data-wk='4']"],t:"Pick <b>Tomasz</b>. He goes from Undecided to Leaning.",done:g=>g.workers[4].disp>=2},
- {h:"Influence chains",allow:["[data-wk='4']"],t:"Dev just signed too, and Dev has 1 influence of his own. Pick <b>Tomasz</b> again and he signs. One action, three signatures.",done:g=>g.workers[4].disp>=3},
- {h:"Three Signed workers who share Crunch",next:true,spot:"[data-issue=crunch]",t:"That unlocks a <b>Small Win</b>. Each Issue on the right needs 3 Signed or Steward workers who share its icon. Each Small Win moves every worker with that icon up a step, lowers Fear, and changes a rule for the rest of the game. The price: management draws an extra card next round. You get three Small Wins per game."},
- {h:"Click Small Win",allow:["[data-act=win]"],t:"It costs 1 action, 2 when Fear is 8 or higher.",done:()=>armed==="win"},
- {h:"Win End Crunch",allow:["[data-issue=crunch]"],t:"Click <b>End Crunch</b> in the Issues panel.",done:g=>won(g,"crunch")},
- {h:"No actions left. End your turn.",allow:["[data-act=end]"],t:"At the end of every round comes a <b>fear check</b>: Fear of 7 or more burns every organizer, Fear 10 ends the drive. If you pass the fear check, management turns over its next card(s) and the next round starts.",done:g=>g.round===2},
- {h:"Round 2: two cards",next:true,spot:".mpanel",t:"Because you won an Issue, management drew two cards: <b>Town Hall</b> (Fear +1, and your next One-on-One costs 2) and <b>Captive-Audience Meeting</b>, which found no Undecided workers to hit. Watch the Management panel each round: it shows what was played and how many cards come next."},
- {h:"Build Committee",allow:["[data-act=com]"],t:"A Signed <b>Leader</b> ★ can become a <b>Steward</b> for 2 actions. Stewards make up your leadership team and are your best allies. Click <b>Build Committee</b>.",done:()=>armed==="com"},
- {h:"Make Priya a Steward",allow:["[data-wk='1']"],t:"Click Priya's card.",done:g=>g.workers[1].disp===4},
- {h:"What a Steward does",next:true,spot:"[data-wk='1']",t:"At the start of every round, she brings one worker in her department up a step: a free one-on-one. And <b>once per game</b> she can <b>absorb</b> a management card aimed at her department. Her card shows which of these are still ready."},
- {h:"Overwork",allow:["[data-act=ow]"],t:"Overwork gives +1 action this round for +1 Burnout. If you are at Burnout 2, you only get 2 actions a round; Burnout 3 means 1 action and no ability. You won End Crunch, so right now Overwork is <b>free</b>. Click <b>Overwork</b>.",done:g=>g.orgs[0].overworked},
- {h:"Map again",allow:["[data-act=map]"],t:"Click <b>Map</b>.",done:()=>armed==="map"},
- {h:"Click the Engineering pile",allow:["[data-pile=Eng]"],t:"",done:g=>g.workers[2].onBoard},
- {h:"Marcus is a holdout",next:true,spot:"[data-wk='2']",t:"The lock means Marcus will <b>not sign until Pay Transparency is won</b>. One-on-Ones can take him to Leaning but no further. The Pay Transparency Small Win needs 3 Signed workers with Pay. Dev is one. Keep an eye out for two more."},
- {h:"Reassure",allow:["[data-act=re]"],t:"1 action, Fear −1, once per round for the whole committee. Fear is 4 after Town Hall. Click <b>Reassure</b>.",done:g=>g.reassuredRound},
- {h:"End your turn",allow:["[data-act=end]"],t:"Round 3 is coming, and this time management will aim at Engineering.",done:g=>g.round===3&&g.phase==="absorb"},
- {h:"A Steward's absorb decision",allow:["[data-act=absorb]"],absorb:[],t:"<b>Open Door Policy</b> would pull your highest-influence Leaning worker, Marcus, back to Undecided. Priya could absorb it, but a Steward only absorbs <b>once per game</b>. This one is small. Let it through and save the absorb. Click to <b>Resolve the card</b>.",done:g=>g.phase==="steward"},
- {h:"Steward phase",allow:["[data-wk='2']"],t:"At the start of each round, each Steward brings one worker in her department up a step. Marcus got knocked down, so pick <b>Marcus</b> to bring him back to Leaning.",done:g=>g.workers[2].disp===2&&g.phase==="org"},
- {h:"Town Hall is still in effect",allow:["[data-act=map]"],t:"Thanks to management’s Town Hall, your next paid One-on-One costs 2, so Map first for 1 action. Click <b>Map</b>.",done:()=>armed==="map"},
- {h:"Click the Engineering pile",allow:["[data-pile=Eng]"],t:"",done:g=>g.workers[7].onBoard},
- {h:"Sam: a contract worker with Pay",allow:["[data-act=one]"],t:"Contract workers can be removed from the board by a <b>Contract Ends</b> card, so sign them while you can. Click <b>One-on-One</b>.",done:()=>armed==="one"},
- {h:"Talk to Sam, for free",allow:["[data-wk='7']"],t:"Priya is a Steward in Engineering, so one One-on-One there each round costs <b>0</b>, Town Hall or not. Click Sam's card. That makes two Pay signatures: Dev and Sam.",done:g=>g.workers[7].disp>=3},
- {h:"Two actions left. Go find the third Pay signature.",allow:["[data-act=map]"],t:"Mapping another department costs 2 actions. Click <b>Map</b>.",done:()=>armed==="map"},
- {h:"Click the Production pile",allow:["[data-pile=Prod]"],t:"",done:g=>g.workers[26].onBoard},
- {h:"Esteban, Associate Producer. End your turn.",allow:["[data-act=end]"],spot:".slot[data-slot='4'],.slot[data-slot='7']",t:"Pay and Credit, Leaning, and a Leader. No actions left to talk to him now. Round 4 starts <b>tier 2</b>: management's cards get nastier. Tier 3 starts in round 7. Both are marked on the management shelf below the board.",done:g=>g.round===4&&g.phase==="absorb"},
- {h:"This one is worth the absorb",allow:["[data-act=absorb]"],absorb:[1],t:"Management just activated <b>Supervisor Pressure</b>, which hits every department with a Steward and would knock Marcus down again. Priya's absorb is ticked. Click <b>Resolve the card</b> to protect Engineering. Her absorb is now spent for the game.",done:g=>g.round===4&&g.phase==="org"},
- {h:"Talk to Esteban",allow:["[data-act=one]"],t:"The Town Hall cost effect on your “next One-on-One” hasn’t been triggered yet, so this one costs 2. Click <b>One-on-One</b>.",done:()=>armed==="one"},
- {h:"Click Esteban",allow:["[data-wk='26']"],t:"Three Pay signatures: Pay Transparency is ready.",done:g=>g.workers[26].disp>=3},
- {h:"One action left: Reassure",allow:["[data-act=re]"],t:"Fear is 4. Spare actions are best spent keeping Fear down; it only gets harder to lower later. Click <b>Reassure</b>.",done:g=>g.reassuredRound},
- {h:"End your turn",allow:["[data-act=end]"],t:"",done:g=>g.round===5&&g.phase==="org"},
- {h:"Mandatory Meeting with HR",next:true,spot:".org .ab",t:"That card gives one organizer Burnout and costs them an action. Your ability is <b>immune to the first Burnout effect</b>, so you shrugged it off, but you still lose the action. Every organizer has one ability like this, but lose access to it at Burnout 3."},
- {h:"Click Small Win",allow:["[data-act=win]"],t:"",done:()=>armed==="win"},
- {h:"Win Pay Transparency",allow:["[data-issue=pay]"],t:"Click <b>Pay Transparency</b>. Watch Marcus.",done:g=>won(g,"pay")},
- {h:"Marcus signed",next:true,spot:"[data-wk='2']",t:"Winning Pay Transparency unlocked every Pay holdout and moved every Pay worker up a step. You have 6 Signed or Steward of the 21 you need, with the rest of this round and three more to get there. From here the game is yours: Management starts playing tier 3 cards in round 7 and the vote to unionize is at the end of round 8. The <b>Rules</b> button up top has everything on one page, and the game will keep pointing things out the first time they happen. Good luck!"},
-];
-const TUT_PARTS=[{n:"The basics",from:0},{n:"Stewards",from:14},{n:"Management pushes back",from:24},{n:"Hold the line",from:33},{n:"Unlock the holdouts",from:38}];
-function tutPart(step){ let i=0; TUT_PARTS.forEach((p,k)=>{ if(step>=p.from)i=k; }); const from=TUT_PARTS[i].from, to=i+1<TUT_PARTS.length?TUT_PARTS[i+1].from:TUT.length; return {i,n:TUT_PARTS[i].n,local:step-from+1,len:to-from}; }
+/* The guided game and the first-time callouts live in tutorial.js and run on the
+   studio kit's tutorial engine (../kit/tutorial.js): goals the player reaches
+   their own way, never a locked board. The module loads before init(). */
+let TUT=null; // the tutorial.js module, once loaded
+const TUT_HELPERS={onBoard:(g,d)=>onBoard(g,d),won:(g,id)=>won(g,id),locked:(g,w)=>locked(g,w)};
+let guide=null, guideGame=null, callouts=null, lastHint=null;
 function startTutorial(){
+  if(!TUT){toast("The guided game couldn't load. Try reloading the page.");return;}
   if(unsub){unsub();unsub=null;} code=null; try{ if(location.hash)history.replaceState(null,"",location.pathname+location.search); }catch(e){}
   const seats=[{k:"senior",playerId:myId}];
-  const g=newGame(seats,7,TUT_SCRIPT); g.hotseat=true; g.local=true; g.seats=seats; g.tutorial={step:0,done:false};
+  const g=newGame(seats,7,TUT.TUT_SCRIPT); g.hotseat=true; g.local=true; g.seats=seats; g.tutorial={status:"active",index:0,seen:[],done:false}; g.created=Date.now();
+  guide=null;
   setupFlips(g); startRound(g); armed=null; write(g);
 }
-function tutorialAdvance(g){ const t=g.tutorial; if(!t||t.done)return; let guard=0;
-  while(guard++<20&&t.step<TUT.length&&!TUT[t.step].next&&TUT[t.step].done&&TUT[t.step].done(g))t.step++;
-  if(t.step>=TUT.length)t.done=true; }
-function tutorialNext(){ const g=G; if(!g.tutorial)return; g.tutorial.step++; if(g.tutorial.step>=TUT.length){g.tutorial.done=true; CALLOUTS.forEach(c=>seen(c.k,"1"));} armed=null; write(g); }
-function tutorialSkip(){ const g=G; if(!g.tutorial)return; g.tutorial.done=true; armed=null; write(g); }
-function gate(root,step){
-  const allow=step.allow||[]; const ok=e=>allow.some(sel=>e.matches(sel));
-  root.querySelectorAll("button").forEach(b=>{ if(b.hasAttribute("data-always")||b.closest(".tut"))return; if(ok(b))b.classList.add("tut-target"); else b.disabled=true; });
-  root.querySelectorAll(".wk.sel").forEach(e=>{ if(ok(e))e.classList.add("tut-target"); else {e.classList.remove("sel");e.onclick=null;} });
-  root.querySelectorAll(".pile.ok").forEach(e=>{ if(ok(e))e.classList.add("tut-target"); else {e.classList.remove("ok");e.onclick=null;} });
-  root.querySelectorAll(".issue").forEach(e=>{ if(!e.onclick)return; if(ok(e))e.classList.add("tut-target"); else {e.onclick=null;e.style.cursor="";e.style.boxShadow="";} });
-  if(step.absorb){ root.querySelectorAll("#abs input").forEach(i=>{ i.checked=step.absorb.includes(+i.dataset.id); i.disabled=true; }); }
-  if(step.spot){ root.querySelectorAll(step.spot).forEach(e=>e.classList.add("tut-spot")); }
+// The guide for this game, made once per game and kept in step with g.tutorial.
+function guideOf(g){
+  if(!TUT||!g.tutorial)return null;
+  if(!guide||guideGame!==g.seed+":"+g.created){ guide=TUT.guideFor(g,TUT_HELPERS); guideGame=g.seed+":"+g.created; }
+  return guide;
 }
-/* first-time notes for real games: shown once per device, when the thing first happens */
-const CALLOUTS=[
- {k:"mgmt",h:"Management moves first",when:g=>g.round===1&&g.phase==="org",t:"Every round starts with management playing a card (more as you grow, and after each Small Win). The Management panel below the board shows what was played. Then you act: 3 actions per organizer, minus Burnout."},
- {k:"influence",h:"Influence: choose who they bring along",when:g=>g.pending&&g.pending.some(p=>p.type==="influence"),t:"A worker who signs pulls colleagues in their department up one step, as many as their influence dots. Click the highlighted workers on the board, or skip the rest."},
- {k:"absorb",h:"A Steward can absorb this card",when:g=>g.phase==="absorb",t:"Each Steward can absorb one management card per game, cancelling its effect in their department. Tick the Stewards allowed to spend it if this card hits them, then resolve. Save it for the cards that hurt."},
- {k:"stewardphase",h:"Steward phase",when:g=>g.phase==="steward",t:"At the start of each round, every Steward brings one worker in their department up a step. Click a highlighted worker, or make no move."},
- {k:"holdout",h:"Holdouts",when:g=>onBoard(g).some(w=>locked(g,w)),t:"A worker with a lock will not sign until the Issue they care about is won (Pay Transparency or End Crunch). One-on-Ones take them to Leaning and stop. Win the Issue and they all move up at once."},
- {k:"plant",h:"A Plant took the empty desk",when:g=>onBoard(g).some(w=>w.reserve),t:"Whenever a worker is removed from the board, management fills the desk with a Plant: Hostile, immovable, and every One-on-One in that department costs +1 while it sits there."},
- {k:"fear7",h:"Fear is 7 or higher",when:g=>g.fear>=7,t:"One-on-Ones now cost 2, and every organizer takes +1 Burnout at the end of the round. Reassure (Fear −1, once per round) or win a Small Win to bring it down. At 10 the drive collapses."},
- {k:"burnout",h:"Burnout",when:g=>g.orgs.some(o=>o.burnout>0),t:"Burnout 1 and 2 still give 3 and 2 actions; at 3 an organizer has 1 action and loses their ability. Reset costs an action and removes one Burnout. If every organizer burns out, the drive is over."},
- {k:"smallwin",h:"Small Win: now management reacts",when:g=>g.issues.some(i=>i.state==="done"),t:"Each Issue you win changes a rule for the rest of the game, moves every worker with its icon up, and lowers Fear. It also adds a card to management's next draw. Three Small Wins per game."},
-];
-let lastTutStep=-1;
-function seen(k,v){ return ls("cc_seen_"+k,v); }
+function saveGuide(g){ const snap=guide.snapshot(); g.tutorial={...snap,done:snap.status!=="active"}; if(g.local)ls("cc_local",JSON.stringify(g)); }
+function tutorialNext(){ const g=G; const t=guideOf(g); if(!t)return; t.next(g); saveGuide(g); armed=null; write(g); }
+function tutorialSkip(){ const g=G; const t=guideOf(g); if(!t)return; t.skip(); saveGuide(g); armed=null; write(g); }
+// Hints come with time: look again every few seconds and redraw when one is due.
+setInterval(()=>{ if(!G||!guide||!G.tutorial||G.tutorial.done)return; const h=guide.hint(G); const id=h?h.body:null; if(id!==lastHint)render(); },4000);
 function renderGuide(root,g){
   if(g.phase==="over")return;
   const grid=root.querySelector(".grid");
-  if(g.tutorial&&!g.tutorial.done){
-    tutorialAdvance(g); if(g.local)ls("cc_local",JSON.stringify(g));
-    if(g.tutorial.done)return;
-    const st=TUT[g.tutorial.step];
-    const pt=tutPart(g.tutorial.step);
-    const card=$(`<div class="tut"><div class="tprog" aria-label="Tutorial progress">${TUT_PARTS.map((p,k)=>`<span class="seg ${k<pt.i?"done":k===pt.i?"now":""}" title="${esc(p.n)}"></span>`).join("")}<span class="plab">Part ${pt.i+1} of ${TUT_PARTS.length}: ${pt.n}</span><span class="step">step ${pt.local} of ${pt.len}</span></div><div class="th"><h2>${st.h}</h2></div>${st.t?`<p>${st.t}</p>`:""}
-      <div class="row">${st.next?`<button class="primary" data-always onclick="tutorialNext()">${g.tutorial.step===TUT.length-1?"Finish the tutorial":"Next"}</button>`:`<span class="small" style="margin-left:0">Do the highlighted action to continue.</span>`}<button class="ghost" data-always onclick="tutorialSkip()">Skip tutorial</button></div></div>`);
-    root.insertBefore(card,grid);
-    gate(root,st);
-    document.body.classList.add("tut-on");
-    if(lastTutStep!==g.tutorial.step){ lastTutStep=g.tutorial.step; const t=root.querySelector(".tut-target,.tut-spot"); if(t&&t.scrollIntoView){ const r=t.getBoundingClientRect(); const lim=window.innerWidth<=700?window.innerHeight*0.55:window.innerHeight; if(r.top<0||r.bottom>lim)t.scrollIntoView({block:"center",behavior:"smooth"}); } }
-    return;
-  }
-  document.body.classList.remove("tut-on");
-  const c=CALLOUTS.find(c=>!seen(c.k)&&c.when(g));
+  const t=guideOf(g);
+  if(t&&t.status==="active"){
+    const before=t.index; const st=t.observe(g); if(t.index!==before||t.status!=="active")saveGuide(g);
+    if(st){
+      const goals=t.steps.filter(x=>!x.next); const gi=goals.indexOf(st);
+      const done=t.steps.slice(0,t.index).filter(x=>!x.next).length;
+      const h=st.next?null:t.hint(g); lastHint=h?h.body:null;
+      const card=$(`<div class="tut"><div class="tprog" aria-label="Tutorial progress">${goals.map((x,k)=>`<span class="seg ${k<done?"done":k===gi?"now":""}" title="${esc(x.title)}"></span>`).join("")}<span class="plab">${gi>=0?`Goal ${gi+1} of ${goals.length}`:t.index===0?"Guided game":"Guided game complete"}</span></div><div class="th"><h2>${st.title}</h2></div><p>${st.body}</p>${h?`<p class="hint" role="status"><b>Hint:</b> ${h.body}</p>`:""}
+        <div class="row">${st.next?`<button class="primary" data-always onclick="tutorialNext()">${t.index===t.steps.length-1?"Finish the tutorial":"Let's go"}</button>`:`<span class="small" style="margin-left:0">Any route counts. Stuck? A hint appears after a while.</span>`}<button class="ghost" data-always onclick="tutorialSkip()">Skip tutorial</button></div></div>`);
+      root.insertBefore(card,grid);
+      if(st.spot)root.querySelectorAll(st.spot).forEach(e=>e.classList.add("tut-spot"));
+      document.body.classList.add("tut-on");
+    }
+  } else document.body.classList.remove("tut-on");
+  if(!TUT)return;
+  if(!callouts)callouts=TUT.calloutsFor(TUT_HELPERS);
+  const c=callouts.observe(g);
   if(!c)return;
-  const card=$(`<div class="callout"><h2>${c.h}</h2><p>${c.t}</p><div class="row"><button class="primary" data-always>Got it</button><span class="small">Shown once, the first time it happens.</span></div></div>`);
-  card.querySelector("button").onclick=()=>{ seen(c.k,"1"); render(); };
+  const card=$(`<div class="callout"><h2>${c.title}</h2><p>${c.body}</p><div class="row"><button class="primary" data-always>Got it</button><span class="small">Shown once, the first time it happens.</span></div></div>`);
+  card.querySelector("button").onclick=()=>{ callouts.next(G); render(); };
   root.insertBefore(card,grid);
 }
 /* rules reference, generated from the same tables the engine plays by */
@@ -983,7 +928,8 @@ function arm(a){armed=armed===a?null:a;render();}
 async function act(fn){ if(G.phase==="org"&&!controls(G.cur)){toast("Not your turn.");return;} if(G.phase!=="org"&&!g0AnySeat()){toast("Only a seated player can do that.");return;} await mutate(g=>{ const err=fn(g); if(err)return err; armed=null; return null; },g=>afterAction(g)); }
 function g0AnySeat(){ return G.orgs?G.orgs.some((o,i)=>controls(i)):true; }
 window.addEventListener("hashchange",()=>{const h=location.hash.replace("#","").toUpperCase(); if(h&&h!==code&&/^[A-Z0-9]{5}$/.test(h)&&!offline)join(h);});
-init();
+// The tutorial module loads first; without it (opened as a file, offline) the game still plays.
+import("/card-check/tutorial.js").then(m=>{TUT=m;}).catch(e=>console.warn("Card Check: tutorial unavailable",e)).finally(init);
 </script>
 <script>
 /* ============ MAILING LIST ============ */
