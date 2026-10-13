@@ -10,13 +10,18 @@ devices by five-character code.
    project (Google Analytics can stay off).
 2. Build → Firestore Database → Create database. Pick a region, start in
    **production mode**.
-3. Rules tab: paste the contents of `firestore.rules` and publish.
-4. Project settings → Your apps → Add app → Web. Register it, then copy
+3. Build → Authentication → Get started → Sign-in method: turn on
+   **Anonymous**. Each device signs in silently so the rules can tell the
+   players at a table from anyone else holding the code.
+4. Firestore → Rules tab: paste the contents of `firestore.rules` and publish.
+   Anyone with a code can watch a game; only its players can change it, and
+   someone new can only add themselves to a game still in its lobby.
+5. Project settings → Your apps → Add app → Web. Register it, then copy
    the `firebaseConfig` object.
-5. In `index.html`, fill in `FIREBASE_CONFIG` near the top of the app
+6. In `index.html`, fill in `FIREBASE_CONFIG` near the top of the app
    script with `apiKey`, `authDomain`, `projectId` and `appId`. The web
    config is public by design; the rules file is what guards the data.
-6. Optional cleanup: in Google Cloud, set a Firestore TTL policy on the
+7. Optional cleanup: in Google Cloud, set a Firestore TTL policy on the
    `games` collection using the `expires` field. Every write already
    stamps `expires` seven days out, so old games delete themselves.
 

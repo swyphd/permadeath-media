@@ -2,18 +2,54 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     // One document per game, keyed by its five-character code.
-    // Anyone with the code can read and write it; nothing else is reachable.
+    // Anyone with the code can read it: that is how a shared link opens the game.
+    // Only the people at the table can change it. Every device signs in
+    // anonymously (Authentication > Sign-in method > Anonymous must be on), the
+    // game records its host's id and its players' ids, and someone new can only
+    // add themselves, and at most one seat of their own, while it is in the lobby.
     match /games/{code} {
       function validCode() { return code.matches('^[A-Z0-9]{5}$'); }
+      function signedIn() { return request.auth != null; }
       function validGame() {
-        return request.resource.data.phase in ['lobby', 'mgmt', 'absorb', 'steward', 'org', 'over']
-          && request.resource.data.expires is timestamp
-          && request.resource.data.expires > request.time
-          && request.resource.data.expires < request.time + duration.value(8, 'd');
+        let g = request.resource.data;
+        return g.phase in ['lobby', 'mgmt', 'absorb', 'steward', 'org', 'over']
+          && g.expires is timestamp
+          && g.expires > request.time
+          && g.expires < request.time + duration.value(8, 'd')
+          && g.host is string
+          && g.players is list
+          && g.players.size() <= 12;
+      }
+      function isPlayer() { return request.auth.uid in resource.data.players; }
+      // Players play; they don't change who is at the table.
+      function sameTable() {
+        return request.resource.data.host == resource.data.host
+          && request.resource.data.players == resource.data.players;
+      }
+      // Someone new, in the lobby: their id goes on the end of players, and the
+      // seats either stay as they were or gain one seat at the end, claimed by them.
+      function joins() {
+        let before = resource.data;
+        let after = request.resource.data;
+        let n = before.seats.size();
+        return before.phase == 'lobby'
+          && !(request.auth.uid in before.players)
+          && after.diff(before).affectedKeys().hasOnly(['players', 'seats', 'expires'])
+          && after.players == before.players.concat([request.auth.uid])
+          && (after.seats == before.seats
+              || (after.seats.size() == n + 1
+                  && after.seats[0:n] == before.seats
+                  && after.seats[n].playerId == request.auth.uid));
       }
       allow get: if validCode();
       allow list: if false;
-      allow create, update: if validCode() && validGame();
+      allow create: if validCode() && signedIn() && validGame()
+        && request.resource.data.phase == 'lobby'
+        && request.resource.data.host == request.auth.uid
+        && request.resource.data.players == [request.auth.uid];
+      // Games made before sign-in have no players list, so nobody can change them.
+      allow update: if validCode() && signedIn() && validGame()
+        && ((isPlayer() && sameTable()) || joins());
       allow delete: if false;
     }
     match /{document=**} {

@@ -575,11 +575,16 @@ async function connectFirestore(){
   if(!FIREBASE_CONFIG.apiKey||!FIREBASE_CONFIG.projectId)return null;
   const v="10.14.1";
   await loadScript(`https://www.gstatic.com/firebasejs/${v}/firebase-app-compat.js`);
+  await loadScript(`https://www.gstatic.com/firebasejs/${v}/firebase-auth-compat.js`);
   await loadScript(`https://www.gstatic.com/firebasejs/${v}/firebase-firestore-compat.js`);
   firebase.initializeApp(FIREBASE_CONFIG);
+  // Each device signs in anonymously; the rules let only a game's players change it.
+  // If sign-in is refused (Anonymous not enabled yet), fall back to the device id.
+  try{ const cred=await firebase.auth().signInAnonymously(); authId=cred.user.uid; }
+  catch(e){ console.warn("Card Check: anonymous sign-in failed",e); }
   return firebase.firestore();
 }
-let db=null,userApi=null,myId=null,code=null,G=null,unsub=null,armed=null,offline=false;
+let db=null,authId=null,myId=null,code=null,G=null,unsub=null,armed=null,offline=false;
 const app=document.getElementById("app");
 const HOME=`<button class="ghost" data-always data-act="rules" onclick="openRules()">Rules</button>`;
 const $=(h)=>{const t=document.createElement("template");t.innerHTML=h.trim();return t.content.firstChild;};
@@ -602,14 +607,16 @@ async function mutate(fn,after){
     const result=await db.runTransaction(async tx=>{ const snap=await tx.get(ref); if(!snap.exists)throw new Error("This game no longer exists."); const g=snap.data(); const err=fn(g); if(err){toastErr=err;return null;} if(after)after(g); const doc=clone(g); const x=expiresAt(); if(x)doc.expires=x; tx.set(ref,doc); return g; });
     if(toastErr){toast(toastErr);render();return;}
     if(result){G=result;render();}
-  }catch(e){ toast("Could not sync: "+(e.code||e.message)); }
+  }catch(e){ toast(e.code==="permission-denied"?"Only the players at this table can change this game.":"Could not sync: "+(e.code||e.message)); }
 }
-function controls(oi){ const o=G.orgs[oi]; if(G.hotseat||G.local||offline||!myId)return true; return o.playerId===myId; }
+function isPlayer(g){ return !g.players||g.players.includes(myId); }
+function controls(oi){ const o=G.orgs[oi]; if(G.local||offline||!myId)return true; if(G.hotseat)return isPlayer(G); return o.playerId===myId; }
 
 async function init(){
   myId=localId();
   try{ db=await connectFirestore(); }catch(e){ toast("Online play unavailable: "+e.message); }
   if(!db)offline=true;
+  if(authId)myId=authId;
   const h=location.hash.replace("#","").toUpperCase();
   if(h&&/^[A-Z0-9]{5}$/.test(h)&&!offline){ join(h); } else renderLobby();
 }
@@ -635,7 +642,7 @@ function renderLobby(){
     ${offline?"":`<div class="panel stack"><h2>Join a game</h2><div class="row"><input id="jc" placeholder="Game code" maxlength="5" style="text-transform:uppercase;width:140px"><button id="joinb">Join</button></div>
     ${recent.length?`<div class="small">Recent: ${recent.map(c=>`<a href="#${c}" data-c="${c}">${c}</a>`).join(" · ")}</div>`:""}</div>`}
   </div>`));
-  document.getElementById("newg").onclick=async()=>{ const hb=document.getElementById("hot"); const hot=offline||!!(hb&&hb.checked); code=genCode(); G={phase:"lobby",seats:[],hotseat:hot,host:myId,seed:Math.floor(Math.random()*1e9),created:Date.now()}; location.hash=code; remember(code); if(!offline){await write(G);subscribe();} else render(); };
+  document.getElementById("newg").onclick=async()=>{ const hb=document.getElementById("hot"); const hot=offline||!!(hb&&hb.checked); code=genCode(); G={phase:"lobby",seats:[],players:[myId],hotseat:hot,host:myId,seed:Math.floor(Math.random()*1e9),created:Date.now()}; location.hash=code; remember(code); if(!offline){await write(G);subscribe();} else render(); };
   document.getElementById("tut").onclick=()=>startTutorial();
   const rb=document.getElementById("resume"); if(rb)rb.onclick=()=>{ if(unsub){unsub();unsub=null;} code=null; G=savedLocal(); render(); };
   const jb=document.getElementById("joinb"); if(jb)jb.onclick=()=>{const c=document.getElementById("jc").value.trim().toUpperCase(); if(c.length===5){location.hash=c;join(c);}};
@@ -661,9 +668,9 @@ function renderSeats(){
   const sc=el.querySelector("#seats");
   ORGS.forEach(o=>{ const s=G.seats.find(x=>x.k===o.k); const isMine=s&&s.playerId===myId; const d=$(`<div class="seat ${isMine?"mine":s?"taken":""}"><b>${o.n}</b><small>${DEPTS[o.d][0]}</small><small>${o.a}</small><small>${s?(isMine?"Yours · click to release":"Claimed"):"Open"}</small></div>`);
     d.onclick=()=>{ if(s&&!isMine)return; if(!isMine&&!G.hotseat&&mine>=1&&!offline){toast("One seat per person in this game.");return;}
-      mutate(g=>{ if(g.phase!=="lobby")return "The game already started."; const cur=g.seats.find(x=>x.k===o.k); if(isMine){ g.seats=g.seats.filter(x=>x.k!==o.k); } else { if(cur)return "Someone just claimed that seat."; if(!g.hotseat&&g.seats.some(x=>x.playerId===myId))return "One seat per person in this game."; g.seats.push({k:o.k,playerId:myId}); } return null; }); };
+      mutate(g=>{ if(g.phase!=="lobby")return "The game already started."; const cur=g.seats.find(x=>x.k===o.k); if(isMine){ g.seats=g.seats.filter(x=>x.k!==o.k); } else { if(cur)return "Someone just claimed that seat."; if(!g.hotseat&&g.seats.some(x=>x.playerId===myId))return "One seat per person in this game."; if(g.players&&!g.players.includes(myId))g.players.push(myId); g.seats.push({k:o.k,playerId:myId}); } return null; }); };
     sc.appendChild(d); });
-  el.querySelector("#start").onclick=()=>{ mutate(g=>{ if(g.phase!=="lobby")return "The game already started."; if(!g.seats.length)return "Claim a seat first."; const ng=newGame(g.seats,g.seed); ng.hotseat=g.hotseat; ng.seats=g.seats; ng.host=g.host; setupFlips(ng); startRound(ng); Object.keys(g).forEach(k=>delete g[k]); Object.assign(g,ng); return null; }); };
+  el.querySelector("#start").onclick=()=>{ mutate(g=>{ if(g.phase!=="lobby")return "The game already started."; if(!g.seats.length)return "Claim a seat first."; const ng=newGame(g.seats,g.seed); ng.hotseat=g.hotseat; ng.seats=g.seats; ng.host=g.host; ng.players=g.players; setupFlips(ng); startRound(ng); Object.keys(g).forEach(k=>delete g[k]); Object.assign(g,ng); return null; }); };
 }
 
 /* ---- game render ---- */
@@ -697,7 +704,7 @@ function render(){
   renderRight(root.querySelector("#right"),g);
   renderGuide(root,g);
   if(g.phase==="over"){const b=$(`<div class="panel"><button class="primary" id="again">Back to lobby (same seats)</button></div>`); root.querySelector("#side").appendChild(b);
-    b.querySelector("#again").onclick=()=>{ if(g.local){ try{localStorage.removeItem("cc_local");}catch(e){} G=null; renderLobby(); return; } mutate(x=>{ const ng={phase:"lobby",seats:x.seats,hotseat:x.hotseat,host:x.host,seed:Math.floor(Math.random()*1e9)}; Object.keys(x).forEach(k=>delete x[k]); Object.assign(x,ng); return null; }); };}
+    b.querySelector("#again").onclick=()=>{ if(g.local){ try{localStorage.removeItem("cc_local");}catch(e){} G=null; renderLobby(); return; } mutate(x=>{ const ng={phase:"lobby",seats:x.seats,players:x.players,hotseat:x.hotseat,host:x.host,seed:Math.floor(Math.random()*1e9)}; Object.keys(x).forEach(k=>delete x[k]); Object.assign(x,ng); return null; }); };}
 }
 function fearSvg(f){ const ang=v=>-120+24*v; const pt=(v,r)=>{const a=ang(v)*Math.PI/180;return [46+r*Math.sin(a),50-r*Math.cos(a)];};
   const [x7,y7]=pt(7,38),[x10,y10]=pt(10,38); const tick=v=>{const [a,b]=pt(v,31),[c,d]=pt(v,45);return `<line x1="${a.toFixed(1)}" y1="${b.toFixed(1)}" x2="${c.toFixed(1)}" y2="${d.toFixed(1)}" stroke="var(--red)" stroke-width="2"/>`;};
