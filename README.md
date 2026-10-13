@@ -19,6 +19,15 @@ addresses send visitors here. Adding another separately-built game is the
 same three steps: a rewrite here, a `base` there, a redirect on its old
 address.
 
+## Studio kit
+
+`/kit/` is the shared code every game was writing for itself: the mailing-list
+signup, local and cloud saves, the tutorial engine, a seeded random source, and
+the test harness with bots and sims. Pages here import it from `/kit/index.js`;
+games in their own repos copy it in with `node kit/sync.mjs <dir>`. See
+[`kit/README.md`](kit/README.md) for the new-game checklist, and run its tests
+with `node kit/tests/run.mjs`.
+
 ## Press kit
 
 `/press/` is the press kit: fact sheet, copy, screenshots, gameplay GIF and
