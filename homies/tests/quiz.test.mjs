@@ -18,11 +18,15 @@ suite('bank', () => {
       ok(n >= 2, `${ax.id} only in ${n}`);
     }
   });
-  test('each side names a game and a note', () => {
+  test('each side is a kind of game with two or three examples', () => {
     for (const x of QUESTIONS) for (const s of ['a', 'b']) {
-      ok(x[s].game && x[s].note, `${x.id}.${s}`);
-      ok(x[s].note.length <= 110, `${x.id}.${s} note too long for a phone card`);
+      ok(x[s].label && x[s].label.length <= 48, `${x.id}.${s} label`);
+      ok(x[s].examples.length >= 2 && x[s].examples.length <= 3, `${x.id}.${s} needs 2-3 examples`);
+      ok(x[s].examples.join(' / ').length <= 70, `${x.id}.${s} examples too long for a phone card`);
     }
+  });
+  test('no example appears on both sides of one question', () => {
+    for (const x of QUESTIONS) for (const g of x.a.examples) ok(!x.b.examples.includes(g), `${x.id}: ${g} on both sides`);
   });
   test('catches a bad bank', () => {
     const bad = [{ id: 'x', a: { tags: ['realtime', 'turns'] }, b: { tags: ['nope'] } }, { id: 'x', a: { tags: [] }, b: { tags: ['brain'] } }];
@@ -45,9 +49,9 @@ suite('one person', () => {
     eq(complete({ ...all('a'), [QUESTIONS[3].id]: 'x' }), false);
   });
   test('profile counts votes per axis', () => {
-    const p = profile({ 'spire-aoe': 'a' });
-    eq(p.pace.b, 1); eq(p.pace.a, 0); eq(p.pace.lean, -1);
-    eq(p.loop.a, 1); eq(p.company.b, 1);
+    const p = profile({ 'rts-tbs': 'a' });
+    eq(p.pace.a, 1); eq(p.pace.b, 0); eq(p.pace.lean, 1);
+    eq(p.skill.b, 1); eq(p.company.a, 1); eq(p.rivalry.b, 1);
     eq(p.setting.lean, null);
   });
   test('lean is in [-1, 1]', () => {
@@ -67,26 +71,31 @@ suite('crew', () => {
     const answers = {
       'jeff@x.test': all('a'),
       'eric@x.test': all('a'),
-      'michael@x.test': { ...all('a'), 'catan-chess': 'b', 'spire-aoe': 'b' },
-      'josh@x.test': { ...all('a'), 'catan-chess': 'b' },
+      'michael@x.test': { ...all('a'), 'boardgame-abstract': 'b', 'rts-tbs': 'b' },
+      'josh@x.test': { ...all('a'), 'boardgame-abstract': 'b' },
     };
     const r = crewResults(crew, answers);
     eq(r.waiting.length, 0);
     const byId = Object.fromEntries(r.questions.map((x) => [x.id, x]));
-    eq(byId['catan-chess'].verdict, 'split');
-    deepEq(byId['catan-chess'].a, ['Jeff', 'Eric']);
-    deepEq(byId['catan-chess'].b, ['Michael', 'Josh']);
-    eq(byId['spire-aoe'].verdict, 'lean');
-    eq(byId['spire-aoe'].winner, 'a');
-    eq(byId['zomboid-helldivers'].verdict, 'unanimous');
+    eq(byId['boardgame-abstract'].verdict, 'split');
+    deepEq(byId['boardgame-abstract'].a, ['Jeff', 'Eric']);
+    deepEq(byId['boardgame-abstract'].b, ['Michael', 'Josh']);
+    eq(byId['rts-tbs'].verdict, 'lean');
+    eq(byId['rts-tbs'].winner, 'a');
+    eq(byId['survival-setting'].verdict, 'unanimous');
     eq(r.unanimous.length, QUESTIONS.length - 2);
     eq(r.splits.length, 1);
   });
-  test('shelf counts picks across the crew', () => {
+  test('shelf counts the examples of picked sides across the crew', () => {
     const r = crewResults(crew, { 'jeff@x.test': all('a'), 'eric@x.test': all('a') });
-    eq(r.shelf[0].picks, 2);
-    ok(r.shelf.every((s) => s.picks === 2));
-    eq(r.shelf.length, QUESTIONS.length, 'two people, same picks, one shelf entry per question');
+    const sideA = new Set(QUESTIONS.flatMap((x) => x.a.examples));
+    eq(r.shelf.length, sideA.size, 'every side-a example, once');
+    ok(r.shelf.every((s) => s.picks % 2 === 0 && sideA.has(s.game)), 'two people, same picks: even counts, side-a games only');
+    ok(r.shelf[0].picks >= r.shelf[r.shelf.length - 1].picks, 'most picked first');
+    const one = crewResults(crew, { 'jeff@x.test': { ...all('a'), 'survival-setting': 'b' } });
+    const games = one.shelf.map((s) => s.game);
+    ok(games.includes('Enshrouded') && games.includes('Valheim'), 'picked side\'s examples are on the shelf');
+    ok(!games.includes('Space Engineers'), 'unpicked side\'s examples are not');
   });
   test('axis verdicts', () => {
     const r = crewResults(crew, { 'jeff@x.test': all('a'), 'eric@x.test': all('b') });
@@ -94,10 +103,10 @@ suite('crew', () => {
     const pace = r.axes.find((a) => a.id === 'pace');
     eq(pace.leans.length, 2);
     ok(['split', 'lean', 'agreed'].includes(pace.verdict));
-    const same = crewResults(crew, { 'jeff@x.test': { 'spire-aoe': 'a', ...all('a') }, 'eric@x.test': all('a') });
-    const loop = same.axes.find((a) => a.id === 'loop');
-    ok(loop.mean !== null);
-    eq(loop.verdict, 'agreed');
+    const same = crewResults(crew, { 'jeff@x.test': all('a'), 'eric@x.test': all('a') });
+    const era = same.axes.find((a) => a.id === 'era');
+    eq(era.mean, 1, 'every side-a era vote is the past');
+    eq(era.verdict, 'agreed');
   });
   test('summary reads', () => {
     const r = crewResults(crew, { 'jeff@x.test': all('a'), 'eric@x.test': all('a') });
