@@ -26,12 +26,12 @@ export function guideSteps(h) {
       body: '<b>One-on-One</b> moves a worker you can see one step toward Signed. <b>Map</b> turns over a new worker card. Priya and Dev are already Leaning. Get anyone to Signed.',
       goal: (g) => anyone(g, (w) => w.disp >= 3),
       hints: [
-        { after: 40, body: 'Pick One-on-One under your actions, then click a worker card on the board.' },
+        { after: 40, body: 'Pick One-on-One on your organizer card at the bottom, then click a worker card on the board.' },
         { after: 90, body: 'Priya is in the Engineering row, Leaning column. One talk signs her.' },
       ] },
 
     { id: 'win', title: 'Win a Small Win',
-      body: 'Each Issue on the right needs three Signed workers who share its icon. Winning one moves everyone with that icon up, lowers Fear, and changes a rule for the rest of the game. Find three who care about the same thing and win it, over as many rounds as it takes.',
+      body: 'Each Issue under Small Wins needs three Signed workers who share its icon. Winning one moves everyone with that icon up, lowers Fear, and changes a rule for the rest of the game. Find three who care about the same thing and win it, over as many rounds as it takes.',
       goal: (g) => g.issues.some((i) => i.state === 'done'),
       hints: [
         { after: 60, body: 'Look at the icons on your Signed workers. Which issue do two of them already share?' },
@@ -71,7 +71,7 @@ export function guideSteps(h) {
 export function callouts(h) {
   return [
     { id: 'mgmt', title: 'Management moves first', when: (g) => g.round === 1 && g.phase === 'org',
-      body: 'Every round starts with management playing a card (more as you grow, and after each Small Win). The Management panel below the board shows what was played. Then you act: 3 actions per organizer, minus Burnout.' },
+      body: 'Management sits across the table. Every round starts with them turning over a card (more as you grow, and after each Small Win), shown at the top with what it did. Then your committee acts: 3 actions each, fewer with Burnout.' },
     { id: 'influence', title: 'Influence: choose who they bring along', when: (g) => g.pending && g.pending.some((p) => p.type === 'influence'),
       body: 'A worker who signs pulls colleagues in their department up one step, as many as their influence dots. Click the highlighted workers on the board, or skip the rest.' },
     { id: 'absorb', title: 'A Steward can absorb this card', when: (g) => g.phase === 'absorb',

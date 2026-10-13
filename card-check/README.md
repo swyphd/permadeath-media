@@ -5,6 +5,16 @@ every action, no page code). With no Firebase config it runs on one device
 (solo or pass-and-play). Add a config and games sync live between devices by
 five-character code.
 
+The page is laid out as a table: Management's side across the top (their deck,
+the cards they turned over this round and what each did, the round track), the
+studio floor in the middle, and the organizing committee along the bottom with
+its actions and its own End turn button (which asks first if actions are left).
+A scoreboard of the four resources stays pinned above it. `look.js` holds the
+visual language: one icon and colour per resource (Fear, actions, Burnout,
+Small Wins, Signed/Stewards), the worker issue icons, which resources each Small
+Win moves, and the words for every tooltip. `tooltip.js` shows them on hover,
+keyboard focus or tap.
+
 It runs on the studio kit (`../kit`): seeded shuffles (`createRng`), the
 guided game's local save (`createLocalSave`, key `cc_local`), the signup form
 (`mountSignupForm`, key `cc-newsletter`), the tutorial engine, and play
@@ -73,3 +83,7 @@ how they end; `SEED=7` replays a batch. It is a pacing check, not a strong playe
 the studio's tutorial rule (goals, no locked controls, short reads) and that
 each goal fires on its outcome. If a rule changes, update the goal or hint
 it touches.
+
+`node card-check/tests/look.test.mjs` checks that every resource, issue and
+board symbol has an icon and a tooltip, that every Small Win names the
+resources it moves, and that management's cards keep a note of what they did.
