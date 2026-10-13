@@ -75,7 +75,8 @@ commit it came from. Fix bugs here, not in a copy.
    `stats.choice(id, option)` for decisions worth comparing, `stats.runEnd('win' | 'loss' | 'quit')`,
    and `stats.progress(() => ({ t, ... }))` so a closed tab records where the run
    stood. Keep `stats.run` in the save and pass it back as `runStart(props, { resume })`
-   so a resumed run stays one run. The read-outs (win rate, where people quit,
+   so a resumed run stays one run. A game shared between devices can choose the
+   run's id when the game starts and pass `runStart(props, { id })`. The read-outs (win rate, where people quit,
    choice shares, win rate by choice) are SQL at the bottom of `game-events.sql`.
 6. **Randomness.** One `createRng()` for the whole engine; every roll goes through
    it. Unseeded it's `Math.random`; seed it for sims, daily puzzles, shared tables.
@@ -94,12 +95,11 @@ rather than scripting each click.
 
 ## Not yet using it
 
-The games still carry their own copies of these pieces. Moving each one onto the
-kit is follow-up work, one game at a time, once the save (Guild Rising) and
-tutorial (Hedy Plant) work in flight has landed. Values that must carry over when
-a game moves:
+Card Check runs on the kit (rng, local save, signup, tutorial, analytics, test
+harness and sims; see `card-check/README.md`). The other games still carry their
+own copies of these pieces. Moving each one onto the kit is follow-up work, one
+game at a time. Values that must carry over when a game moves:
 
-- Card Check: newsletter `doneKey: 'cc-newsletter'`; callouts used `cc_seen_<k>` keys.
 - Hedy Plant: newsletter `doneKey: 'hp-newsletter'`; local save key
   `hedy-plant-save-v2` (a bare state, so adopt it through `migrate` at version 0);
   cloud `progress: s => s.t`.
