@@ -371,6 +371,72 @@
     color: var(--paper-dim);
   }
 
+  /* Featured playtest */
+  .featured-card {
+    border: 2px solid var(--yellow);
+    background: var(--soot-2);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+  }
+
+  .featured-body { padding: 1.75rem; }
+
+  .featured-card .status {
+    color: var(--yellow);
+    border-color: var(--yellow);
+  }
+
+  .featured-title {
+    font-family: "Big Shoulders Stencil", sans-serif;
+    text-transform: uppercase;
+    font-size: clamp(2.4rem, 6vw, 3.4rem);
+    font-weight: 800;
+    line-height: 0.95;
+    color: var(--paper);
+  }
+
+  .featured-title .hit { color: var(--oxide); }
+
+  .featured-asks {
+    margin: 1rem 0 0 1.1rem;
+    font-size: 0.85rem;
+    color: var(--paper-dim);
+  }
+
+  .featured-asks li { margin-bottom: 0.3rem; }
+
+  .featured-actions { display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: center; margin-top: 1.25rem; }
+
+  .featured-actions .file-link { margin-top: 0; }
+
+  .featured-actions .ghost-link {
+    font-size: 0.8rem;
+    letter-spacing: 0.06em;
+    color: var(--paper);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  .featured-shot {
+    display: block;
+    background: #E8EBEE;
+    overflow: hidden;
+    border-left: 2px solid var(--yellow);
+  }
+
+  .featured-shot img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: 64% 30%;
+  }
+
+  @media (max-width: 720px) {
+    .featured-card { grid-template-columns: 1fr; }
+    .featured-shot { border-left: 0; border-top: 2px solid var(--yellow); aspect-ratio: 16 / 10; }
+  }
+
   @media (max-width: 480px) {
     .file-card-top {
       flex-direction: column;
@@ -396,6 +462,38 @@
         a bureaucracy, a hierarchy, a feedback loop — and ask you to understand
         it, not just beat it.
       </p>
+    </section>
+
+    <section id="featured">
+      <span class="section-label mono">Featured Playtest</span>
+
+      <div class="featured-card">
+        <div class="featured-body">
+          <div class="file-card-top">
+            <span class="file-id mono">FILE NO. 005 / PLANT SYSTEMS DIV.</span>
+            <span class="status mono">STATUS: PLAYTESTERS WANTED</span>
+          </div>
+          <div class="featured-title">Hedy <span class="hit">Plant</span></div>
+          <p class="file-desc mono">
+            An idle factory game. You run an electric car plant that sells
+            every car to its parent company, and every time the plant gets
+            better, the company rewrites the deal. Build the line, meet the
+            other plants, and organize your way out.
+          </p>
+          <ul class="featured-asks mono">
+            <li>Free in your browser, no account needed.</li>
+            <li>Play a shift or two, then join the list below and reply to any build email with what dragged or confused you.</li>
+            <li>Every playtest build changes the numbers.</li>
+          </ul>
+          <div class="featured-actions">
+            <a class="file-link mono" href="/hedy-plant/?ref=home-featured">Playtest Hedy Plant</a>
+            <a class="ghost-link mono" href="#dispatches">Get the next build first</a>
+          </div>
+        </div>
+        <a class="featured-shot" href="/hedy-plant/?ref=home-featured" tabindex="-1" aria-hidden="true">
+          <img src="/press/hedy-plant/01-hedy-letter.png" alt="" loading="lazy" width="2560" height="1600">
+        </a>
+      </div>
     </section>
 
     <section id="dispatches">
@@ -481,21 +579,6 @@
           Solo or pass-and-play, in the browser.
         </p>
         <a class="file-link mono" href="/card-check/">Playtest Card Check</a>
-      </div>
-
-      <div class="file-card">
-        <div class="file-card-top">
-          <span class="file-id mono">FILE NO. 005 / PLANT SYSTEMS DIV.</span>
-          <span class="status mono">STATUS: PLAYTEST</span>
-        </div>
-        <div class="file-title">Hedy Plant</div>
-        <p class="file-desc mono">
-          An idle factory game. You run an electric car plant that sells
-          every car to its parent company, and every time the plant gets
-          better, the company rewrites the deal. Build the line, meet the
-          other plants, and organize your way out.
-        </p>
-        <a class="file-link mono" href="/hedy-plant/">Playtest Hedy Plant</a>
       </div>
     </section>
 
