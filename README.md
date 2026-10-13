@@ -9,6 +9,7 @@ Official website for Permadeath Media, served at https://permadeathmedia.com.
 | `/hexagons/` | `hexagons/` in this repo |
 | `/card-check/` | `card-check/` in this repo |
 | `/hedy-plant/` | `hedy-plant/` in this repo, a single-file build copied from the Hedy Plant source (`npm run build` there writes `dist/index.html`) |
+| `/homies/` | `homies/` in this repo: the crew's private game-picking quiz, meetings and tasks (Google sign-in) |
 | `/guild-rising/` | the `swyphd/guild-rising` repo, deployed on its own Vercel project |
 | `/union-up/` | the `swyphd/union-up` repo, deployed on its own Vercel project |
 
@@ -43,6 +44,16 @@ or Global Privacy Control send nothing. A game must be listed in `GAMES` in
 - **Supabase**: run `game-events.sql` once in the SQL Editor. The bottom of that
   file has the read-outs: how runs end, where people quit, which choices people
   make, and win rate by choice.
+
+## Homies
+
+`/homies/` is the private page for the people building the next game: a
+this-or-that quiz of real games that picks the genre, setting and reference
+games; a launch meeting and check-ins with fixed agendas that can't close until
+everyone leaves with a task; and the task board in between. Google sign-in,
+crew-only (`homies.sql` has the row-level security; the first person to sign in
+claims the crew and adds the rest). Setup, including the Google OAuth client and
+the Supabase provider, is in [`homies/README.md`](homies/README.md).
 
 ## Press kit
 

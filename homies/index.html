@@ -1,0 +1,951 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Homies — Permadeath Media</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Stencil:wght@600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --soot: #1A1A18; --soot-2: #232320; --soot-3: #2C2C28;
+    --oxide: #C0392B; --yellow: #F1C40F; --teal: #1A7A6E; --teal-bright: #2BB3A1;
+    --paper: #E9E4D8; --paper-dim: #B8B2A2; --line: rgba(233, 228, 216, 0.18);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { background: var(--soot); color: var(--paper); font-family: "IBM Plex Sans", sans-serif; line-height: 1.5; min-height: 100vh; }
+  button, input, select, textarea { font: inherit; color: inherit; }
+  a { color: var(--yellow); }
+  .stencil { font-family: "Big Shoulders Stencil", sans-serif; text-transform: uppercase; letter-spacing: 0.01em; }
+  .mono { font-family: "IBM Plex Mono", monospace; }
+  .hazard-rule { height: 6px; background: repeating-linear-gradient(135deg, var(--yellow) 0 14px, var(--soot) 14px 28px); }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 0 1rem 4rem; }
+
+  /* Top bar */
+  .top { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1rem 0 0.75rem; border-bottom: 1px solid var(--line); }
+  .brand { font-size: 2rem; font-weight: 800; color: var(--paper); text-decoration: none; line-height: 1; }
+  .brand .hit { color: var(--oxide); }
+  .brand small { display: block; font-family: "IBM Plex Mono", monospace; text-transform: none; letter-spacing: 0.1em; font-size: 0.6rem; color: var(--paper-dim); margin-top: 0.3rem; font-weight: 400; }
+  .who { font-size: 0.75rem; color: var(--paper-dim); text-align: right; }
+  .who button { background: none; border: 0; color: var(--yellow); cursor: pointer; font-size: 0.75rem; padding: 0; text-decoration: underline; }
+  nav.tabs { display: flex; gap: 0.25rem; overflow-x: auto; padding: 0.6rem 0; margin-bottom: 1rem; border-bottom: 1px solid var(--line); scrollbar-width: none; }
+  nav.tabs::-webkit-scrollbar { display: none; }
+  nav.tabs a { flex: 0 0 auto; font-family: "IBM Plex Mono", monospace; font-size: 0.78rem; letter-spacing: 0.08em; text-decoration: none; color: var(--paper-dim); padding: 0.4rem 0.7rem; border: 1px solid transparent; }
+  nav.tabs a.on { color: var(--soot); background: var(--yellow); }
+  nav.tabs a .n { color: var(--oxide); font-weight: 600; }
+  nav.tabs a.on .n { color: var(--soot); }
+
+  h1 { font-size: clamp(1.9rem, 6vw, 2.6rem); font-weight: 700; line-height: 1; margin-bottom: 0.5rem; }
+  h2 { font-size: 1.4rem; font-weight: 700; line-height: 1.1; }
+  h3 { font-size: 0.78rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--paper-dim); font-weight: 500; font-family: "IBM Plex Mono", monospace; }
+  p.dim, .dim { color: var(--paper-dim); }
+  .small { font-size: 0.82rem; }
+  .tiny { font-size: 0.72rem; }
+
+  .card { background: var(--soot-2); border: 1px solid var(--line); border-left: 4px solid var(--teal); padding: 1rem 1.1rem; margin-bottom: 1rem; }
+  .card.hot { border-left-color: var(--oxide); }
+  .card.gold { border-left-color: var(--yellow); }
+  .card.quiet { border-left-color: var(--line); }
+  .card.done { border-left-color: var(--teal-bright); }
+  .card-top { display: flex; justify-content: space-between; align-items: baseline; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 0.5rem; }
+  .card-top h2 { font-size: 1.25rem; }
+  .row { display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap; }
+  .row.between { justify-content: space-between; }
+  .stack > * + * { margin-top: 0.6rem; }
+
+  .btn { font-family: "IBM Plex Mono", monospace; font-size: 0.82rem; letter-spacing: 0.06em; font-weight: 500; color: var(--soot); background: var(--yellow); border: 0; padding: 0.65rem 1rem; cursor: pointer; text-decoration: none; display: inline-block; }
+  .btn:hover, .btn:focus-visible { background: var(--paper); }
+  .btn:disabled { opacity: 0.45; cursor: not-allowed; background: var(--paper-dim); }
+  .btn.ghost { background: transparent; color: var(--paper); border: 1px solid var(--line); }
+  .btn.ghost:hover { border-color: var(--paper); background: transparent; }
+  .btn.red { background: var(--oxide); color: var(--paper); }
+  .btn.sm { padding: 0.35rem 0.6rem; font-size: 0.72rem; }
+  .btn.wide { width: 100%; text-align: center; }
+  .link { background: none; border: 0; color: var(--yellow); cursor: pointer; text-decoration: underline; padding: 0; font-size: inherit; }
+
+  input[type=text], input[type=email], input[type=date], input[type=datetime-local], select, textarea {
+    width: 100%; background: var(--soot); border: 1px solid rgba(233,228,216,0.3); color: var(--paper); padding: 0.6rem 0.7rem; border-radius: 0; font-family: "IBM Plex Mono", monospace; font-size: 0.9rem; min-width: 0;
+  }
+  input:focus, select:focus, textarea:focus { outline: 2px solid var(--yellow); outline-offset: 1px; border-color: var(--yellow); }
+  input::placeholder { color: var(--paper-dim); opacity: 0.6; }
+  label.field { display: block; font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--paper-dim); font-family: "IBM Plex Mono", monospace; margin-bottom: 0.3rem; }
+  form.inline { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+  form.inline > * { flex: 1 1 140px; }
+  form.inline > .btn { flex: 0 0 auto; }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+  .chip { font-family: "IBM Plex Mono", monospace; font-size: 0.75rem; letter-spacing: 0.04em; border: 1px solid var(--line); color: var(--paper-dim); background: transparent; padding: 0.35rem 0.6rem; cursor: pointer; }
+  .chip.on { background: var(--teal); border-color: var(--teal); color: var(--paper); }
+  .chip.gold.on { background: var(--yellow); border-color: var(--yellow); color: var(--soot); }
+  .chip.static { cursor: default; }
+  .chip .ct { color: var(--yellow); margin-left: 0.3rem; }
+  .chip.on .ct { color: inherit; }
+  .seg { display: inline-flex; border: 1px solid var(--line); }
+  .seg button { background: transparent; border: 0; color: var(--paper-dim); padding: 0.4rem 0.6rem; font-family: "IBM Plex Mono", monospace; font-size: 0.72rem; cursor: pointer; border-right: 1px solid var(--line); }
+  .seg button:last-child { border-right: 0; }
+  .seg button.on { background: var(--yellow); color: var(--soot); }
+  .seg button.on.b { background: var(--teal); color: var(--paper); }
+
+  .badge { font-family: "IBM Plex Mono", monospace; font-size: 0.66rem; letter-spacing: 0.1em; text-transform: uppercase; padding: 0.15rem 0.5rem; border: 1px solid var(--line); color: var(--paper-dim); white-space: nowrap; }
+  .badge.ok { color: var(--teal-bright); border-color: var(--teal-bright); }
+  .badge.warn { color: var(--yellow); border-color: var(--yellow); }
+  .badge.bad { color: var(--oxide); border-color: var(--oxide); }
+  .badge.fill { background: var(--yellow); color: var(--soot); border-color: var(--yellow); }
+
+  .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.4rem; margin: 1rem 0 1.25rem; }
+  .step { padding: 0.55rem 0.6rem; border: 1px solid var(--line); font-family: "IBM Plex Mono", monospace; font-size: 0.7rem; letter-spacing: 0.06em; color: var(--paper-dim); }
+  .step b { display: block; font-family: "Big Shoulders Stencil", sans-serif; text-transform: uppercase; font-size: 1.1rem; color: var(--paper); font-weight: 700; letter-spacing: 0.02em; }
+  .step.now { border-color: var(--yellow); background: rgba(241,196,15,0.08); }
+  .step.past { opacity: 0.55; }
+  .step.now b { color: var(--yellow); }
+
+  /* Quiz */
+  .progress { height: 6px; background: var(--soot-3); margin: 0.75rem 0 1.5rem; }
+  .progress i { display: block; height: 100%; background: var(--yellow); transition: width 0.2s ease; }
+  .ask { font-size: 1.05rem; color: var(--paper-dim); margin-bottom: 1rem; }
+  .choices { display: grid; grid-template-columns: 1fr; gap: 0.75rem; }
+  @media (min-width: 560px) { .choices { grid-template-columns: 1fr 1fr; } }
+  .choice { text-align: left; background: var(--soot-2); border: 1px solid var(--line); border-top: 4px solid var(--teal); padding: 1.1rem 1.1rem 1.2rem; cursor: pointer; min-height: 130px; transition: transform 0.08s ease, border-color 0.1s ease; }
+  .choice:nth-child(2) { border-top-color: var(--oxide); }
+  .choice:hover { border-color: var(--paper); }
+  .choice:active { transform: scale(0.98); }
+  .choice.picked { outline: 2px solid var(--yellow); }
+  .choice .game { font-family: "Big Shoulders Stencil", sans-serif; text-transform: uppercase; font-size: 1.6rem; font-weight: 700; line-height: 1; color: var(--paper); }
+  .choice .note { margin-top: 0.5rem; color: var(--paper-dim); font-size: 0.9rem; }
+  .choice .k { font-family: "IBM Plex Mono", monospace; font-size: 0.66rem; letter-spacing: 0.12em; color: var(--paper-dim); display: block; margin-bottom: 0.4rem; }
+  .or { text-align: center; color: var(--paper-dim); font-family: "IBM Plex Mono", monospace; font-size: 0.7rem; letter-spacing: 0.2em; margin: -0.2rem 0; }
+  .quiz-nav { display: flex; justify-content: space-between; align-items: center; margin-top: 1.25rem; }
+  .review { list-style: none; }
+  .review li { display: grid; grid-template-columns: 1fr auto 1fr; gap: 0.5rem; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid var(--line); font-size: 0.85rem; }
+  .review li button { background: transparent; border: 1px solid var(--line); color: var(--paper-dim); padding: 0.35rem 0.5rem; cursor: pointer; font-size: 0.8rem; text-align: center; }
+  .review li button.on { background: var(--teal); border-color: var(--teal); color: var(--paper); }
+  .review li .vs { font-family: "IBM Plex Mono", monospace; font-size: 0.65rem; color: var(--paper-dim); }
+
+  /* Results */
+  .axis { padding: 0.75rem 0; border-bottom: 1px solid var(--line); }
+  .axis .lbls { display: flex; justify-content: space-between; font-family: "IBM Plex Mono", monospace; font-size: 0.72rem; color: var(--paper-dim); margin-bottom: 0.3rem; gap: 0.5rem; }
+  .axis .lbls .win { color: var(--paper); font-weight: 600; }
+  .axis .lbls .mid { color: var(--paper-dim); letter-spacing: 0.1em; text-transform: uppercase; font-size: 0.62rem; }
+  .bar { position: relative; height: 26px; background: var(--soot-3); border: 1px solid var(--line); }
+  .bar::before { content: ""; position: absolute; left: 50%; top: 0; bottom: 0; width: 1px; background: var(--line); }
+  .dot { position: absolute; top: 50%; transform: translate(-50%, -50%); width: 22px; height: 22px; border-radius: 50%; background: var(--yellow); color: var(--soot); font-family: "IBM Plex Mono", monospace; font-size: 0.65rem; font-weight: 600; display: flex; align-items: center; justify-content: center; border: 2px solid var(--soot-2); }
+  .dot.c1 { background: var(--yellow); } .dot.c2 { background: var(--teal-bright); } .dot.c3 { background: var(--oxide); color: var(--paper); } .dot.c4 { background: var(--paper); }
+  .dot.c5 { background: #8E6BBF; color: var(--paper); } .dot.c6 { background: #E67E22; }
+  .legend { display: flex; gap: 0.75rem; flex-wrap: wrap; font-size: 0.75rem; color: var(--paper-dim); margin: 0.5rem 0 0; }
+  .legend .dot { position: static; transform: none; display: inline-flex; width: 16px; height: 16px; font-size: 0.55rem; margin-right: 0.3rem; vertical-align: middle; border: 0; }
+  .verdicts { list-style: none; }
+  .verdicts li { padding: 0.55rem 0; border-bottom: 1px solid var(--line); font-size: 0.9rem; }
+  .verdicts li .over { color: var(--paper-dim); }
+  .verdicts li .names { font-family: "IBM Plex Mono", monospace; font-size: 0.7rem; color: var(--paper-dim); }
+  .vs-split { display: grid; grid-template-columns: 1fr auto 1fr; gap: 0.5rem; align-items: start; }
+  .vs-split b { display: block; }
+
+  /* Agenda */
+  .agenda-item { border: 1px solid var(--line); border-left: 4px solid var(--line); background: var(--soot-2); padding: 0.9rem 1rem; margin-bottom: 0.75rem; }
+  .agenda-item.ok { border-left-color: var(--teal-bright); }
+  .agenda-item .ai-top { display: flex; justify-content: space-between; gap: 0.75rem; align-items: baseline; margin-bottom: 0.5rem; }
+  .agenda-item .ai-top h2 { font-size: 1.15rem; }
+  .agenda-item .num { font-family: "IBM Plex Mono", monospace; font-size: 0.7rem; color: var(--oxide); letter-spacing: 0.1em; margin-right: 0.4rem; }
+  .pillar { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; padding: 0.45rem 0; border-bottom: 1px dashed var(--line); flex-wrap: wrap; }
+  .pillar .pl { font-size: 0.85rem; }
+  .pillar .pl small { display: block; color: var(--paper-dim); font-size: 0.7rem; font-family: "IBM Plex Mono", monospace; }
+  .person { padding: 0.5rem 0; border-bottom: 1px dashed var(--line); }
+  .person .pn { font-weight: 600; margin-bottom: 0.3rem; font-size: 0.9rem; }
+
+  /* Tasks */
+  .task { display: grid; grid-template-columns: auto 1fr auto; gap: 0.6rem; align-items: start; padding: 0.6rem 0; border-bottom: 1px solid var(--line); }
+  .task .av { width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: "IBM Plex Mono", monospace; font-size: 0.7rem; font-weight: 600; color: var(--soot); background: var(--paper-dim); margin-top: 0.1rem; }
+  .task .tt { font-size: 0.92rem; }
+  .task.done .tt { text-decoration: line-through; color: var(--paper-dim); }
+  .task .meta { font-family: "IBM Plex Mono", monospace; font-size: 0.68rem; color: var(--paper-dim); margin-top: 0.15rem; }
+  .task .meta .late { color: var(--oxide); font-weight: 600; }
+  .task .meta .blk { color: var(--yellow); }
+  .task .acts { display: flex; gap: 0.3rem; }
+  .task .acts button { background: transparent; border: 1px solid var(--line); color: var(--paper-dim); width: 30px; height: 30px; cursor: pointer; font-size: 0.85rem; line-height: 1; }
+  .task .acts button:hover { border-color: var(--paper); color: var(--paper); }
+  .task .acts button.ok { color: var(--teal-bright); }
+  .task .acts button.flag { color: var(--yellow); }
+  .task .acts button.x { color: var(--oxide); }
+
+  .toast { position: fixed; left: 50%; bottom: 1rem; transform: translateX(-50%); background: var(--oxide); color: var(--paper); padding: 0.6rem 1rem; font-size: 0.85rem; max-width: 90vw; z-index: 10; box-shadow: 0 4px 20px rgba(0,0,0,0.4); }
+  .toast.ok { background: var(--teal); }
+  .empty { color: var(--paper-dim); font-size: 0.88rem; padding: 0.5rem 0; }
+  .center { text-align: center; }
+  .gate { max-width: 420px; margin: 12vh auto 0; text-align: center; }
+  .gate .brand { font-size: 3.6rem; }
+  .gate p { margin: 1rem 0 1.5rem; color: var(--paper-dim); }
+  .gbtn { display: inline-flex; align-items: center; gap: 0.6rem; background: var(--paper); color: var(--soot); border: 0; padding: 0.8rem 1.2rem; font-weight: 600; cursor: pointer; font-size: 0.95rem; }
+  .gbtn:hover { background: #fff; }
+  .gbtn svg { width: 18px; height: 18px; }
+  footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--line); color: var(--paper-dim); font-size: 0.72rem; font-family: "IBM Plex Mono", monospace; letter-spacing: 0.06em; }
+  footer a { color: var(--paper-dim); }
+  ul.plain { list-style: none; }
+  .kv { display: grid; grid-template-columns: auto 1fr; gap: 0.3rem 1rem; font-size: 0.88rem; }
+  .kv dt { color: var(--paper-dim); font-family: "IBM Plex Mono", monospace; font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; padding-top: 0.15rem; }
+  .hr { border: 0; border-top: 1px solid var(--line); margin: 0.9rem 0; }
+</style>
+</head>
+<body>
+<div class="hazard-rule"></div>
+<div id="app" class="wrap"><div class="gate"><p>Loading…</p></div></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script type="module">
+import { SUPABASE_URL, SUPABASE_KEY } from '/kit/config.js';
+import { AXES, QUESTIONS, byId, complete, nextUnanswered, profile, crewResults, summary } from '/homies/quiz.js';
+
+// ---------------------------------------------------------------- setup
+const ROLES = ['Code', 'Art', 'Design', 'Audio', 'Writing', 'Production', 'Marketing'];
+const CADENCE = [{ id: 'weekly', label: 'Every week', days: 7 }, { id: 'biweekly', label: 'Every two weeks', days: 14 }, { id: 'monthly', label: 'Monthly', days: 30 }];
+const POLL_MS = 20000;
+const HOME = location.origin + '/homies/';
+
+const app = document.getElementById('app');
+const sb = window.supabase?.createClient ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
+
+const S = {
+  session: undefined,  // undefined: not checked yet; null: signed out
+  me: null,            // homies_members row, or null when not on the crew
+  claimable: false,    // signed in, not a member, and the crew table is empty
+  members: [], answers: {}, meetings: [], tasks: [], state: {},
+  loaded: false, busy: false,
+  quizAt: null,        // which question is on screen
+  toast: null,
+};
+
+// ---------------------------------------------------------------- helpers
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const attr = esc;
+const initial = (name) => esc((name || '?').trim().slice(0, 1).toUpperCase());
+const nameOf = (email) => S.members.find((m) => m.email === email)?.name || email || '?';
+const colorOf = (email) => `c${(S.members.findIndex((m) => m.email === email) % 6) + 1}`;
+const byDate = (k) => (a, b) => String(a[k] || '').localeCompare(String(b[k] || ''));
+const todayStr = () => localDate(new Date());
+function localDate(d) { const z = new Date(d.getTime() - d.getTimezoneOffset() * 60000); return z.toISOString().slice(0, 10); }
+function toLocalInput(iso) { if (!iso) return ''; const d = new Date(iso); const z = new Date(d.getTime() - d.getTimezoneOffset() * 60000); return z.toISOString().slice(0, 16); }
+function fromLocalInput(v) { return v ? new Date(v).toISOString() : null; }
+function fmtWhen(iso) {
+  if (!iso) return 'no date yet';
+  return new Date(iso).toLocaleString(undefined, { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+}
+function fmtDay(ymd) {
+  if (!ymd) return 'no date';
+  const [y, m, d] = ymd.split('-').map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+}
+function addDays(ymdOrIso, n) { const d = new Date(ymdOrIso); d.setDate(d.getDate() + n); return d; }
+const isLate = (t) => t.status !== 'done' && t.due_on && t.due_on < todayStr();
+const list = (xs) => xs.length <= 1 ? xs.join('') : xs.length === 2 ? `${xs[0]} and ${xs[1]}` : `${xs.slice(0, -1).join(', ')}, and ${xs[xs.length - 1]}`;
+
+function toast(msg, ok = false) {
+  S.toast = { msg, ok };
+  render();
+  clearTimeout(toast.t);
+  toast.t = setTimeout(() => { S.toast = null; render(); }, ok ? 2500 : 5000);
+}
+function fail(err, what) {
+  console.error(what, err);
+  toast(`${what}: ${err?.message || err}`);
+}
+
+// ---------------------------------------------------------------- data
+async function loadAll() {
+  if (!S.me) return;
+  const [m, a, g, t, st] = await Promise.all([
+    sb.from('homies_members').select('*').order('created_at'),
+    sb.from('homies_answers').select('email, question, pick'),
+    sb.from('homies_meetings').select('*').order('scheduled_at', { nullsFirst: false }),
+    sb.from('homies_tasks').select('*').order('due_on', { nullsFirst: false }).order('created_at'),
+    sb.from('homies_state').select('key, value'),
+  ]);
+  for (const r of [m, a, g, t, st]) if (r.error) throw r.error;
+  S.members = m.data;
+  S.answers = {};
+  for (const row of a.data) (S.answers[row.email] ||= {})[row.question] = row.pick;
+  S.meetings = g.data;
+  S.tasks = t.data;
+  S.state = Object.fromEntries(st.data.map((r) => [r.key, r.value]));
+  S.loaded = true;
+}
+
+async function refresh(quiet = true) {
+  try { await loadAll(); render(); } catch (e) { if (!quiet) fail(e, 'Could not load'); }
+}
+
+async function whoAmI() {
+  const { data, error } = await sb.rpc('homies_me');
+  if (error) throw error;
+  // The function returns a row (or a null row with every column null).
+  S.me = data && data.email ? data : null;
+  S.claimable = false;
+}
+
+async function onSession(session) {
+  S.session = session;
+  S.me = null; S.loaded = false;
+  if (!session) { render(); return; }
+  try {
+    await whoAmI();
+    if (S.me) await loadAll();
+  } catch (e) { fail(e, 'Sign-in check failed'); }
+  render();
+}
+
+// ---------------------------------------------------------------- writes
+async function write(p, what, after = refresh) {
+  S.busy = true;
+  try {
+    const { error } = await p;
+    if (error) throw error;
+    if (after) await after();
+  } catch (e) { fail(e, what); }
+  finally { S.busy = false; render(); }
+}
+
+const answer = (question, pick) => write(
+  sb.from('homies_answers').upsert({ email: S.me.email, question, pick, answered_at: new Date().toISOString() }, { onConflict: 'email,question' }),
+  'Could not save your pick',
+  async () => { (S.answers[S.me.email] ||= {})[question] = pick; },
+);
+
+const setNote = (meetingId, path, value) => {
+  // Optimistic local update, then the atomic server-side set.
+  const m = S.meetings.find((x) => x.id === meetingId);
+  if (m) {
+    m.notes = m.notes || {};
+    if (path.length === 1) m.notes[path[0]] = value;
+    else { m.notes[path[0]] = { ...(m.notes[path[0]] || {}), [path[1]]: value }; }
+  }
+  return write(sb.rpc('homies_note', { meeting: meetingId, path, value }), 'Could not save that', null);
+};
+
+async function createMeeting(kind, scheduledAt, extra = {}) {
+  const row = { kind, scheduled_at: scheduledAt, created_by: S.me.email, notes: extra };
+  const { data, error } = await sb.from('homies_meetings').insert(row).select().single();
+  if (error) throw error;
+  return data;
+}
+
+// ---------------------------------------------------------------- derived
+function results() { return crewResults(S.members, S.answers); }
+function revealed(r) { return S.members.length > 0 && (r.waiting.length === 0 || !!S.state.reveal?.on); }
+function launch() { return S.meetings.find((m) => m.kind === 'launch'); }
+function planned() { return S.meetings.filter((m) => m.status === 'planned').sort(byDate('scheduled_at')); }
+function lastClosed() { return S.meetings.filter((m) => m.status === 'done').sort(byDate('closed_at')).pop(); }
+function phase() {
+  const l = launch();
+  if (l?.status === 'done') return 'build';
+  const r = results();
+  return revealed(r) ? 'launch' : 'quiz';
+}
+function myProgress(email) { return Object.keys(S.answers[email] || {}).filter((q) => byId[q]).length; }
+function cadenceDays() { return CADENCE.find((c) => c.id === (S.state.cadence?.id || launch()?.notes?.cadence))?.days || 14; }
+
+// ---------------------------------------------------------------- views
+function route() {
+  const h = location.hash || '#/';
+  if (!h.startsWith('#/')) return { view: 'home' };
+  const [, view = 'home', id] = h.slice(1).split('/');
+  return { view: view || 'home', id };
+}
+
+function render() {
+  const { view, id } = route();
+  let body;
+  if (!sb) body = gate('<p>The sign-in library did not load. Check your connection and reload.</p>');
+  else if (S.session === undefined) body = gate('<p>Checking who you are…</p>');
+  else if (!S.session) body = gateSignedOut();
+  else if (!S.me) body = gateNotOnCrew();
+  else if (!S.loaded) body = gate('<p>Loading the crew…</p>');
+  else {
+    const views = { home, quiz, results: resultsView, meetings, meeting, tasks, crew };
+    body = topbar(view) + (views[view] ? views[view](id) : home()) + footer();
+  }
+  app.innerHTML = body + (S.toast ? `<div class="toast ${S.toast.ok ? 'ok' : ''}">${esc(S.toast.msg)}</div>` : '');
+  const focus = app.querySelector('[data-autofocus]');
+  if (focus) focus.focus();
+}
+
+function gate(inner) {
+  return `<div class="gate"><a class="brand stencil" href="/homies/">HOM<span class="hit">IES</span><small>permadeath media</small></a>${inner}</div>`;
+}
+function gateSignedOut() {
+  return gate(`<p>Four people, one game. This is where we pick it, meet about it, and keep each other honest between meetings.</p>
+    <button class="gbtn" data-act="signin">${googleMark()} Sign in with Google</button>
+    <p class="tiny" style="margin-top:2rem">Crew only. Nothing here is public.</p>`);
+}
+function gateNotOnCrew() {
+  return gate(`<p>You're signed in as <b class="mono">${esc(S.session.user.email)}</b>, but that address isn't on the crew list yet. Ask whoever set this up to add it, then reload.</p>
+    <div class="row" style="justify-content:center"><button class="btn ghost" data-act="reload">Reload</button><button class="btn ghost" data-act="signout">Sign out</button></div>`);
+}
+function googleMark() {
+  return `<svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.5 30.3 0 24 0 14.6 0 6.5 5.4 2.6 13.2l7.9 6.1C12.4 13.6 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-2.8-.4-4H24v8.1h12.9c-.3 2.2-1.7 5.4-4.8 7.6l7.4 5.7c4.4-4.1 7-10.1 7-17.4z"/><path fill="#FBBC05" d="M10.5 28.7A14.5 14.5 0 0 1 9.7 24c0-1.6.3-3.2.8-4.7l-7.9-6.1A24 24 0 0 0 0 24c0 3.9.9 7.5 2.6 10.8l7.9-6.1z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.4-5.7c-2 1.4-4.8 2.4-8.5 2.4-6.3 0-11.6-4.1-13.5-9.9l-7.9 6.1C6.5 42.6 14.6 48 24 48z"/></svg>`;
+}
+
+function topbar(view) {
+  const r = results();
+  const mine = S.tasks.filter((t) => t.owner === S.me.email && t.status !== 'done');
+  const late = mine.filter(isLate).length;
+  const tabs = [
+    ['home', 'Home'], ['quiz', 'Quiz', myProgress(S.me.email) < QUESTIONS.length ? `${QUESTIONS.length - myProgress(S.me.email)}` : ''],
+    ['results', 'Results'], ['meetings', 'Meetings', planned().length ? `${planned().length}` : ''],
+    ['tasks', 'Tasks', late ? `${late} late` : mine.length ? `${mine.length}` : ''], ['crew', 'Crew'],
+  ];
+  const on = view === 'meeting' ? 'meetings' : view;
+  return `<div class="top">
+      <a class="brand stencil" href="#/">HOM<span class="hit">IES</span><small>permadeath media</small></a>
+      <div class="who">${esc(S.me.name)}<br><button data-act="signout">sign out</button></div>
+    </div>
+    <nav class="tabs">${tabs.map(([v, l, n]) => `<a href="#/${v}" class="${on === v ? 'on' : ''}">${l}${n ? ` <span class="n">${esc(n)}</span>` : ''}</a>`).join('')}</nav>`;
+}
+function footer() {
+  return `<footer>${S.members.length} on the crew · <a href="/">permadeathmedia.com</a> · data refreshes every ${POLL_MS / 1000}s</footer>`;
+}
+
+// ---------- home
+function home() {
+  const ph = phase();
+  const r = results();
+  const l = launch();
+  const next = planned()[0];
+  const steps = `<div class="steps">
+    <div class="step ${ph === 'quiz' ? 'now' : 'past'}">1 <b>Pick</b>the quiz</div>
+    <div class="step ${ph === 'launch' ? 'now' : ph === 'build' ? 'past' : ''}">2 <b>Launch</b>first meeting</div>
+    <div class="step ${ph === 'build' ? 'now' : ''}">3 <b>Build</b>check-ins</div>
+  </div>`;
+
+  let lead = '';
+  if (ph === 'quiz') {
+    const mineDone = myProgress(S.me.email) >= QUESTIONS.length;
+    lead = `<div class="card gold"><div class="card-top"><h2 class="stencil">Pick the game</h2><span class="badge warn">step 1</span></div>
+      <p class="small dim">Thirty quick this-or-that picks each. Nobody sees anyone's answers until everyone's done. Then the results are the agenda for the launch meeting.</p>
+      <div class="hr"></div>
+      ${crewProgress(r)}
+      <div class="row" style="margin-top:0.9rem">
+        ${mineDone ? '<span class="badge ok">you’re done</span>' : `<a class="btn" href="#/quiz">${myProgress(S.me.email) ? 'Keep going' : 'Start the quiz'} →</a>`}
+        ${r.waiting.length && r.done.length ? `<button class="btn ghost sm" data-act="reveal">Reveal without ${esc(list(r.waiting))}</button>` : ''}
+      </div></div>`;
+  } else if (ph === 'launch') {
+    lead = `<div class="card gold"><div class="card-top"><h2 class="stencil">Launch meeting</h2><span class="badge warn">step 2</span></div>
+      <p class="small">${esc(summary(r)) || 'The results are in.'}</p>
+      <div class="row" style="margin-top:0.75rem"><a class="btn ghost sm" href="#/results">Read the results</a></div>
+      <div class="hr"></div>
+      ${l ? `<div class="row between"><div><b>${esc(fmtWhen(l.scheduled_at))}</b><div class="tiny dim">the agenda is built from the quiz</div></div><a class="btn" href="#/meeting/${l.id}">Open the agenda →</a></div>`
+          : `<form class="inline" data-form="schedule" data-kind="launch"><div><label class="field">When are we meeting?</label><input type="datetime-local" name="when" required></div><button class="btn" type="submit">Schedule it</button></form>`}
+    </div>`;
+  } else {
+    const pitch = l.notes?.pitch;
+    lead = `<div class="card gold"><div class="card-top"><h2 class="stencil">${esc(pitch ? 'The game' : 'Building')}</h2><span class="badge warn">step 3</span></div>
+      ${pitch ? `<p>${esc(pitch)}</p>` : ''}
+      ${l.notes?.refs?.length ? `<p class="small dim" style="margin-top:0.4rem">Like ${esc(list(l.notes.refs))}.</p>` : ''}
+      <div class="hr"></div>
+      ${next ? `<div class="row between"><div><h3>Next check-in</h3><b>${esc(fmtWhen(next.scheduled_at))}</b></div><a class="btn" href="#/meeting/${next.id}">Open the agenda →</a></div>`
+             : `<form class="inline" data-form="schedule" data-kind="checkin"><div><label class="field">Next check-in</label><input type="datetime-local" name="when" required value="${attr(toLocalInput(addDays(new Date(), cadenceDays())))}"></div><button class="btn" type="submit">Schedule it</button></form>`}
+    </div>`;
+  }
+
+  const mine = S.tasks.filter((t) => t.owner === S.me.email && t.status !== 'done').sort(byDate('due_on'));
+  const myCard = `<div class="card ${mine.some(isLate) ? 'hot' : ''}"><div class="card-top"><h2 class="stencil">Your tasks</h2><a class="small" href="#/tasks">all tasks →</a></div>
+    ${mine.length ? mine.map(taskRow).join('') : '<div class="empty">Nothing on your plate. Add something, or wait for the next meeting.</div>'}
+    <form class="inline" data-form="task" style="margin-top:0.75rem"><input type="text" name="title" placeholder="Add a task" maxlength="200" required><input type="date" name="due" value="${attr(defaultDue())}"><input type="hidden" name="owner" value="${attr(S.me.email)}"><button class="btn sm" type="submit">Add</button></form>
+  </div>`;
+
+  return `<h1 class="stencil">Hey ${esc(S.me.name)}</h1>${steps}${lead}${myCard}${ph === 'build' ? board() : ''}`;
+}
+
+function crewProgress(r) {
+  return `<ul class="plain stack">${S.members.map((m) => {
+    const n = myProgress(m.email);
+    const done = n >= QUESTIONS.length;
+    return `<li class="row between"><span><span class="dot ${colorOf(m.email)}" style="position:static;transform:none;display:inline-flex;width:18px;height:18px;font-size:0.6rem;margin-right:0.4rem;border:0;vertical-align:middle">${initial(m.name)}</span>${esc(m.name)}</span><span class="badge ${done ? 'ok' : n ? 'warn' : ''}">${done ? 'done' : `${n} / ${QUESTIONS.length}`}</span></li>`;
+  }).join('')}</ul>`;
+}
+
+function defaultDue() {
+  const next = planned()[0];
+  if (next?.scheduled_at) return localDate(new Date(next.scheduled_at));
+  return localDate(addDays(new Date(), 7));
+}
+
+// Who's carrying what, since the last meeting.
+function board() {
+  const since = lastClosed()?.closed_at || '1970-01-01';
+  const checkins = S.meetings.filter((m) => m.kind === 'checkin' && m.status === 'done').sort(byDate('closed_at')).slice(-4);
+  return `<div class="card quiet"><div class="card-top"><h2 class="stencil">The board</h2><span class="tiny dim">since the last meeting</span></div>
+    <ul class="plain">${S.members.map((m) => {
+      const mine = S.tasks.filter((t) => t.owner === m.email);
+      const open = mine.filter((t) => t.status === 'open').length;
+      const late = mine.filter(isLate).length;
+      const blocked = mine.filter((t) => t.status === 'blocked').length;
+      const done = mine.filter((t) => t.status === 'done' && t.done_at > since).length;
+      const showed = checkins.filter((c) => c.notes?.showed?.[m.email] === true).length;
+      return `<li class="row between" style="padding:0.4rem 0;border-bottom:1px dashed var(--line)"><b>${esc(m.name)}</b><span class="row" style="gap:0.35rem">
+        <span class="badge ok">${done} done</span><span class="badge">${open} open</span>
+        ${late ? `<span class="badge bad">${late} late</span>` : ''}${blocked ? `<span class="badge warn">${blocked} blocked</span>` : ''}
+        ${checkins.length ? `<span class="badge" title="showed something at the last check-ins">showed ${showed}/${checkins.length}</span>` : ''}</span></li>`;
+    }).join('')}</ul></div>`;
+}
+
+// ---------- quiz
+function quiz() {
+  const mine = S.answers[S.me.email] || {};
+  const n = myProgress(S.me.email);
+  const total = QUESTIONS.length;
+  if (S.quizAt === null) S.quizAt = nextUnanswered(mine);
+  if (S.quizAt === -1 || S.quizAt >= total) return quizDone(mine);
+  const x = QUESTIONS[S.quizAt];
+  const picked = mine[x.id];
+  return `<div class="row between"><h3>Question ${S.quizAt + 1} of ${total}</h3><button class="link small" data-act="quiz-review">review all</button></div>
+    <div class="progress"><i style="width:${(n / total) * 100}%"></i></div>
+    <p class="ask">${esc(x.ask)}</p>
+    <div class="choices">
+      <button class="choice ${picked === 'a' ? 'picked' : ''}" data-act="pick" data-q="${attr(x.id)}" data-pick="a"><span class="k">A</span><span class="game">${esc(x.a.game)}</span><div class="note">${esc(x.a.note)}</div></button>
+      <button class="choice ${picked === 'b' ? 'picked' : ''}" data-act="pick" data-q="${attr(x.id)}" data-pick="b"><span class="k">B</span><span class="game">${esc(x.b.game)}</span><div class="note">${esc(x.b.note)}</div></button>
+    </div>
+    <div class="quiz-nav">
+      <button class="btn ghost sm" data-act="quiz-go" data-to="${S.quizAt - 1}" ${S.quizAt === 0 ? 'disabled' : ''}>← Back</button>
+      <span class="tiny dim">Gut call. There's no wrong answer, only a split to argue about later.</span>
+      <button class="btn ghost sm" data-act="quiz-go" data-to="${S.quizAt + 1}" ${!picked ? 'disabled' : ''}>Next →</button>
+    </div>`;
+}
+
+function quizDone(mine) {
+  const r = results();
+  const done = complete(mine);
+  return `<h1 class="stencil">${done ? 'Done.' : 'Your picks'}</h1>
+    ${done ? `<div class="card done"><p>${r.waiting.length ? `Waiting on ${esc(list(r.waiting))}. The results open the moment everyone's in.` : 'Everyone has answered.'}</p>
+      <div class="row" style="margin-top:0.75rem">${revealed(r) ? '<a class="btn" href="#/results">See the results →</a>' : `<button class="btn ghost sm" data-act="reveal">Reveal without ${esc(list(r.waiting))}</button>`}</div></div>`
+          : `<div class="card hot"><p>You've skipped some. Tap a side on each to finish.</p></div>`}
+    <h3 style="margin:1rem 0 0.25rem">Change any answer</h3>
+    <ul class="review">${QUESTIONS.map((x) => `<li>
+      <button class="${mine[x.id] === 'a' ? 'on' : ''}" data-act="pick-stay" data-q="${attr(x.id)}" data-pick="a">${esc(x.a.game)}</button>
+      <span class="vs">VS</span>
+      <button class="${mine[x.id] === 'b' ? 'on' : ''}" data-act="pick-stay" data-q="${attr(x.id)}" data-pick="b">${esc(x.b.game)}</button></li>`).join('')}</ul>`;
+}
+
+// ---------- results
+function resultsView() {
+  const r = results();
+  if (!revealed(r)) {
+    return `<h1 class="stencil">Not yet</h1><div class="card"><p>Results stay hidden until everyone has answered, so nobody's picks sway anyone else's.</p><div class="hr"></div>${crewProgress(r)}
+      <div class="row" style="margin-top:0.9rem">${myProgress(S.me.email) < QUESTIONS.length ? '<a class="btn" href="#/quiz">Finish your quiz →</a>' : ''}
+      ${r.done.length ? `<button class="btn ghost sm" data-act="reveal">Reveal without ${esc(list(r.waiting))}</button>` : ''}</div></div>`;
+  }
+  const legend = `<div class="legend">${S.members.filter((m) => r.done.includes(m.email)).map((m) => `<span><span class="dot ${colorOf(m.email)}">${initial(m.name)}</span>${esc(m.name)}</span>`).join('')}</div>`;
+  const axes = r.axes.map((ax) => {
+    const dots = ax.leans.map((l) => `<span class="dot ${colorOf(l.email)}" style="left:${50 - l.lean * 46}%" title="${attr(l.name)}">${initial(l.name)}</span>`).join('');
+    const badge = { agreed: '<span class="badge ok">agreed</span>', lean: '<span class="badge">leaning</span>', split: '<span class="badge bad">split</span>', open: '<span class="badge">no votes</span>' }[ax.verdict];
+    return `<div class="axis"><div class="lbls"><span class="${ax.side === 'a' && ax.verdict !== 'split' ? 'win' : ''}">${esc(ax.a.label)}</span><span class="mid">${esc(ax.label)} ${badge}</span><span class="${ax.side === 'b' && ax.verdict !== 'split' ? 'win' : ''}">${esc(ax.b.label)}</span></div><div class="bar">${dots}</div></div>`;
+  }).join('');
+
+  const un = r.unanimous.map((x) => { const q = byId[x.id]; const w = x.a.length ? 'a' : 'b'; const l = w === 'a' ? 'b' : 'a';
+    return `<li><b>${esc(q[w].game)}</b> <span class="over">over ${esc(q[l].game)}</span></li>`; }).join('');
+  const sp = r.splits.map((x) => { const q = byId[x.id];
+    return `<li><div class="vs-split"><span><b>${esc(q.a.game)}</b><span class="names">${esc(x.a.join(', '))}</span></span><span class="vs dim tiny" style="padding-top:0.3rem">VS</span><span><b>${esc(q.b.game)}</b><span class="names">${esc(x.b.join(', '))}</span></span></div></li>`; }).join('');
+  const ln = r.questions.filter((x) => x.verdict === 'lean').map((x) => { const q = byId[x.id]; const w = x.winner; const l = w === 'a' ? 'b' : 'a';
+    return `<li><b>${esc(q[w].game)}</b> <span class="over">over ${esc(q[l].game)}</span> <span class="names">${esc(x[l].join(', '))} disagree${x[l].length === 1 ? 's' : ''}</span></li>`; }).join('');
+  const shelf = r.shelf.slice(0, 14).map((s) => `<span class="chip static ${s.picks === r.done.length && r.done.length > 1 ? 'on' : ''}">${esc(s.game)}<span class="ct">${s.picks}</span></span>`).join('');
+  const people = S.members.filter((m) => r.done.includes(m.email)).map((m) => {
+    const p = r.profiles[m.email];
+    const strong = AXES.filter((ax) => p[ax.id].lean !== null && Math.abs(p[ax.id].lean) >= 0.5)
+      .sort((a, b) => Math.abs(p[b.id].lean) - Math.abs(p[a.id].lean)).slice(0, 6)
+      .map((ax) => (p[ax.id].lean > 0 ? ax.a : ax.b).phrase);
+    return `<div class="person"><div class="pn"><span class="dot ${colorOf(m.email)}" style="position:static;transform:none;display:inline-flex;width:18px;height:18px;font-size:0.6rem;margin-right:0.4rem;border:0;vertical-align:middle">${initial(m.name)}</span>${esc(m.name)}'s game</div><div class="small dim">${esc(strong.length ? list(strong) : 'down the middle on everything') }.</div></div>`;
+  }).join('');
+
+  return `<h1 class="stencil">The results</h1>
+    <p class="small">${esc(summary(r)) || 'Nothing to summarize yet.'}</p>
+    ${r.waiting.length ? `<p class="tiny dim" style="margin-top:0.3rem">Revealed early. Still to answer: ${esc(list(r.waiting))}.</p>` : ''}
+    <div class="card" style="margin-top:1rem"><div class="card-top"><h2 class="stencil">Where we land</h2></div>${legend}${axes}
+      <p class="tiny dim" style="margin-top:0.6rem">Each dot is one person's lean across every question that touched that axis. Agreed means everyone's on the same side.</p></div>
+    ${sp ? `<div class="card hot"><div class="card-top"><h2 class="stencil">Split the room</h2><span class="badge bad">settle at the launch meeting</span></div><ul class="verdicts">${sp}</ul></div>` : ''}
+    ${un ? `<div class="card done"><div class="card-top"><h2 class="stencil">Everyone agreed</h2></div><ul class="verdicts">${un}</ul></div>` : ''}
+    ${ln ? `<div class="card quiet"><div class="card-top"><h2 class="stencil">Leaning</h2></div><ul class="verdicts">${ln}</ul></div>` : ''}
+    <div class="card quiet"><div class="card-top"><h2 class="stencil">The shelf</h2><span class="tiny dim">times picked</span></div><div class="chips">${shelf}</div></div>
+    <div class="card quiet"><div class="card-top"><h2 class="stencil">Each of us</h2></div>${people}</div>
+    ${phase() !== 'build' ? `<a class="btn wide" href="#/meetings">Take this into the launch meeting →</a>` : ''}`;
+}
+
+// ---------- meetings
+function meetings() {
+  const l = launch();
+  const upcoming = planned();
+  const past = S.meetings.filter((m) => m.status === 'done').sort(byDate('closed_at')).reverse();
+  const row = (m) => `<a class="card ${m.status === 'done' ? 'quiet' : m.kind === 'launch' ? 'gold' : ''}" href="#/meeting/${m.id}" style="display:block;text-decoration:none;color:inherit">
+    <div class="card-top"><h2 class="stencil">${m.kind === 'launch' ? 'Launch meeting' : 'Check-in'}</h2><span class="badge ${m.status === 'done' ? 'ok' : 'warn'}">${m.status === 'done' ? 'closed' : 'planned'}</span></div>
+    <div class="small">${esc(fmtWhen(m.scheduled_at))}</div>
+    ${m.status === 'done' && m.notes?.decisions?.length ? `<div class="tiny dim" style="margin-top:0.3rem">${m.notes.decisions.length} decision${m.notes.decisions.length === 1 ? '' : 's'}</div>` : ''}
+    ${m.kind === 'launch' && m.notes?.pitch ? `<div class="small dim" style="margin-top:0.3rem">${esc(m.notes.pitch)}</div>` : ''}</a>`;
+  let add = '';
+  if (!l) add = `<div class="card"><h3>Schedule the launch meeting</h3><p class="small dim" style="margin:0.3rem 0 0.6rem">Its agenda is the quiz results: the splits to settle, the pillars to lock, roles, cadence, and one task each.</p>
+    <form class="inline" data-form="schedule" data-kind="launch"><input type="datetime-local" name="when" required><button class="btn" type="submit">Schedule</button></form></div>`;
+  else if (l.status === 'done' && !upcoming.length) add = `<div class="card"><h3>Schedule the next check-in</h3>
+    <form class="inline" data-form="schedule" data-kind="checkin" style="margin-top:0.5rem"><input type="datetime-local" name="when" required value="${attr(toLocalInput(addDays(lastClosed()?.closed_at || new Date(), cadenceDays())))}"><button class="btn" type="submit">Schedule</button></form></div>`;
+  return `<h1 class="stencil">Meetings</h1>${add}${upcoming.map(row).join('')}${past.length ? `<h3 style="margin:1.25rem 0 0.5rem">Closed</h3>${past.map(row).join('')}` : ''}`;
+}
+
+function meeting(id) {
+  const m = S.meetings.find((x) => x.id === id);
+  if (!m) return `<h1 class="stencil">No such meeting</h1><a class="btn ghost" href="#/meetings">Back</a>`;
+  const notes = m.notes || {};
+  const items = m.kind === 'launch' ? launchAgenda(m, notes) : checkinAgenda(m, notes);
+  const missing = items.filter((i) => !i.ok && !i.optional).map((i) => i.title);
+  const closed = m.status === 'done';
+  return `<div class="row between"><a class="small" href="#/meetings">← meetings</a>${closed ? `<span class="badge ok">closed ${esc(fmtWhen(m.closed_at))}</span>` : `<span class="badge warn">${missing.length ? `${missing.length} to go` : 'ready to close'}</span>`}</div>
+    <h1 class="stencil" style="margin-top:0.5rem">${m.kind === 'launch' ? 'Launch meeting' : 'Check-in'}</h1>
+    <div class="row between" style="margin-bottom:1rem">
+      ${closed ? `<span class="small dim">${esc(fmtWhen(m.scheduled_at))}</span>`
+               : `<form class="inline" data-form="reschedule" data-id="${attr(m.id)}" style="flex:1"><input type="datetime-local" name="when" value="${attr(toLocalInput(m.scheduled_at))}" required><button class="btn ghost sm" type="submit">Move</button></form>`}
+    </div>
+    ${items.map((it, i) => `<section class="agenda-item ${it.ok ? 'ok' : ''}"><div class="ai-top"><h2 class="stencil"><span class="num">${String(i + 1).padStart(2, '0')}</span>${esc(it.title)}</h2><span class="badge ${it.ok ? 'ok' : it.optional ? '' : 'warn'}">${it.ok ? 'done' : it.optional ? 'optional' : 'to do'}</span></div>${it.body}</section>`).join('')}
+    ${closed ? '' : `<div class="card ${missing.length ? 'quiet' : 'gold'}">
+      ${missing.length ? `<p class="small dim">Still to do: ${esc(list(missing))}.</p>` : `<p class="small">Everything's in. Closing creates the next check-in and locks this agenda.</p>`}
+      <div class="row" style="margin-top:0.75rem"><button class="btn" data-act="close-meeting" data-id="${attr(m.id)}" ${missing.length || S.busy ? 'disabled' : ''}>Close the meeting</button>
+      <button class="btn ghost sm" data-act="delete-meeting" data-id="${attr(m.id)}">Cancel this meeting</button></div></div>`}`;
+}
+
+function memberChips(selected, act, extra = '') {
+  return `<div class="chips">${S.members.map((m) => `<button type="button" class="chip ${selected.includes(m.email) ? 'on' : ''}" data-act="${act}" data-email="${attr(m.email)}" ${extra}>${esc(m.name)}</button>`).join('')}</div>`;
+}
+
+function meetingTasks(m, notes, requireEach, carriedOk = false) {
+  const rows = S.tasks.filter((t) => t.meeting_id === m.id);
+  const carried = Object.keys(notes.carried || {}).filter((id) => notes.carried[id] && S.tasks.some((t) => t.id === id && t.status !== 'done'));
+  const covered = (email) => rows.some((t) => t.owner === email && t.status !== 'done') || (carriedOk && carried.some((id) => S.tasks.find((t) => t.id === id)?.owner === email));
+  const without = S.members.filter((mm) => !covered(mm.email)).map((mm) => mm.name);
+  const nextDue = notes.next ? localDate(new Date(notes.next)) : defaultDue();
+  const body = `${rows.length ? rows.map(taskRow).join('') : '<div class="empty">No tasks from this meeting yet.</div>'}
+    ${carriedOk && carried.length ? `<p class="tiny dim" style="margin-top:0.4rem">Plus ${carried.length} carried over from last time.</p>` : ''}
+    ${m.status === 'done' ? '' : `<form class="inline" data-form="task" data-meeting="${attr(m.id)}" style="margin-top:0.75rem">
+      <input type="text" name="title" placeholder="What, exactly, by the next check-in?" maxlength="200" required style="flex-basis:100%">
+      <select name="owner">${S.members.map((mm) => `<option value="${attr(mm.email)}" ${mm.email === S.me.email ? 'selected' : ''}>${esc(mm.name)}</option>`).join('')}</select>
+      <input type="date" name="due" value="${attr(nextDue)}"><button class="btn sm" type="submit">Add</button></form>`}
+    ${requireEach && without.length ? `<p class="tiny" style="margin-top:0.5rem;color:var(--yellow)">Everyone leaves with at least one task. Still without one: ${esc(list(without))}.</p>` : ''}`;
+  return { ok: !requireEach || without.length === 0, body };
+}
+
+function nextMeetingField(m, notes, dflt) {
+  return `<label class="field">Date and time</label><input type="datetime-local" data-note="${attr(m.id)}" data-path="next" value="${attr(toLocalInput(notes.next) || toLocalInput(dflt))}" ${m.status === 'done' ? 'disabled' : ''}>
+    ${notes.next ? '' : '<p class="tiny dim" style="margin-top:0.3rem">Suggested from the cadence. Change it, or tap away to keep it.</p>'}`;
+}
+
+function launchAgenda(m, notes) {
+  const r = results();
+  const closed = m.status === 'done';
+  const dis = closed ? 'disabled' : '';
+  const items = [];
+
+  items.push({ title: 'Read the results together', ok: !!notes.read,
+    body: `<p class="small dim">Someone shares their screen on the results page. Go axis by axis; stop on every split and let each side say why in one sentence.</p>
+      <div class="row" style="margin-top:0.6rem"><a class="btn ghost sm" href="#/results">Open the results</a>
+      <button class="chip ${notes.read ? 'on' : ''}" data-act="note-toggle" data-id="${attr(m.id)}" data-path="read" ${dis}>${notes.read ? 'Read it' : 'Mark as read'}</button></div>` });
+
+  const pillars = notes.pillars || {};
+  const decided = AXES.filter((ax) => pillars[ax.id]).length;
+  items.push({ title: 'Lock the pillars', ok: decided === AXES.length,
+    body: `<p class="small dim">For each axis: pick a side or say it doesn't matter. The crew's lean is shown under each one. ${decided} of ${AXES.length} decided.</p>
+      ${AXES.map((ax) => { const cr = r.axes.find((a) => a.id === ax.id); const hint = cr.verdict === 'open' ? 'no votes' : cr.verdict === 'split' ? 'split' : `${cr.verdict === 'agreed' ? 'all' : 'most'} lean ${cr[cr.side].label.toLowerCase()}`;
+        const v = pillars[ax.id];
+        return `<div class="pillar"><div class="pl">${esc(ax.label)}<small>crew: ${esc(hint)}</small></div><div class="seg">
+          <button class="${v === 'a' ? 'on' : ''}" data-act="note" data-id="${attr(m.id)}" data-path="pillars" data-key="${attr(ax.id)}" data-value="a" ${dis}>${esc(ax.a.label)}</button>
+          <button class="${v === 'either' ? 'on b' : ''}" data-act="note" data-id="${attr(m.id)}" data-path="pillars" data-key="${attr(ax.id)}" data-value="either" ${dis}>Either</button>
+          <button class="${v === 'b' ? 'on' : ''}" data-act="note" data-id="${attr(m.id)}" data-path="pillars" data-key="${attr(ax.id)}" data-value="b" ${dis}>${esc(ax.b.label)}</button></div></div>`; }).join('')}` });
+
+  const refs = notes.refs || [];
+  items.push({ title: 'Name the reference games', ok: refs.length >= 1,
+    body: `<p class="small dim">Up to three games this one is "like". Start from the shelf; add one if it isn't there.</p>
+      <div class="chips" style="margin:0.6rem 0">${[...new Set([...r.shelf.slice(0, 12).map((s) => s.game), ...refs])].map((g) => `<button class="chip gold ${refs.includes(g) ? 'on' : ''}" data-act="ref-toggle" data-id="${attr(m.id)}" data-game="${attr(g)}" ${dis}>${esc(g)}</button>`).join('')}</div>
+      ${closed ? '' : `<form class="inline" data-form="ref" data-id="${attr(m.id)}"><input type="text" name="game" placeholder="Another game" maxlength="60"><button class="btn ghost sm" type="submit">Add</button></form>`}` });
+
+  items.push({ title: 'The pitch, in one sentence', ok: !!(notes.pitch || '').trim(),
+    body: `<p class="small dim">"A ___ game where you ___, like ___ but ___." Argue about it, then one person types it.</p>
+      <input type="text" data-note="${attr(m.id)}" data-path="pitch" value="${attr(notes.pitch || '')}" maxlength="200" placeholder="A turn-based roguelike where you…" style="margin-top:0.5rem" ${dis}>` });
+
+  const roles = notes.roles || {};
+  items.push({ title: 'Who does what', ok: S.members.every((mm) => (roles[mm.email] || []).length),
+    body: `<p class="small dim">Everyone owns at least one hat. Two people can share one.</p>
+      ${S.members.map((mm) => `<div class="person"><div class="pn">${esc(mm.name)}</div><div class="chips">${ROLES.map((role) => `<button class="chip ${(roles[mm.email] || []).includes(role) ? 'on' : ''}" data-act="role-toggle" data-id="${attr(m.id)}" data-email="${attr(mm.email)}" data-role="${attr(role)}" ${dis}>${role}</button>`).join('')}</div></div>`).join('')}` });
+
+  items.push({ title: 'Cadence and the next check-in', ok: !!notes.next && !!notes.cadence,
+    body: `<div class="chips" style="margin-bottom:0.75rem">${CADENCE.map((c) => `<button class="chip ${notes.cadence === c.id ? 'on' : ''}" data-act="note" data-id="${attr(m.id)}" data-path="cadence" data-value="${c.id}" ${dis}>${c.label}</button>`).join('')}</div>
+      ${nextMeetingField(m, notes, addDays(m.scheduled_at || new Date(), CADENCE.find((c) => c.id === notes.cadence)?.days || 14))}` });
+
+  const t = meetingTasks(m, notes, true);
+  items.push({ title: 'First tasks', ok: t.ok, body: `<p class="small dim">One each, due by the next check-in. Small and finishable beats grand.</p>${t.body}` });
+  return items;
+}
+
+function checkinAgenda(m, notes) {
+  const closed = m.status === 'done';
+  const dis = closed ? 'disabled' : '';
+  const items = [];
+  const carried = notes.carried || {};
+  // Everything owed coming into this meeting: tasks from earlier meetings or added
+  // in between, not yet done, created before this meeting.
+  const owed = S.tasks.filter((t) => t.meeting_id !== m.id && t.status !== 'done' && (closed ? t.created_at < m.closed_at : true));
+  const since = (S.meetings.filter((x) => x.status === 'done' && x.id !== m.id && x.closed_at < (m.closed_at || '9999')).sort(byDate('closed_at')).pop())?.closed_at || '1970-01-01';
+  const finished = S.tasks.filter((t) => t.status === 'done' && t.done_at > since && (!closed || t.done_at < m.closed_at));
+  const undecided = owed.filter((t) => !(t.status === 'blocked' || carried[t.id]));
+  items.push({ title: 'Round the table', ok: undecided.length === 0,
+    body: `<p class="small dim">Each person, each task they owed: done, carry it over, or blocked (say why in a few words). ${finished.length ? `<span style="color:var(--teal-bright)">${finished.length} finished since last time.</span>` : ''}</p>
+      ${S.members.map((mm) => { const mineOwed = owed.filter((t) => t.owner === mm.email); const mineDone = finished.filter((t) => t.owner === mm.email);
+        if (!mineOwed.length && !mineDone.length) return `<div class="person"><div class="pn">${esc(mm.name)}</div><div class="empty">Nothing owed.</div></div>`;
+        return `<div class="person"><div class="pn">${esc(mm.name)}</div>
+          ${mineDone.map((t) => `<div class="task done"><span class="av">✓</span><div><div class="tt">${esc(t.title)}</div></div><span></span></div>`).join('')}
+          ${mineOwed.map((t) => `<div class="task"><span class="av ${isLate(t) ? '' : ''}" style="${isLate(t) ? 'background:var(--oxide);color:var(--paper)' : ''}">${t.status === 'blocked' ? '⚑' : carried[t.id] ? '↻' : '·'}</span>
+            <div><div class="tt">${esc(t.title)}</div><div class="meta">due ${esc(fmtDay(t.due_on))}${isLate(t) ? ' <span class="late">late</span>' : ''}${t.status === 'blocked' ? ` <span class="blk">blocked: ${esc(t.note || '')}</span>` : carried[t.id] ? ' · carrying over' : ''}</div></div>
+            ${closed ? '<span></span>' : `<div class="seg"><button data-act="task-status" data-id="${attr(t.id)}" data-status="done">Done</button><button class="${carried[t.id] && t.status !== 'blocked' ? 'on b' : ''}" data-act="carry" data-id="${attr(t.id)}" data-meeting="${attr(m.id)}">Carry</button><button class="${t.status === 'blocked' ? 'on' : ''}" data-act="task-block" data-id="${attr(t.id)}">Blocked</button></div>`}</div>`).join('')}</div>`; }).join('')}` });
+
+  const showed = notes.showed || {};
+  items.push({ title: 'Show and tell', ok: S.members.every((mm) => typeof showed[mm.email] === 'boolean'),
+    body: `<p class="small dim">Did each person show something that exists now and didn't before? A build, a sketch, a doc, a sound. Yes or no, no judgement, it gets tracked.</p>
+      ${S.members.map((mm) => `<div class="pillar"><div class="pl">${esc(mm.name)}</div><div class="seg">
+        <button class="${showed[mm.email] === true ? 'on' : ''}" data-act="note" data-id="${attr(m.id)}" data-path="showed" data-key="${attr(mm.email)}" data-value="true" data-type="bool" ${dis}>Showed</button>
+        <button class="${showed[mm.email] === false ? 'on b' : ''}" data-act="note" data-id="${attr(m.id)}" data-path="showed" data-key="${attr(mm.email)}" data-value="false" data-type="bool" ${dis}>Not this time</button></div></div>`).join('')}` });
+
+  const decisions = notes.decisions || [];
+  items.push({ title: 'Decisions', ok: true, optional: true,
+    body: `<p class="small dim">Anything the crew settled today, one line each. Skip if nothing changed.</p>
+      ${decisions.length ? `<ul class="verdicts">${decisions.map((d, i) => `<li class="row between"><span>${esc(d)}</span>${closed ? '' : `<button class="link tiny" data-act="decision-remove" data-id="${attr(m.id)}" data-i="${i}">remove</button>`}</li>`).join('')}</ul>` : ''}
+      ${closed ? '' : `<form class="inline" data-form="decision" data-id="${attr(m.id)}" style="margin-top:0.5rem"><input type="text" name="text" placeholder="We decided…" maxlength="140" required><button class="btn ghost sm" type="submit">Add</button></form>`}` });
+
+  items.push({ title: 'Next check-in', ok: !!notes.next,
+    body: nextMeetingField(m, notes, addDays(m.scheduled_at || new Date(), cadenceDays())) });
+
+  const t = meetingTasks(m, notes, true, true);
+  items.push({ title: 'Next tasks', ok: t.ok, body: `<p class="small dim">One each, due by the next check-in. A carried-over task counts.</p>${t.body}` });
+  return items;
+}
+
+// ---------- tasks
+function taskRow(t) {
+  const late = isLate(t);
+  return `<div class="task ${t.status}"><span class="av ${colorOf(t.owner)}" style="${late ? 'background:var(--oxide);color:var(--paper)' : ''}" title="${attr(nameOf(t.owner))}">${initial(nameOf(t.owner))}</span>
+    <div><div class="tt">${esc(t.title)}</div><div class="meta">${esc(nameOf(t.owner))} · ${t.status === 'done' ? `done ${esc(fmtDay(t.done_at ? localDate(new Date(t.done_at)) : null))}` : `due ${esc(fmtDay(t.due_on))}`}${late ? ' <span class="late">late</span>' : ''}${t.status === 'blocked' ? ` <span class="blk">blocked${t.note ? `: ${esc(t.note)}` : ''}</span>` : ''}</div></div>
+    <div class="acts">${t.status === 'done'
+      ? `<button title="Reopen" data-act="task-status" data-id="${attr(t.id)}" data-status="open">↺</button>`
+      : `<button class="ok" title="Done" data-act="task-status" data-id="${attr(t.id)}" data-status="done">✓</button><button class="flag" title="${t.status === 'blocked' ? 'Unblock' : 'Blocked'}" data-act="${t.status === 'blocked' ? 'task-status' : 'task-block'}" data-id="${attr(t.id)}" data-status="open">⚑</button>`}
+      <button class="x" title="Delete" data-act="task-delete" data-id="${attr(t.id)}">×</button></div></div>`;
+}
+
+function tasks() {
+  const mineOnly = S.state._mineOnly ?? false;
+  const all = S.tasks.filter((t) => !mineOnly || t.owner === S.me.email);
+  const open = all.filter((t) => t.status !== 'done').sort((a, b) => (isLate(b) - isLate(a)) || String(a.due_on || '9').localeCompare(String(b.due_on || '9')));
+  const done = all.filter((t) => t.status === 'done').sort(byDate('done_at')).reverse().slice(0, 25);
+  const groups = [['Late', open.filter(isLate)], ['Blocked', open.filter((t) => t.status === 'blocked' && !isLate(t))], ['Open', open.filter((t) => t.status === 'open' && !isLate(t))]].filter((g) => g[1].length);
+  return `<div class="row between"><h1 class="stencil">Tasks</h1><div class="seg"><button class="${mineOnly ? 'on' : ''}" data-act="tasks-filter" data-v="1">Mine</button><button class="${!mineOnly ? 'on' : ''}" data-act="tasks-filter" data-v="0">Everyone</button></div></div>
+    <div class="card"><form class="inline" data-form="task"><input type="text" name="title" placeholder="What, exactly?" maxlength="200" required style="flex-basis:100%">
+      <select name="owner">${S.members.map((mm) => `<option value="${attr(mm.email)}" ${mm.email === S.me.email ? 'selected' : ''}>${esc(mm.name)}</option>`).join('')}</select>
+      <input type="date" name="due" value="${attr(defaultDue())}"><button class="btn sm" type="submit">Add</button></form></div>
+    ${groups.length ? groups.map(([name, xs]) => `<div class="card ${name === 'Late' ? 'hot' : name === 'Blocked' ? 'gold' : ''}"><h3>${name} · ${xs.length}</h3>${xs.map(taskRow).join('')}</div>`).join('') : '<div class="card done"><div class="empty">Nothing open. Either you’re ahead, or it’s time for a check-in.</div></div>'}
+    ${done.length ? `<div class="card quiet"><h3>Done · recent</h3>${done.map(taskRow).join('')}</div>` : ''}`;
+}
+
+// ---------- crew
+function crew() {
+  return `<h1 class="stencil">The crew</h1>
+    <div class="card"><h3>Add someone</h3><p class="small dim" style="margin:0.3rem 0 0.6rem">Use the Gmail address they'll sign in with. They're on the list before they ever log in.</p>
+      <form class="inline" data-form="member"><input type="email" name="email" placeholder="friend@gmail.com" required><input type="text" name="name" placeholder="First name" maxlength="40" required><button class="btn sm" type="submit">Add</button></form></div>
+    <div class="card quiet">${S.members.map((m) => `<div class="person"><div class="row between"><div><span class="dot ${colorOf(m.email)}" style="position:static;transform:none;display:inline-flex;width:20px;height:20px;font-size:0.6rem;margin-right:0.4rem;border:0;vertical-align:middle">${initial(m.name)}</span><b>${esc(m.name)}</b> <span class="tiny dim mono">${esc(m.email)}</span></div>
+      <div class="row" style="gap:0.35rem"><span class="badge ${m.user_id ? 'ok' : ''}">${m.user_id ? 'signed in' : 'never signed in'}</span><span class="badge ${myProgress(m.email) >= QUESTIONS.length ? 'ok' : ''}">quiz ${myProgress(m.email)}/${QUESTIONS.length}</span>
+      <button class="link tiny" data-act="rename" data-email="${attr(m.email)}">rename</button>${m.email === S.me.email ? '' : `<button class="link tiny" data-act="remove-member" data-email="${attr(m.email)}" style="color:var(--oxide)">remove</button>`}</div></div></div>`).join('')}</div>
+    <p class="tiny dim">Everyone here sees everything here, and only people here can. Quiz answers can only be changed by the person who gave them.</p>`;
+}
+
+// ---------------------------------------------------------------- actions
+app.addEventListener('click', async (e) => {
+  const el = e.target.closest('[data-act]');
+  if (!el || el.disabled) return;
+  const act = el.dataset.act;
+  const d = el.dataset;
+  switch (act) {
+    case 'signin': {
+      const { error } = await sb.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: HOME } });
+      if (error) fail(error, 'Could not start sign-in');
+      break;
+    }
+    case 'signout': await sb.auth.signOut(); location.hash = '#/'; break;
+    case 'reload': location.reload(); break;
+    case 'pick': case 'pick-stay': {
+      await answer(d.q, d.pick);
+      if (act === 'pick') {
+        const i = QUESTIONS.findIndex((x) => x.id === d.q);
+        const mine = S.answers[S.me.email] || {};
+        const nxt = QUESTIONS.findIndex((x, j) => j > i && !mine[x.id]);
+        S.quizAt = nxt === -1 ? (complete(mine) ? -1 : nextUnanswered(mine)) : nxt;
+        render();
+      } else render();
+      break;
+    }
+    case 'quiz-go': S.quizAt = Number(d.to); render(); break;
+    case 'quiz-review': S.quizAt = -1; render(); break;
+    case 'reveal': {
+      const r = results();
+      if (!confirm(`Reveal the results now, without ${list(r.waiting)}? Their answers still count when they come in.`)) return;
+      await write(sb.from('homies_state').upsert({ key: 'reveal', value: { on: true, by: S.me.email, at: new Date().toISOString() }, updated_at: new Date().toISOString() }), 'Could not reveal');
+      location.hash = '#/results';
+      break;
+    }
+    case 'note': {
+      let v = d.value;
+      if (d.type === 'bool') v = v === 'true';
+      await setNote(d.id, d.key ? [d.path, d.key] : [d.path], v);
+      if (d.path === 'cadence') write(sb.from('homies_state').upsert({ key: 'cadence', value: { id: v }, updated_at: new Date().toISOString() }), 'Could not save cadence', null);
+      render();
+      break;
+    }
+    case 'note-toggle': { const m = S.meetings.find((x) => x.id === d.id); await setNote(d.id, [d.path], !m?.notes?.[d.path]); render(); break; }
+    case 'ref-toggle': {
+      const m = S.meetings.find((x) => x.id === d.id); const refs = [...(m?.notes?.refs || [])];
+      const i = refs.indexOf(d.game);
+      if (i >= 0) refs.splice(i, 1); else if (refs.length >= 3) return toast('Three reference games is plenty. Drop one first.');
+      else refs.push(d.game);
+      await setNote(d.id, ['refs'], refs); render(); break;
+    }
+    case 'role-toggle': {
+      const m = S.meetings.find((x) => x.id === d.id); const cur = [...((m?.notes?.roles || {})[d.email] || [])];
+      const i = cur.indexOf(d.role); if (i >= 0) cur.splice(i, 1); else cur.push(d.role);
+      await setNote(d.id, ['roles', d.email], cur); render(); break;
+    }
+    case 'decision-remove': {
+      const m = S.meetings.find((x) => x.id === d.id); const ds = [...(m?.notes?.decisions || [])]; ds.splice(Number(d.i), 1);
+      await setNote(d.id, ['decisions'], ds); render(); break;
+    }
+    case 'carry': {
+      const m = S.meetings.find((x) => x.id === d.meeting); const on = !m?.notes?.carried?.[d.id];
+      const t = S.tasks.find((x) => x.id === d.id);
+      if (t && t.status === 'blocked') await write(sb.from('homies_tasks').update({ status: 'open', note: null }).eq('id', d.id), 'Could not update the task', null);
+      await setNote(d.meeting, ['carried', d.id], on); await refresh(); break;
+    }
+    case 'task-status': {
+      const patch = { status: d.status, done_at: d.status === 'done' ? new Date().toISOString() : null };
+      if (d.status === 'open') patch.note = null;
+      await write(sb.from('homies_tasks').update(patch).eq('id', d.id), 'Could not update the task'); break;
+    }
+    case 'task-block': {
+      const t = S.tasks.find((x) => x.id === d.id);
+      const note = prompt(`What's blocking "${t?.title || 'this'}"? A few words.`, t?.note || '');
+      if (note === null) return;
+      await write(sb.from('homies_tasks').update({ status: 'blocked', note: note.trim().slice(0, 500) || null }).eq('id', d.id), 'Could not update the task'); break;
+    }
+    case 'task-delete': {
+      const t = S.tasks.find((x) => x.id === d.id);
+      if (!confirm(`Delete "${t?.title}"? If it's done, mark it done instead so it stays on the record.`)) return;
+      await write(sb.from('homies_tasks').delete().eq('id', d.id), 'Could not delete the task'); break;
+    }
+    case 'tasks-filter': S.state._mineOnly = d.v === '1'; render(); break;
+    case 'close-meeting': await closeMeeting(d.id); break;
+    case 'delete-meeting': {
+      if (!confirm('Cancel this meeting? Its agenda notes go with it. Tasks stay.')) return;
+      await write(sb.from('homies_meetings').delete().eq('id', d.id), 'Could not cancel the meeting');
+      location.hash = '#/meetings'; break;
+    }
+    case 'rename': {
+      const m = S.members.find((x) => x.email === d.email);
+      const name = prompt(`What does the crew call ${m?.email}?`, m?.name || '');
+      if (!name || !name.trim()) return;
+      await write(sb.from('homies_members').update({ name: name.trim().slice(0, 40) }).eq('email', d.email), 'Could not rename'); break;
+    }
+    case 'remove-member': {
+      const m = S.members.find((x) => x.email === d.email);
+      if (!confirm(`Remove ${m?.name} (${m?.email}) from the crew? Their answers and tasks go too.`)) return;
+      await write(sb.from('homies_members').delete().eq('email', d.email), 'Could not remove'); break;
+    }
+  }
+});
+
+app.addEventListener('submit', async (e) => {
+  const f = e.target.closest('form[data-form]');
+  if (!f) return;
+  e.preventDefault();
+  const kind = f.dataset.form;
+  const fd = new FormData(f);
+  if (kind === 'schedule') {
+    const when = fromLocalInput(fd.get('when'));
+    if (!when) return toast('Pick a date and time.');
+    try { const m = await createMeeting(f.dataset.kind, when); await refresh(); location.hash = `#/meeting/${m.id}`; }
+    catch (err) { fail(err, 'Could not schedule'); }
+  } else if (kind === 'reschedule') {
+    await write(sb.from('homies_meetings').update({ scheduled_at: fromLocalInput(fd.get('when')) }).eq('id', f.dataset.id), 'Could not move the meeting');
+  } else if (kind === 'task') {
+    const title = String(fd.get('title') || '').trim();
+    if (!title) return;
+    const row = { title, owner: fd.get('owner') || S.me.email, due_on: fd.get('due') || null, created_by: S.me.email, meeting_id: f.dataset.meeting || null };
+    await write(sb.from('homies_tasks').insert(row), 'Could not add the task');
+  } else if (kind === 'member') {
+    const email = String(fd.get('email') || '').trim().toLowerCase(); const name = String(fd.get('name') || '').trim();
+    await write(sb.from('homies_members').insert({ email, name }), 'Could not add them');
+  } else if (kind === 'ref') {
+    const game = String(fd.get('game') || '').trim(); if (!game) return;
+    const m = S.meetings.find((x) => x.id === f.dataset.id); const refs = [...(m?.notes?.refs || [])];
+    if (refs.length >= 3) return toast('Three reference games is plenty. Drop one first.');
+    if (!refs.includes(game)) refs.push(game);
+    await setNote(f.dataset.id, ['refs'], refs); render();
+  } else if (kind === 'decision') {
+    const text = String(fd.get('text') || '').trim(); if (!text) return;
+    const m = S.meetings.find((x) => x.id === f.dataset.id);
+    await setNote(f.dataset.id, ['decisions'], [...(m?.notes?.decisions || []), text]); render();
+  }
+});
+
+// Text and date fields on an agenda save when you leave them.
+app.addEventListener('change', async (e) => {
+  const el = e.target.closest('[data-note]');
+  if (!el) return;
+  const v = el.type === 'datetime-local' ? fromLocalInput(el.value) : el.value;
+  await setNote(el.dataset.note, el.dataset.key ? [el.dataset.path, el.dataset.key] : [el.dataset.path], v);
+  render();
+});
+
+async function closeMeeting(id) {
+  const m = S.meetings.find((x) => x.id === id);
+  if (!m) return;
+  const notes = m.notes || {};
+  if (!confirm(`Close this ${m.kind === 'launch' ? 'launch meeting' : 'check-in'}? The next check-in gets created for ${fmtWhen(notes.next)}.`)) return;
+  S.busy = true; render();
+  try {
+    const now = new Date().toISOString();
+    // Carried tasks move to the next check-in's date.
+    const carried = Object.keys(notes.carried || {}).filter((k) => notes.carried[k]);
+    if (carried.length && notes.next) {
+      const { error } = await sb.from('homies_tasks').update({ due_on: localDate(new Date(notes.next)) }).in('id', carried).neq('status', 'done');
+      if (error) throw error;
+    }
+    const { error } = await sb.from('homies_meetings').update({ status: 'done', closed_at: now }).eq('id', id);
+    if (error) throw error;
+    if (m.kind === 'launch' && notes.cadence) {
+      await sb.from('homies_state').upsert({ key: 'cadence', value: { id: notes.cadence }, updated_at: now });
+    }
+    const next = await createMeeting('checkin', notes.next);
+    await refresh();
+    toast('Closed. See you at the next one.', true);
+    location.hash = `#/meeting/${next.id}`;
+  } catch (err) { fail(err, 'Could not close the meeting'); }
+  finally { S.busy = false; render(); }
+}
+
+// ---------------------------------------------------------------- boot
+window.addEventListener('hashchange', () => { if (route().view !== 'quiz') S.quizAt = null; render(); });
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && S.me) refresh(); });
+setInterval(() => { if (document.visibilityState === 'visible' && S.me && !S.busy) refresh(); }, POLL_MS);
+
+if (sb) {
+  // Coming back from Google, the URL carries the token (hash) or a code (query).
+  const cameBack = /access_token=|[?&]code=/.test(location.hash + location.search);
+  sb.auth.getSession().then(({ data }) => {
+    if (cameBack) history.replaceState(null, '', location.pathname + '#/');
+    onSession(data.session);
+  });
+  sb.auth.onAuthStateChange((event, session) => {
+    if (event === 'SIGNED_IN' && S.session?.user?.id === session?.user?.id) return;
+    if (event === 'TOKEN_REFRESHED') { S.session = session; return; }
+    onSession(session);
+  });
+} else render();
+</script>
+</body>
+</html>
