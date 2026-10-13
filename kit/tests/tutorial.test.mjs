@@ -158,3 +158,73 @@ suite('tutorial: callouts (Card Check, once per device)', () => {
     eq(createTutorial({ key: 'cc-callouts', steps: callouts, autoStart: true }).observe(g), null);
   });
 });
+
+import { checkSteps, isGoalStep } from '../tutorial.js';
+
+suite('tutorial: goals, not scripts', () => {
+  // "Here's how to walk, now leave the room."
+  const room = (o = {}) => ({ x: 0, inRoom: true, opened: false, ...o });
+  const leave = { id: 'leave', title: 'Leave the room', body: 'WASD walks. Find a way out.', goal: (g) => !g.inRoom,
+    hints: [{ after: 30, body: 'Rooms usually have doors.' }, { after: 60, body: 'The door is behind you.' }] };
+
+  test('a goal step finishes on the outcome, by any route', () => {
+    for (const route of [{ opened: true, inRoom: false }, { x: 9, inRoom: false }]) {
+      installStorage();
+      const t = createTutorial({ steps: [leave], autoStart: true, persist: false });
+      eq(t.observe(room()).id, 'leave');
+      eq(t.paused(room()), false, 'the player can move freely while the goal is up');
+      eq(t.observe(room(route)), null);
+      eq(t.status, 'done');
+    }
+  });
+  test('hints come in stages, only for a player who stalls', () => {
+    let now = 0;
+    const t = createTutorial({ steps: [leave], autoStart: true, persist: false, clock: () => now });
+    t.observe(room());
+    eq(t.hint(room()), null);
+    now = 31000; eq(t.hint(room()).body, 'Rooms usually have doors.');
+    now = 61000; eq(t.hint(room()).body, 'The door is behind you.');
+  });
+  test('a hint can wait on what the player has tried', () => {
+    const s = { id: 's', goal: () => false, hints: [{ after: (g, secs) => g.bumps >= 3 || secs > 120, body: 'Try the door.' }] };
+    let now = 0;
+    const t = createTutorial({ steps: [s], autoStart: true, persist: false, clock: () => now });
+    t.observe({ bumps: 1 });
+    eq(t.hint({ bumps: 1 }), null);
+    eq(t.hint({ bumps: 3 }).body, 'Try the door.');
+  });
+  test('the hint clock restarts on each new step', () => {
+    let now = 0;
+    const a = { id: 'a', goal: (g) => g.a, hints: [{ after: 10, body: 'A' }] };
+    const b = { id: 'b', goal: (g) => g.b, hints: [{ after: 10, body: 'B' }] };
+    const t = createTutorial({ steps: [a, b], mode: 'scripted', autoStart: true, persist: false, clock: () => now });
+    t.observe({});
+    now = 50000;
+    eq(t.observe({ a: true }).id, 'b');
+    eq(t.hint({}), null);
+    now = 61000;
+    eq(t.hint({}).body, 'B');
+  });
+  test('done still works as the old name for goal', () => {
+    ok(isGoalStep({ done: () => true }));
+    ok(isGoalStep({ goal: () => true }));
+    ok(!isGoalStep({ goal: () => true, next: true }));
+  });
+  test('checkSteps passes a tutorial that sets goals', () => {
+    deepEq(checkSteps([
+      { id: 'welcome', body: 'Your commons starts with just you.' },
+      leave,
+      { id: 'grow', goal: (g) => g.members >= 3, body: 'Three members will keep the lights on. Get there however you like.' },
+    ]), []);
+  });
+  test('checkSteps flags locked controls, click-by-click runs and long read steps', () => {
+    const click = (id) => ({ id, done: () => true, allow: ['[data-act=map]'] });
+    const w = checkSteps([
+      click('map'), click('pile'), click('one'), click('priya'),
+      { id: 'lecture', body: 'word '.repeat(80) },
+    ]);
+    ok(w.some((m) => m.startsWith('map: `allow`')));
+    ok(w.some((m) => m.startsWith('4 goal steps in a row')));
+    ok(w.some((m) => m.startsWith('lecture: a 80-word read step')));
+  });
+});

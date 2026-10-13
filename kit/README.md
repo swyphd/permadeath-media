@@ -57,10 +57,18 @@ commit it came from. Fix bugs here, not in a copy.
    Add the game's page to Supabase → Authentication → URL Configuration →
    Redirect URLs, or the login link won't come back to it. The `game_saves` table
    already takes any game name.
-4. **Tutorial.** Write steps (`id`, `title`, `body`, `when`, `done`), call
-   `tutorial.observe(game)` each render or tick and draw the step it returns; skip
-   the tick while `tutorial.paused(game)`. `mode: 'scripted'` for a guided game in a
-   fixed order, `autoStart: true` for one-time callouts.
+4. **Tutorial.** Give the player a task and let them explore: "here's how to
+   walk, now leave the room", not "take this step, then this step, then click the
+   doorknob". Each step teaches one skill and names an outcome (`goal: g => g.coins >= 20`),
+   finishes however the player gets there, and never locks the other controls.
+   Add `hints: [{ after: 30, body }]` for a player who stalls, vaguest first, and
+   show `tutorial.hint(game)` under the step. Keep read steps (no goal, the game
+   pauses) few and short. Call `tutorial.observe(game)` each render or tick and draw
+   the step it returns; skip the tick while `tutorial.paused(game)`. Put
+   `eq(checkSteps(steps).length, 0)` in the game's tests: it flags `allow` locks,
+   runs of more than three goal steps, and read steps over 60 words.
+   `mode: 'scripted'` runs steps in a fixed order, `autoStart: true` is for
+   one-time callouts.
 5. **Analytics.** Add the game to `GAMES` in `api/events.js`, then
    `const stats = createAnalytics({ game: 'my-game', version: BUILD })`. Call
    `stats.runStart()`, `stats.milestone(name)` at each progress point,
@@ -81,7 +89,8 @@ Analytics is anonymous (a random id the browser makes up, no emails or IPs), sen
 nothing when the browser has Do Not Track or Global Privacy Control on, and can be
 turned off for good with `optOut()`.
 No pre-ticked boxes and no signup pop-ups on load. The tutorial can always be
-skipped, and skipping is remembered.
+skipped, and skipping is remembered. Tutorials set goals and leave the game open
+rather than scripting each click.
 
 ## Not yet using it
 
