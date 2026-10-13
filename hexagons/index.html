@@ -17,7 +17,8 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script type="text/babel">
+  <script type="text/babel" data-type="module">
+    import { createAnalytics } from '/kit/analytics.js';
     const { useState, useEffect, useRef, useCallback } = React;
 
     // ── Supabase ──────────────────────────────────────────────────────
@@ -105,6 +106,24 @@
           {error && <div role="alert" style={{marginTop:6,color:'#dc2626',fontSize:12}}>{error}</div>}
         </form>
       );
+    }
+
+    // ── Play analytics (studio kit -> /api/events) ───────────────────
+    // One run per daily puzzle attempt. It starts when a mode is picked and ends
+    // with a win when the grid is solved. A run that never ends is a player who
+    // left; the last milestone shows how far they got. The run id is kept per day,
+    // so a reload carries on the same run.
+    const stats = createAnalytics({ game: 'hexagons', version: '2026-10-13' });
+    const RUN_KEY = (day) => `hexagons-run-${day}`;
+    function loadRun(day) {
+      try { return JSON.parse(localStorage.getItem(RUN_KEY(day)) || 'null'); } catch (e) { return null; }
+    }
+    function saveRun(day, run) {
+      try { localStorage.setItem(RUN_KEY(day), JSON.stringify(run)); } catch (e) {}
+    }
+    function blanksFilled(cells) {
+      const blanks = cells.filter(c => !c.given);
+      return { blanks: blanks.length, filled: blanks.filter(c => c.value).length };
     }
 
     // ── Geometry ──────────────────────────────────────────────────────
@@ -537,7 +556,24 @@
       function chooseMode(comp) {
         setCompetitive(comp);
         setModeChosen(true);
+        if (solved) return;
+        const mode = comp ? 'competitive' : 'relaxed';
+        const props = { puzzle: getDayNum(), difficulty: diffInfo.text, mode, ...blanksFilled(cells) };
+        const prev = loadRun(todayStr);
+        if (prev?.id) {
+          stats.runStart({ ...props, t: (Date.now() - prev.startedAt) / 1000 }, { resume: prev.id });
+        } else {
+          const id = stats.runStart(props);
+          saveRun(todayStr, { id, startedAt: Date.now() });
+        }
+        stats.choice('mode', mode, { puzzle: getDayNum() });
       }
+
+      // Where a run stood if the tab closes before the grid is solved.
+      useEffect(() => {
+        stats.progress(() => ({ puzzle: getDayNum(), difficulty: diffInfo.text,
+          mode: competitive ? 'competitive' : 'relaxed', mistakes, ...blanksFilled(cells) }));
+      }, [cells, competitive, mistakes, diffInfo]);
 
       // ── Auth listener ───────────────────────────────────────────────
       useEffect(() => {
@@ -715,7 +751,21 @@
         const we = checkErrors(next);
         if (competitive && we[selected]?.error) setMistakes(m=>m+1);
         setCells(we);
-        if (checkSolved(we)) { setSolved(true); setCelebrate(true); }
+        if (stats.run) {
+          // Milestones at a quarter, half and three quarters of the blanks filled.
+          const before = blanksFilled(cells), after = blanksFilled(we);
+          [25, 50, 75].forEach(pct => {
+            const at = Math.ceil(after.blanks * pct / 100);
+            if (before.filled < at && after.filled >= at) stats.milestone(`filled_${pct}`, { puzzle: getDayNum() });
+          });
+        }
+        if (checkSolved(we)) {
+          setSolved(true); setCelebrate(true);
+          const m = mistakes + (competitive && we[selected]?.error ? 1 : 0);
+          stats.runEnd('win', { puzzle: getDayNum(), difficulty: diffInfo.text,
+            mode: competitive ? 'competitive' : 'relaxed', mistakes: competitive ? m : null,
+            seconds: competitive ? elapsed : null });
+        }
       }
 
       function handleClear() {
@@ -728,6 +778,7 @@
 
       function handleClearAll() {
         if (solved) return;
+        if (stats.run) stats.choice('clear_all', 'yes', { puzzle: getDayNum(), ...blanksFilled(cells) });
         setCells(prev => prev.map(c => c.given ? c : {...c, value:null, error:false}));
       }
 
@@ -735,6 +786,7 @@
         const streakLine = streak>0 ? `🔥 ${streak} day${streak===1?'':'s'}\n` : '';
         const compLine = competitive && solved ? `⏱️ ${fmtTime(elapsed)}  ❌ ${mistakes} mistake${mistakes===1?'':'s'}\n` : '';
         const text = `⬡ Hexagons #${getDayNum()}\n📅 ${todayStr}\n${diffInfo.hexes} ${diffInfo.text}\n${compLine}${streakLine}\n${solved?'✅ Solved!':'🔄 In progress'}`;
+        stats.choice('share', solved ? 'solved' : 'in_progress', { puzzle: getDayNum() });
         navigator.clipboard.writeText(text).then(()=>{setCopied(true);setTimeout(()=>setCopied(false),2000);});
       }
 
