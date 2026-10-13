@@ -25,14 +25,20 @@ sync is live, and falls back to device-only play if the SDK fails to load.
 
 ## Onboarding
 
-- **Learn to play** on the start screen runs a scripted solo game: a fixed
-  opening (`TUT_SCRIPT`) and a step list (`TUT`) in `index.html`. Each step
-  names the one allowed target and a condition on game state; everything
-  else is disabled until the condition holds. The game stays on the device
-  and resumes after a reload.
-- **First-time callouts** (`CALLOUTS`) appear once per device the first time
-  a mechanic shows up in a real game. Finishing the tutorial marks them seen.
+- **Learn to play** on the start screen runs a solo guided game from a fixed
+  opening (`TUT_SCRIPT`), with five goals in `tutorial.js`: sign a worker,
+  win a Small Win, make a Steward, keep Fear down to round 5, sign a holdout.
+  Each goal names an outcome and finishes however the player gets there;
+  nothing on the board is locked. Hints appear in stages if the player
+  stalls, by time or by game state. The game stays on the device and resumes
+  after a reload.
+- **First-time callouts** (also in `tutorial.js`) appear once per device the
+  first time a mechanic shows up, in the guided game and in real games.
+- Both run on the studio kit's tutorial engine (`../kit/tutorial.js`), which
+  `index.html` loads before starting.
 - **Rules** in the header is generated from the engine's own data tables.
 
-If a rule changes, replay the tutorial (`scratchpad/tutorial.js` drives it
-headlessly in Playwright) and adjust the step list where the script stalls.
+`node card-check/tests/tutorial.test.mjs` checks that the guided game keeps
+the studio's tutorial rule (goals, no locked controls, short reads) and that
+each goal fires on its outcome. If a rule changes, update the goal or hint
+it touches.
