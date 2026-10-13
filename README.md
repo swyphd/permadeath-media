@@ -22,11 +22,27 @@ address.
 ## Studio kit
 
 `/kit/` is the shared code every game was writing for itself: the mailing-list
-signup, local and cloud saves, the tutorial engine, a seeded random source, and
-the test harness with bots and sims. Pages here import it from `/kit/index.js`;
+signup, local and cloud saves, the tutorial engine, play analytics, a seeded
+random source, and the test harness with bots and sims. Pages here import it from `/kit/index.js`;
 games in their own repos copy it in with `node kit/sync.mjs <dir>`. See
 [`kit/README.md`](kit/README.md) for the new-game checklist, and run its tests
 with `node kit/tests/run.mjs`.
+
+## Play analytics
+
+Games using the kit's `analytics.js` send what happens in a run (started,
+milestones, choices, won, lost, tab closed mid-run) to `/api/events`
+(`api/events.js`), which writes it to the `game_events` table in Supabase. The
+public key can add rows but not read them; the numbers are visible only from the
+dashboard. No emails, names or IPs are recorded, and browsers with Do Not Track
+or Global Privacy Control send nothing. A game must be listed in `GAMES` in
+`api/events.js`.
+
+### Setup
+
+- **Supabase**: run `game-events.sql` once in the SQL Editor. The bottom of that
+  file has the read-outs: how runs end, where people quit, which choices people
+  make, and win rate by choice.
 
 ## Press kit
 

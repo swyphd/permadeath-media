@@ -6,4 +6,6 @@ await import('./newsletter.test.mjs');
 await import('./save.test.mjs');
 await import('./tutorial.test.mjs');
 await import('./sim.test.mjs');
+await import('./analytics.test.mjs');
+await import('./events-api.test.mjs');
 await report();

@@ -1,14 +1,15 @@
 # Studio kit
 
 The pieces every Permadeath game was writing for itself, written once. A new game
-starts with saves, a tutorial, mailing-list signups, seeded randomness and a bot
-harness without building any of them.
+starts with saves, a tutorial, mailing-list signups, play analytics, seeded
+randomness and a bot harness without building any of them.
 
 | Module | What it is | Where it came from |
 | --- | --- | --- |
 | `newsletter.js` | Signup to the studio list via `/api/subscribe`, plus `mountSignupForm` for the footer form every page has | the footer form on every page, Hedy's `site.jsx` |
 | `save.js` | `createLocalSave` (browser save with versions and migrations) and `createCloudSave` (emailed login link, Supabase `game_saves`) | Hedy Plant's `App.jsx` and `site.jsx` |
 | `tutorial.js` | The step engine: which step shows, when the game pauses, what's been seen | Guild Rising's `Tutorial.jsx`, Card Check's `TUT` and `CALLOUTS` |
+| `analytics.js` | `createAnalytics`: run starts and ends (win, loss, quit), milestones, choices, and where a run stood when the tab closed, sent to `/api/events` | new: no game recorded outcomes |
 | `rng.js` | Seeded random source (mulberry32) with `int`, `pick`, `shuffle`, `weighted`, save/restore | Union Up's `engine/rng.js` |
 | `test/harness.js` | `suite`, `test`, `eq`, `near`, `report`: tests on plain `node`, no dependencies | Hedy Plant's `tests/harness.mjs` |
 | `test/sim.js` | `simulate` (a bot plays the real engine), `runMany`, `fuzz` (invariants every turn), `replays` (same seed, same run), `greedy` | Hedy's `tests/bots.mjs`, Union Up's `sim/` |
@@ -60,14 +61,25 @@ commit it came from. Fix bugs here, not in a copy.
    `tutorial.observe(game)` each render or tick and draw the step it returns; skip
    the tick while `tutorial.paused(game)`. `mode: 'scripted'` for a guided game in a
    fixed order, `autoStart: true` for one-time callouts.
-5. **Randomness.** One `createRng()` for the whole engine; every roll goes through
+5. **Analytics.** Add the game to `GAMES` in `api/events.js`, then
+   `const stats = createAnalytics({ game: 'my-game', version: BUILD })`. Call
+   `stats.runStart()`, `stats.milestone(name)` at each progress point,
+   `stats.choice(id, option)` for decisions worth comparing, `stats.runEnd('win' | 'loss' | 'quit')`,
+   and `stats.progress(() => ({ t, ... }))` so a closed tab records where the run
+   stood. Keep `stats.run` in the save and pass it back as `runStart(props, { resume })`
+   so a resumed run stays one run. The read-outs (win rate, where people quit,
+   choice shares, win rate by choice) are SQL at the bottom of `game-events.sql`.
+6. **Randomness.** One `createRng()` for the whole engine; every roll goes through
    it. Unseeded it's `Math.random`; seed it for sims, daily puzzles, shared tables.
-6. **Tests and bots.** `test/harness.js` for tests, `test/sim.js` for pacing bots
+7. **Tests and bots.** `test/harness.js` for tests, `test/sim.js` for pacing bots
    and fuzzing. Seed with `seedFromEnv(rng)` so `SEED=7 node sim/x.mjs` replays.
 
 ## Studio rules the kit keeps
 
 No login walls: the local save always works and the cloud save is only offered.
+Analytics is anonymous (a random id the browser makes up, no emails or IPs), sends
+nothing when the browser has Do Not Track or Global Privacy Control on, and can be
+turned off for good with `optOut()`.
 No pre-ticked boxes and no signup pop-ups on load. The tutorial can always be
 skipped, and skipping is remembered.
 

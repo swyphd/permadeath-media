@@ -5,3 +5,4 @@ export * from './rng.js';
 export * from './newsletter.js';
 export * from './save.js';
 export * from './tutorial.js';
+export * from './analytics.js';
