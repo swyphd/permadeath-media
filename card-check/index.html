@@ -17,6 +17,7 @@
   --red:#b7312c;--amber:#b7791f;--ok:#2f855a;--accent:#1f3b6e;--accent-ink:#ffffff;
   --hostile:#fff1f0;--undecided:#f7f8fa;--leaning:#eef5fc;--signed:#edf8f0;--steward:#e3f3e8;
   --sel:#f6c34c;--sel-ink:#1c2230;
+  --fear:#c53030;--act:#2b6cb0;--burn:#dd6b20;--win:#b7791f;--sign:#2f855a;--them:#3d1d24;--them-ink:#f7e9ea;
   color-scheme:light dark;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
@@ -24,12 +25,14 @@
   --hostile:#3a2422;--undecided:#262c38;--leaning:#1f2d40;--signed:#1f3328;--steward:#20402b;
   --accent:#6f9ae0;--accent-ink:#0f1420;--sel:#e0b23a;--sel-ink:#1c2230;
   --red:#f28b84;--amber:#e8bc5a;--ok:#6fd49a;
+  --fear:#f28b84;--act:#79a8ea;--burn:#f6a65a;--win:#e8bc5a;--sign:#6fd49a;--them:#2b1418;--them-ink:#f1dfe0;
 }}
 :root[data-theme="dark"]{
   --bg:#161a22;--panel:#1f2430;--ink:#e8ebf0;--muted:#9aa5b5;--line:#343b48;--soft:#262c38;
   --hostile:#3a2422;--undecided:#262c38;--leaning:#1f2d40;--signed:#1f3328;--steward:#20402b;
   --accent:#6f9ae0;--accent-ink:#0f1420;--sel:#e0b23a;--sel-ink:#1c2230;
   --red:#f28b84;--amber:#e8bc5a;--ok:#6fd49a;
+  --fear:#f28b84;--act:#79a8ea;--burn:#f6a65a;--win:#e8bc5a;--sign:#6fd49a;--them:#2b1418;--them-ink:#f1dfe0;
 }
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
 *{box-sizing:inherit}
@@ -65,8 +68,6 @@ input{font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:6
 .top .sub{color:var(--muted)}
 .top .spacer{flex:1}
 .panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px}
-.grid{display:grid;grid-template-columns:260px 1fr 300px;gap:12px;align-items:start}
-@media (max-width:1050px){.grid{grid-template-columns:1fr}.side{order:2}.board-wrap{order:1}.right{order:3}}
 .stack>*+*{margin-top:12px}
 
 /* lobby */
@@ -80,81 +81,176 @@ input{font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:6
 .seat small{color:var(--muted);display:block}
 .code{font-family:"Barlow Condensed";font-size:28px;letter-spacing:.12em}
 
-/* board */
-.board{display:grid;grid-template-columns:28px 86px repeat(5,1fr);gap:4px}
-.board .hdr{text-align:center;font-family:"Barlow Condensed";font-weight:700;font-size:15px;padding:4px 0;color:var(--muted)}
+/* icons and resource colours: one icon and one colour per resource, everywhere */
+.ico{display:inline-flex;align-items:center;justify-content:center;vertical-align:-.15em;line-height:1}
+.ico svg{width:1em;height:1em;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.ico[data-tip]{cursor:help}
+.r-fear{color:var(--fear)}.r-action{color:var(--act)}.r-burnout{color:var(--burn)}.r-win{color:var(--win)}.r-signed,.r-steward{color:var(--sign)}
+.tip{position:absolute;z-index:60;left:0;top:0;max-width:min(320px,calc(100vw - 16px));background:var(--ink);color:var(--bg);font-size:12.5px;line-height:1.4;padding:7px 10px;border-radius:7px;white-space:pre-line;pointer-events:none;opacity:0;transition:opacity .12s;box-shadow:0 6px 18px rgba(0,0,0,.25)}
+.tip.show{opacity:1}
+
+/* the scoreboard */
+.hud{position:sticky;top:0;z-index:8;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;background:var(--bg);padding:6px 0 8px;margin:0 0 6px}
+.res{background:var(--panel);border:1px solid var(--line);border-top:5px solid var(--rc);border-radius:10px;padding:6px 10px 8px;min-width:0;cursor:help}
+.res .rhead{display:flex;align-items:center;gap:6px;font-size:18px;color:var(--rc)}
+.res .lab{font-family:"Barlow Condensed","IBM Plex Sans",sans-serif;font-weight:700;font-size:15px;letter-spacing:.03em;color:var(--ink);text-transform:uppercase}
+.res .lab.sub{margin-left:auto;display:inline-flex;align-items:center;gap:2px;font-size:15px;color:var(--rc)}
+.res .lab.sub.r-burnout{color:var(--burn)}
+.res .rbody{display:flex;align-items:center;gap:4px;min-height:44px}
+.res .big{font-family:"Barlow Condensed","IBM Plex Sans",sans-serif;font-size:40px;font-weight:700;line-height:1}
+.res .big.hot{color:var(--fear)}
+.res .of{font-family:"Barlow Condensed","IBM Plex Sans",sans-serif;font-size:20px;color:var(--muted);align-self:flex-end;margin-bottom:4px}
+.res .det{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.res .dial{width:52px;height:48px;flex:none}
+.res .bar{height:8px;border-radius:4px;background:var(--line);overflow:hidden;margin-top:4px}
+.res .bar span{display:block;height:100%;background:var(--sign)}
+.wslots{gap:6px!important}
+.wslot{width:34px;height:40px;border:2px dashed var(--line);border-radius:6px;display:inline-flex;align-items:center;justify-content:center;font-size:20px}
+.wslot.on{border:2px solid var(--rc);background:var(--soft);color:var(--rc)}
+.pips{display:inline-flex;gap:2px;font-size:16px}
+.pip{opacity:.25}.pip.on{opacity:1}
+@media (max-width:640px){
+  .hud{gap:4px;padding:4px 0 6px}
+  .res{padding:4px 6px 5px;border-top-width:4px}
+  .res{overflow:hidden}
+  .res .rhead{font-size:13px;gap:2px;flex-wrap:nowrap;min-width:0}.res .lab{font-size:11px;letter-spacing:0}.res .lab.sub{font-size:11px;gap:1px}.res .lab .wide{display:none}
+  .res .rbody{min-height:30px}.res .big{font-size:26px}.res .of{font-size:14px;margin-bottom:2px}
+  .res .dial{display:none}.res .det{display:none}
+  .wslot{width:20px;height:26px;font-size:13px;border-width:1.5px}
+  .wslots{gap:3px!important}
+}
+@media (max-width:380px){.res .lab:not(.sub){display:none}}
+
+/* the table: Management across the top, the studio floor between, the committee at the bottom */
+.table{display:grid;grid-template-columns:minmax(0,1fr) 330px;grid-template-areas:"them them" "rail rail" "main side";gap:12px;align-items:start}
+.them{grid-area:them}.rail{grid-area:rail}.maincol{grid-area:main;min-width:0}.sidecol{grid-area:side;min-width:0}
+@media (max-width:1050px){.table{grid-template-columns:minmax(0,1fr);grid-template-areas:"them" "rail" "main" "side"}}
+.them{background:var(--them);color:var(--them-ink);border-radius:14px;padding:12px 14px;border:2px solid transparent;transition:border-color .3s}
+.them.acting{border-color:var(--fear);box-shadow:0 0 0 3px color-mix(in srgb,var(--fear) 30%,transparent)}
+.them h2{display:flex;align-items:center;gap:6px;color:var(--them-ink)}
+.them .small{color:color-mix(in srgb,var(--them-ink) 70%,transparent)}
+.thead,.uhead,.bhead,.ihead{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+.thead .spacer,.uhead .spacer{flex:1}
+.tbody{display:flex;gap:12px;align-items:stretch}
+.mdeck{flex:none;width:76px;min-height:104px;border-radius:8px;border:2px solid color-mix(in srgb,var(--them-ink) 60%,transparent);background:repeating-linear-gradient(45deg,#6b2a33 0 6px,#53202a 6px 12px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:#fff;font-size:12px;box-shadow:3px 3px 0 #2a1015,6px 6px 0 #1d0b0f;cursor:help}
+.mdeck .n{font-family:"Barlow Condensed",sans-serif;font-size:30px;font-weight:700;line-height:1}
+.played{display:flex;gap:10px;flex-wrap:wrap;flex:1;min-width:0;align-items:flex-start}
+.mcard{flex:1 1 220px;max-width:340px;background:#fbf7f2;color:#1c2230;border-radius:8px;padding:8px 12px 10px;border-top:6px solid #718096;font-size:13px;box-shadow:0 3px 10px rgba(0,0,0,.3)}
+.mcard.t2{border-top-color:#c05621}.mcard.t3{border-top-color:#9b2c2c}
+.mcard .tier{font-size:10.5px;color:#5f6b7c;letter-spacing:.06em;font-weight:600}
+.mcard b{display:block;font-family:"Barlow Condensed",sans-serif;font-size:19px;line-height:1.1;margin:2px 0}
+.mcard .how{color:#3d4757;font-size:12.5px}
+.mcard .did{margin:6px 0 0;padding:6px 0 0 16px;border-top:1px dashed #c9ccd3;font-size:12px;color:#7a1f1a}
+.mcard.flip{animation:flipin .55s cubic-bezier(.2,.7,.3,1) both;animation-delay:var(--d,0s)}
+@keyframes flipin{0%{transform:perspective(700px) rotateY(-90deg) translateY(-8px);opacity:0}60%{opacity:1}100%{transform:none;opacity:1}}
+.them .prompt{flex:1 1 260px}
+.them .mrow{margin-top:10px}
+.mflags{margin-top:8px;font-size:12.5px;color:#ffd2cc}
+.mrow{display:grid;grid-template-columns:repeat(9,1fr);gap:6px}
+.slot{border:1.5px dashed color-mix(in srgb,var(--them-ink) 35%,transparent);border-radius:6px;min-height:46px;padding:3px;font-size:11px;text-align:center;color:color-mix(in srgb,var(--them-ink) 70%,transparent);cursor:help}
+.slot.filled{border-style:solid;background:rgba(255,255,255,.07);color:var(--them-ink)}
+.slot.now{border-color:#ffb4ab;border-style:solid;box-shadow:inset 0 0 0 1px #ffb4ab}
+.slot .n{font-family:"Barlow Condensed",sans-serif;font-weight:700;font-size:14px}
+.slot .cards{font-size:10px;line-height:1.2}
+.slot .iss{display:inline-block;width:10px;height:7px;background:#e9d27a;border:1px solid #9a7a1a;border-radius:1px;margin:1px}
+
+/* the turn tracker */
+.rail{display:flex;align-items:center;gap:10px 16px;flex-wrap:wrap;padding:2px 2px}
+.rail .now{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.rail .who{font-family:"Barlow Condensed","IBM Plex Sans",sans-serif;font-weight:700;font-size:26px;line-height:1;display:inline-flex;align-items:center;gap:6px}
+.rail .who.them-c{color:var(--fear)}.rail .who.us-c{color:var(--act)}
+.steps{display:flex;gap:4px;list-style:none;margin:0 0 0 auto;padding:0;flex-wrap:wrap}
+.steps li{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;padding:4px 10px;border-radius:999px;border:1px solid var(--line);color:var(--muted);background:var(--panel);cursor:help}
+.steps li+li::before{content:"";}
+.steps li.past{opacity:.6}
+.steps li.on.them-s{background:var(--fear);border-color:var(--fear);color:#fff}
+.steps li.on.us-s{background:var(--act);border-color:var(--act);color:#fff}
+.steps li.on .ico{color:inherit}
+@media (max-width:640px){.rail .who{font-size:21px}.steps{margin-left:0}.steps li span{display:none}.steps li.on span{display:inline}.steps li{padding:4px 8px}}
+
+/* the studio floor */
+.bhead h2{margin-right:auto}
+.board{display:grid;grid-template-columns:28px 72px repeat(5,minmax(0,1fr));gap:4px}
+.board .hdr{text-align:center;font-family:"Barlow Condensed";font-weight:700;font-size:15px;padding:4px 0;color:var(--muted);cursor:help}
 .board .hdr.hostile{color:var(--red)}
-.cell{min-height:92px;border-radius:6px;padding:4px;display:flex;flex-wrap:wrap;gap:4px;align-content:flex-start}
+.cell{min-height:76px;border-radius:6px;padding:4px;display:flex;flex-wrap:wrap;gap:4px;align-content:flex-start}
 .cell.c0{background:var(--hostile)}.cell.c1{background:var(--undecided)}.cell.c2{background:var(--leaning)}.cell.c3{background:var(--signed)}.cell.c4{background:var(--steward)}
-.deptlab{writing-mode:vertical-rl;transform:rotate(180deg);color:#fff;font-family:"Barlow Condensed";font-weight:700;font-size:13px;border-radius:5px;display:flex;align-items:center;justify-content:center;letter-spacing:.06em}
-.pile{border:1.5px dashed var(--line);border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:12px;color:var(--muted);cursor:pointer;padding:4px;gap:2px}
-.pile.ok{border-color:var(--accent);color:var(--ink);background:var(--soft)}
-.pile .n{font-family:"Barlow Condensed";font-size:22px;font-weight:700;line-height:1}
-.pile.inoc{box-shadow:inset 0 0 0 2px var(--amber)}
-.wk{background:var(--panel);border:1px solid var(--line);border-radius:5px;padding:4px 6px;font-size:12px;line-height:1.2;width:100%;height:52px;cursor:default;position:relative;display:flex;flex-direction:column;justify-content:space-between;overflow:hidden}
+.deptlab{writing-mode:vertical-rl;transform:rotate(180deg);color:#fff;font-family:"Barlow Condensed";font-weight:700;font-size:13px;border-radius:5px;display:flex;align-items:center;justify-content:center;gap:4px;letter-spacing:.06em;cursor:help}
+.pile{border-radius:7px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:12px;color:#fff;cursor:help;padding:4px;gap:2px;background:repeating-linear-gradient(45deg,#33415c 0 5px,#2a364d 5px 10px);border:2px solid #1f2a3d;box-shadow:2px 2px 0 #1f2a3d,4px 4px 0 #161e2c;margin:0 4px 4px 0}
+.pile.empty{background:none;border:1.5px dashed var(--line);box-shadow:none;color:var(--muted)}
+.pile.ok{cursor:pointer;border-color:var(--sel);box-shadow:0 0 0 2px var(--sel),2px 2px 0 #1f2a3d,4px 4px 0 #161e2c}
+.pile .n{font-family:"Barlow Condensed";font-size:24px;font-weight:700;line-height:1}
+.pile .mc{display:inline-flex;align-items:center;gap:2px;background:#fff;color:var(--act);border-radius:4px;padding:0 4px;font-weight:700}
+.wk{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:4px 6px;font-size:12px;line-height:1.2;width:100%;height:56px;cursor:default;position:relative;display:flex;flex-direction:column;justify-content:space-between;overflow:hidden;box-shadow:0 1px 2px rgba(0,0,0,.12)}
 .wk b{display:flex;align-items:center;gap:3px;font-size:13px;white-space:nowrap;overflow:hidden}
 .wk b .nm{overflow:hidden;text-overflow:ellipsis;min-width:0}
-.wk b .st{flex:none;font-size:12px}
+.wk b .st{flex:none;display:inline-flex;gap:1px;font-size:13px}
+.m-lead{color:#b7791f}.m-trait{color:#805ad5}.m-lock{color:var(--red)}.m-unlock{color:var(--ok)}.m-plant{color:var(--red)}.m-con{color:var(--muted)}
 .wk .r{display:block;color:var(--muted);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .wk .i{display:block;font-size:10.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.wk .inf{flex:none;font-size:10px;letter-spacing:1px;margin-left:auto;color:var(--ink)}
+.wk .i.bad{color:var(--red);font-weight:600}.wk .i.good{color:var(--ok);font-weight:600}
+.wk .isx{display:flex;gap:4px;font-size:13px;color:var(--ink)}
+.wk .inf{flex:none;font-size:10px;letter-spacing:1px;margin-left:auto;color:var(--ink);cursor:help}
 .wk.sel{cursor:pointer;box-shadow:0 0 0 2px var(--sel)}
-.wk.inoc{transform:rotate(-6deg);border-color:var(--amber);box-shadow:0 0 0 1.5px var(--amber)}
+.wk.flip{animation:flipin .5s cubic-bezier(.2,.7,.3,1) both}
+@media (max-width:700px){.board{grid-template-columns:22px 30px repeat(5,minmax(0,1fr))}.wk{width:100%;min-width:0}.wk .r,.wk .i,.wk .isx,.wk .inf{display:none}.wk b{font-size:11px;flex-wrap:wrap;row-gap:0}.wk b .st{font-size:10px}.wk{padding:3px 4px;height:auto;min-height:30px;justify-content:center}.board .hdr{font-size:11px}.pile{font-size:9px;margin:0 2px 2px 0;padding:2px}.pile .n{font-size:16px}.deptlab{font-size:10px}.cell{min-height:52px;padding:3px;gap:3px}.bhead .small{display:none}}
 
-@media (max-width:700px){.board{grid-template-columns:22px 26px repeat(5,1fr)}.wk{width:100%;min-width:0}.wk .r,.wk .i,.wk .inf{display:none}.wk b{font-size:11px}.wk{padding:3px 4px;height:30px;justify-content:center}.board .hdr{font-size:11px}.pile{font-size:10px}.pile .n{font-size:16px}.deptlab{font-size:10px}}
-
-/* organizers */
-.org{border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:var(--soft)}
-.org.active{border-color:var(--accent);box-shadow:inset 0 0 0 2px var(--accent)}
-.org .nm{font-family:"Barlow Condensed";font-weight:700;font-size:18px;display:flex;justify-content:space-between;align-items:baseline}
+/* the committee */
+.us{background:var(--panel);border:2px solid var(--line);border-radius:14px;padding:12px 14px;transition:border-color .3s}
+.us.acting{border-color:var(--act);box-shadow:0 0 0 3px color-mix(in srgb,var(--act) 25%,transparent)}
+.us h2{display:flex;align-items:center;gap:6px}
+.endturn{font-family:"Barlow Condensed","IBM Plex Sans",sans-serif;font-size:19px;letter-spacing:.03em;padding:9px 20px;border-radius:999px;display:inline-flex;align-items:center;gap:6px}
+.endturn .ico{transform:rotate(90deg)}
+.orgs{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:10px}
+.org{border:1px solid var(--line);border-radius:10px;padding:8px 10px;background:var(--soft)}
+.org.active{border-color:var(--act);box-shadow:inset 0 0 0 2px var(--act)}
+.org .nm{font-family:"Barlow Condensed";font-weight:700;font-size:19px;display:flex;justify-content:space-between;align-items:baseline;gap:6px}
 .org .nm small{font-family:"IBM Plex Sans";font-weight:500;font-size:12px;color:var(--muted)}
 .org .ab{font-size:12px;color:var(--muted)}
 .org .ab.lost{text-decoration:line-through}
-.burn{display:inline-block;width:14px;height:20px;border:1.5px solid var(--ink);border-radius:2px;vertical-align:middle;margin-right:6px;transition:transform .25s}
-.burn.b1{transform:rotate(90deg)}.burn.b2{transform:rotate(180deg)}.burn.b3{background:var(--ink)}
-.actions{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px}
-.actions button{padding:7px 6px;font-size:13px}
+.meters{display:flex;gap:6px 16px;flex-wrap:wrap;margin-top:6px}
+.meter{display:inline-flex;align-items:center;gap:6px}
+.meter .pips{font-size:20px;cursor:help}
+.mlab{font-size:12px;color:var(--muted)}
+.actions{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:6px;margin-top:8px}
+.actions button{padding:6px 8px;font-size:13px;display:flex;justify-content:space-between;align-items:center;gap:6px;text-align:left}
+.actions .an{font-weight:600}
+.actions .cost{display:inline-flex;align-items:center;gap:2px;font-size:12.5px;white-space:nowrap}
+.actions .arrow{color:var(--muted);margin:0 1px}
 .hint{font-size:13px;color:var(--muted);margin-top:8px;min-height:1.4em}
 .hint.warn{color:var(--red)}
 .prompt{background:var(--sel);color:var(--sel-ink);padding:8px 10px;border-radius:6px;font-weight:600;margin-top:8px}
+@media (max-width:640px){.uhead .endturn{order:5;width:100%;justify-content:center}.uhead .small{display:none}.actions{grid-template-columns:1fr 1fr}.actions button{flex-wrap:wrap}}
 
-/* fear */
-.fear{display:flex;align-items:center;gap:10px}
-.fear .dial{width:92px;height:92px;flex:none}
-.fear .num{font-family:"Barlow Condensed";font-size:44px;font-weight:700;line-height:1}
-.fear .lab{color:var(--muted);font-size:13px}
-.fearnotes{font-size:12px;color:var(--muted)}
-
-/* issues */
-.issue{border:1px solid var(--line);border-radius:6px;padding:6px 8px;font-size:13px;display:flex;justify-content:space-between;align-items:center;gap:6px}
-.issue.ready{border-color:var(--ok)}
-.issue.done{opacity:.5}
-.issue.gone{opacity:.4;text-decoration:line-through}
-.issue b{display:block}
-.issue small{color:var(--muted)}
-.issue .req{font-family:"Barlow Condensed";font-size:18px;font-weight:700;white-space:nowrap}
-
-/* management row */
-.mrow{display:grid;grid-template-columns:repeat(9,1fr);gap:6px}
-.slot{border:1.5px dashed var(--line);border-radius:6px;min-height:64px;padding:4px;font-size:11px;text-align:center;color:var(--muted);position:relative}
-.slot.filled{border-style:solid;background:var(--soft);color:var(--ink)}
-.slot.now{border-color:var(--accent);border-style:solid}
-.slot .n{font-family:"Barlow Condensed";font-weight:700;font-size:14px}
-.slot .cards{font-size:10px;line-height:1.2}
-.slot .iss{display:inline-block;width:10px;height:7px;background:#e9d27a;border:1px solid #9a7a1a;border-radius:1px;margin:1px}
-.mcards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px;margin-top:10px}
-.mcard{border-left:4px solid var(--line);padding:8px 12px;background:var(--soft);border-radius:4px;font-size:13px}
-.mcard .tier{font-size:11px;color:var(--muted);letter-spacing:.04em}
-.mcard.t1 .tier{color:#718096}.mcard.t2 .tier{color:#c05621}.mcard.t3 .tier{color:#9b2c2c}
-.mpanel .mhead{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
-.mpanel .mhead .spacer{flex:1}
-@media (max-width:700px){.mrow{grid-template-columns:repeat(9,1fr);gap:3px}.slot{min-height:44px;font-size:9px;padding:2px}.slot .cards{display:none}}
-.mcard.t1{border-left-color:#718096}.mcard.t2{border-left-color:#c05621}.mcard.t3{border-left-color:#9b2c2c}
-.mcard b{font-family:"Barlow Condensed";font-size:17px}
-.mcard .how{color:var(--muted);font-size:12px}
-.log{font-size:12px;max-height:240px;overflow:auto;border-top:1px solid var(--line);padding-top:6px}
+/* Small Wins */
+.issues .ihead h2{display:flex;align-items:center;gap:6px}
+.issue{border:1px solid var(--line);border-left:6px solid var(--rc);border-radius:8px;padding:7px 9px;font-size:13px;background:var(--panel)}
+.issue.ready{box-shadow:0 0 0 2px var(--ok) inset}
+.issue.pick{cursor:pointer;box-shadow:0 0 0 2px var(--sel)}
+.issue.done{background:var(--soft)}
+.issue.gone{opacity:.45}
+.issue.gone b{text-decoration:line-through}
+.issue .ih{display:flex;align-items:center;gap:6px}
+.issue .ih b{font-family:"Barlow Condensed";font-size:18px;line-height:1.1}
+.issue .ih .big{font-size:20px;color:var(--rc)}
+.issue .rres{margin-left:auto;display:inline-flex;gap:3px;font-size:15px}
+.issue .need{display:flex;align-items:center;gap:6px;margin-top:4px;cursor:help}
+.issue .need .pips{font-size:15px}
+.issue .state{margin-top:4px}
+.issue.done .state{color:var(--ok);font-weight:600}
+.fx{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
+.chip{display:inline-flex;align-items:center;gap:3px;font-size:12px;padding:2px 7px;border-radius:999px;border:1px solid currentColor;background:var(--panel);cursor:help;line-height:1.3}
+.chip>span:not(.ico){color:var(--ink)}
+.issue .cost{margin-top:5px;display:flex;align-items:center;gap:3px;flex-wrap:wrap}
+.logp summary{cursor:pointer}
+.log{font-size:12px;max-height:240px;overflow:auto;border-top:1px solid var(--line);padding-top:6px;margin-top:6px}
 .log div{padding:2px 0;border-bottom:1px dotted var(--line)}
 .log .r{font-weight:600;color:var(--accent);margin-top:4px}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:30;display:flex;align-items:center;justify-content:center;padding:16px}
+.modal .sheet{background:var(--panel);color:var(--ink);max-width:420px;width:100%;border-radius:12px;padding:18px 20px;border:1px solid var(--line);box-shadow:0 10px 30px rgba(0,0,0,.35)}
+.modal p{font-size:14px;margin:8px 0 0}
+.modal .row{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}
+.symbols td.k{font-size:15px}
 .banner{padding:14px;border-radius:8px;font-family:"Barlow Condensed";font-size:26px;text-align:center}
 .banner.win{background:var(--signed);color:var(--ok)}
 .banner.loss{background:var(--hostile);color:var(--red)}
@@ -163,8 +259,8 @@ input{font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:6
 .toast{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:8px 14px;border-radius:8px;font-size:13px;opacity:0;transition:opacity .2s;pointer-events:none}
 .toast.show{opacity:1}
 /* tutorial, callouts, rules */
-.tut,.callout{position:sticky;top:0;z-index:5;background:var(--panel);border:1px solid var(--line);border-left:5px solid var(--sel);border-radius:10px;padding:12px 14px;margin-bottom:12px;box-shadow:0 4px 14px rgba(0,0,0,.14)}
-.callout{border-left-color:var(--accent)}
+.tut,.callout{position:sticky;top:var(--hudh,0px);z-index:5;background:var(--panel);border:1px solid var(--line);border-left:5px solid var(--sel);border-radius:10px;padding:12px 14px;margin-bottom:12px;box-shadow:0 4px 14px rgba(0,0,0,.14)}
+.callout{border-left-color:var(--accent);position:relative;top:auto;z-index:1}
 .tut .th{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
 .tut h2,.callout h2{font-size:20px}
 .tut .step{font-size:12px;color:var(--muted);margin-left:auto;white-space:nowrap}
@@ -235,6 +331,8 @@ import {
   doSkipInfluence, afterAction
 } from "/card-check/engine.js";
 import * as TUT from "/card-check/tutorial.js";
+import { ICONS, RESOURCES, ISSUE_ICONS, ISSUE_EFFECTS, SYMBOLS, issueResources, influenceTip } from "/card-check/look.js";
+import { mountTooltips } from "/card-check/tooltip.js";
 import { createLocalSave, createNewsletter, mountSignupForm, createAnalytics, newId } from "/kit/index.js";
 /* Online play. Paste the web app config from the Firebase console here.
    Leave apiKey empty and the game stays device-only (solo / pass-and-play). */
@@ -383,97 +481,258 @@ function renderSeats(){
   el.querySelector("#start").onclick=()=>{ mutate(g=>{ if(g.phase!=="lobby")return "The game already started."; if(!g.seats.length)return "Claim a seat first."; const ng=newGame(g.seats,g.seed); ng.hotseat=g.hotseat; ng.seats=g.seats; ng.host=g.host; ng.players=g.players; ng.run=newId(); setupFlips(ng); startRound(ng); Object.keys(g).forEach(k=>delete g[k]); Object.assign(g,ng); return null; }); };
 }
 
-/* ---- game render ---- */
+/* ---- game render ----
+   The page is a table: Management sits across the top, the studio floor (the board)
+   in the middle, the organizing committee along the bottom. A scoreboard of the
+   resources stays pinned above it all, and every icon has a tooltip. */
+const tipA=(s)=>`data-tip="${esc(s)}"`;
+// An icon with its tooltip. `name` is a key of ICONS; `cls` adds colour classes.
+function ic(name,tip,cls=""){ return `<span class="ico ${cls}" ${tip?`${tipA(tip)} role="img" aria-label="${esc(tip.split(/[.:]/)[0])}"`:'aria-hidden="true"'}><svg viewBox="0 0 24 24" aria-hidden="true">${ICONS[name]||""}</svg></span>`; }
+// A resource's icon in its own colour.
+function ri(r,tip){ const R=RESOURCES[r]; return ic(R.icon,tip===undefined?R.tip:tip,"r-"+r); }
+const DISP_TIPS=["Hostile: against the union. A Hostile Leader drags a colleague down a step every round.","Undecided: could go either way.","Leaning: one good talk from signing.","Signed: has signed a union card. Counts at the vote.","Steward: a Signed Leader on the committee. Counts at the vote."];
+let revealScroll=false, tooltips=null, lastGameKey=null, lastRoundKey=null, revealKey=null, revealUntil=0, revealTimer=null, seenOnBoard=null;
+
 function render(){
+  if(tooltips)tooltips.hide();
   if(!G){renderLobby();return;}
   if(G.phase==="lobby"){renderSeats();return;}
   const g=G; const pend=g.pending&&g.pending[0];
-  const sc=signedCount(g); const vc=voteCount(g);
+  noteRound(g);
   app.innerHTML="";
   const why=[]; if(g.flags.decert){const d=g.flags.decert; const lost=onBoard(g,d).filter(w=>w.disp>=3).length; const st=onBoard(g,d).filter(w=>w.disp===4).length; if(st<2)why.push(`${DEPTS[d][0]} is decertified: its ${lost} Signed/Steward don't count unless two are Stewards (has ${st}).`);}
   if(g.flags.vdc){const n=onBoard(g).filter(w=>w.disp>=3&&!g.flags.vdc.includes(w.id)).length; if(n)why.push(`Vote Delay Challenge: ${n} signed this round don't count.`);}
   const root=$(`<div>
     ${why.length?`<div class="panel" style="margin-bottom:10px;border-color:var(--red);color:var(--red);font-size:13px">${why.map(esc).join(" ")}</div>`:""}
-    <div class="top"><h1>Card Check</h1><span class="sub">${g.tutorial&&!g.tutorial.done?"tutorial · ":""}${g.phase==="over"?"game over":`round ${g.round} of ${g.maxRound}`}${g.phase==="absorb"?" · management phase":g.phase==="steward"?" · steward phase":""}</span><span class="spacer"></span>
-      <span class="small">${sc} Signed/Steward · ${g.threshold} needed${sc!==vc?` · ${vc} would count now`:""}</span>${!offline&&code&&!g.local?`<span class="code" style="font-size:18px">${code}</span>`:""}${HOME}</div>
+    <div class="top"><h1>Card Check</h1><span class="sub">${g.tutorial&&!g.tutorial.done?"tutorial · ":""}${g.phase==="over"?"game over":`round ${g.round} of ${g.maxRound}`}</span><span class="spacer"></span>
+      ${!offline&&code&&!g.local?`<span class="code" style="font-size:18px">${code}</span>`:""}${HOME}</div>
+    <div class="hud" id="hud"></div>
     ${g.phase==="over"?`<div class="banner ${g.result}">${g.result==="win"?"The union is certified.":"The drive is broken."} ${esc(g.why||"")}</div>`:""}
-    <div class="grid">
-      <div class="side stack" id="side"></div>
-      <div class="board-wrap stack"><div class="panel" id="board"></div><div class="panel mpanel" id="mgmt"></div></div>
-      <div class="right stack" id="right"></div>
+    <div class="table">
+      <section class="them" id="them" aria-label="Management's side of the table"></section>
+      <div class="rail" id="rail"></div>
+      <div class="maincol stack">
+        <section class="panel boardp" id="board" aria-label="The studio floor"></section>
+        <section class="us" id="us" aria-label="Your side of the table"></section>
+      </div>
+      <div class="sidecol stack" id="right"></div>
     </div></div>`);
   app.appendChild(root);
-  if(g.phase==="steward"&&pend){ const anySeat=g.orgs.some((o,i)=>controls(i));
-    const box=$(`<div class="prompt">${pend.type==="steward"?`Steward phase — ${esc(pend.from)} can bring one worker in ${DEPTS[pend.dept][0]} up a step. Click a worker on the board.`:`${esc(pend.from)}'s influence: pick ${pend.n} more in ${DEPTS[pend.dept][0]} to move up.`}</div>`);
-    const b=$(`<button style="margin-top:6px">${pend.type==="steward"?"Make no move":"Skip remaining"}</button>`); b.disabled=!anySeat; b.onclick=()=>act(g=>pend.type==="steward"?doStewardSkip(g):doSkipInfluence(g)); box.appendChild(b);
-    if(!anySeat)box.appendChild($(`<div class="small">Waiting for a seated player.</div>`));
-    root.querySelector("#side").appendChild(box); }
-  renderSide(root.querySelector("#side"),g,pend);
+  renderHud(root.querySelector("#hud"),g);
+  renderThem(root.querySelector("#them"),g);
+  renderRail(root.querySelector("#rail"),g);
   renderBoard(root.querySelector("#board"),g,pend);
-  renderMgmt(root.querySelector("#mgmt"),g);
+  renderUs(root.querySelector("#us"),g,pend);
   renderRight(root.querySelector("#right"),g);
   renderGuide(root,g);
-  if(g.phase==="over"){const b=$(`<div class="panel"><button class="primary" id="again">Back to lobby (same seats)</button></div>`); root.querySelector("#side").appendChild(b);
-    b.querySelector("#again").onclick=()=>{ if(g.local){ localSave.clear(); G=null; renderLobby(); return; } mutate(x=>{ const ng={phase:"lobby",seats:x.seats,players:x.players,hotseat:x.hotseat,host:x.host,seed:Math.floor(Math.random()*1e9)}; Object.keys(x).forEach(k=>delete x[k]); Object.assign(x,ng); return null; }); };}
+  syncHudHeight();
+  // A new round: bring Management's side into view so their turn is seen.
+  if(revealScroll){ revealScroll=false; const th=root.querySelector("#them"); const tut=document.querySelector(".tut");
+    const cover=(document.getElementById("hud").offsetHeight||0)+(tut&&getComputedStyle(tut).position==="sticky"?tut.offsetHeight+12:0);
+    const y=th.getBoundingClientRect().top+window.scrollY-cover-8;
+    if(y<window.scrollY) window.scrollTo({top:Math.max(0,y),behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"}); }
 }
-function fearSvg(f){ const ang=v=>-120+24*v; const pt=(v,r)=>{const a=ang(v)*Math.PI/180;return [46+r*Math.sin(a),50-r*Math.cos(a)];};
-  const [x7,y7]=pt(7,38),[x10,y10]=pt(10,38); const tick=v=>{const [a,b]=pt(v,31),[c,d]=pt(v,45);return `<line x1="${a.toFixed(1)}" y1="${b.toFixed(1)}" x2="${c.toFixed(1)}" y2="${d.toFixed(1)}" stroke="var(--red)" stroke-width="2"/>`;};
-  const [lx7,ly7]=pt(7,52),[lx10,ly10]=pt(10,52); const [nx,ny]=pt(f,34);
-  return `<svg class="dial" viewBox="-6 -2 104 96" aria-label="Fear ${f} of 10; danger from 7"><path d="M16 74 A38 38 0 1 1 76 74" fill="none" stroke="var(--line)" stroke-width="8" stroke-linecap="round"/>
-  <path d="M${x7.toFixed(1)} ${y7.toFixed(1)} A38 38 0 0 1 ${x10.toFixed(1)} ${y10.toFixed(1)}" fill="none" stroke="var(--red)" stroke-opacity=".35" stroke-width="8"/>
-  <path d="M16 74 A38 38 0 1 1 76 74" fill="none" stroke="${f>=8?"var(--red)":f>=7?"var(--amber)":"var(--accent)"}" stroke-width="8" stroke-linecap="round" stroke-dasharray="${(f/10)*159} 200"/>
-  ${tick(7)}${tick(10)}
-  <text x="${lx7.toFixed(1)}" y="${(ly7+3).toFixed(1)}" font-size="9" font-weight="700" text-anchor="middle" fill="var(--red)" font-family="Barlow Condensed, sans-serif">7</text>
-  <text x="${lx10.toFixed(1)}" y="${(ly10+3).toFixed(1)}" font-size="9" font-weight="700" text-anchor="middle" fill="var(--red)" font-family="Barlow Condensed, sans-serif">10</text>
-  <line x1="46" y1="50" x2="${nx.toFixed(1)}" y2="${ny.toFixed(1)}" stroke="var(--ink)" stroke-width="3" stroke-linecap="round"/><circle cx="46" cy="50" r="4" fill="var(--ink)"/></svg>`; }
+// Management's turn happens all at once in the rules; on screen it gets a moment:
+// when a new round starts its cards turn over one by one and the turn tracker says so.
+function noteRound(g){
+  const gameKey=g.seed+":"+(g.created||"")+":"+(g.run||"");
+  const roundKey=gameKey+":"+g.round;
+  const fresh=gameKey!==lastGameKey;
+  if(fresh)seenOnBoard=null;
+  if(roundKey!==lastRoundKey&&(fresh?g.round===1:true)&&g.phase!=="over"){
+    const slot=g.row[g.round-1]; const n=slot?slot.cards.length:0;
+    revealKey=roundKey; revealUntil=Date.now()+900+650*n; revealScroll=!fresh;
+    clearTimeout(revealTimer); revealTimer=setTimeout(()=>{ if(G)render(); },900+650*n+50);
+  }
+  lastGameKey=gameKey; lastRoundKey=roundKey;
+}
+function revealing(g){ return revealKey&&revealKey.endsWith(":"+g.round)&&Date.now()<revealUntil; }
+function syncHudHeight(){ const h=document.getElementById("hud"); if(h)document.documentElement.style.setProperty("--hudh",h.offsetHeight+"px"); }
+window.addEventListener("resize",syncHudHeight);
 
-function renderSide(el,g,pend){
-  const f=g.fear;
-  el.appendChild($(`<div class="panel"><div class="fear">${fearSvg(f)}<div><div class="num">${f}</div><div class="lab">Fear</div></div></div>
-    <div class="fearnotes">${f>=10?"At 10. If it is still 10 at the end of this round, the drive collapses. ":""}${f>=8?"Small Wins cost 2 actions. ":""}${f>=7?"One-on-Ones cost 2. Everyone +1 Burnout at round end. ":f>=5?"Climbing. 7 is where it hurts. ":"Under control. "}${g.reassuredRound?"Reassured this round.":"Reassure available this round."}</div></div>`));
+function fearNote(g){ const f=g.fear; return `${f>=10?"At 10: if it is still 10 at the end of this round, the drive collapses. ":""}${f>=8?"Small Wins cost 2 actions. ":""}${f>=7?"One-on-Ones cost 2. Everyone takes +1 Burnout at round end. ":f>=5?"Climbing. 7 is where it hurts. ":"Under control. "}${g.reassuredRound?"Reassured this round.":"Reassure available this round."}`; }
+// The scoreboard: the four resources, each in its own colour with its own icon.
+function renderHud(el,g){
+  const f=g.fear; const sc=signedCount(g); const vc=voteCount(g); const st=onBoard(g).filter(w=>w.disp===4).length;
+  const fearTip=`Fear ${f} of 10. ${fearNote(g)}\n\n${RESOURCES.fear.tip}`;
+  const pct=Math.min(100,Math.round(sc/g.threshold*100));
+  const signTip=`${sc} Signed or Steward of ${g.threshold} needed at the vote (end of round ${g.maxRound}).${sc!==vc?` Only ${vc} would count right now.`:""} ${st} of them ${st===1?"is a Steward":"are Stewards"}.\n\n${RESOURCES.signed.tip}`;
+  const done=g.issues.filter(i=>i.state==="done");
+  const slots=[0,1,2].map(k=>{ const i=done[k]; if(!i)return `<span class="wslot" ${tipA("An open Small Win slot.")}></span>`; const def=ISSUES.find(x=>x.id===i.id); const r=issueResources(i.id)[0];
+    return `<span class="wslot on" style="--rc:var(${RESOURCES[r].color})" ${tipA(`${def.n}, won. In effect: ${def.x}`)}>${ic(def.icon==="any"?"any":def.icon,"")}</span>`; }).join("");
+  const oi=g.phase==="over"?-1:g.cur; const o=g.orgs[oi]||g.orgs[0];
+  const left=g.phase==="org"?o.actions:actionsFor(o); const total=g.phase==="org"?Math.max(o.turnTotal||0,o.actions):actionsFor(o);
+  el.innerHTML=`
+    <div class="res" style="--rc:var(--fear)" ${tipA(fearTip)}>
+      <div class="rhead">${ri("fear","")}<span class="lab">Fear</span></div>
+      <div class="rbody">${fearSvg(f)}<span class="big ${f>=7?"hot":""}">${f}</span><span class="of">/10</span></div>
+      <div class="det">${f>=7?"Danger: talks cost 2, Burnout at round end":f>=5?"Climbing. 7 is where it hurts":"Under control"}</div>
+    </div>
+    <div class="res" style="--rc:var(--sign)" ${tipA(signTip)}>
+      <div class="rhead">${ri("signed","")}<span class="lab">Signed</span>${st?`<span class="lab sub">${ri("steward","")}${st}</span>`:""}</div>
+      <div class="rbody"><span class="big">${sc}</span><span class="of">/${g.threshold}</span></div>
+      <div class="bar" aria-hidden="true"><span style="width:${pct}%"></span></div>
+    </div>
+    <div class="res" style="--rc:var(--win)" ${tipA(`${done.length} of 3 Small Wins taken, ${winsLeft(g)} left this game.\n\n${RESOURCES.win.tip}`)}>
+      <div class="rhead">${ri("win","")}<span class="lab"><span class="wide">Small </span>Wins</span></div>
+      <div class="rbody wslots">${slots}</div>
+      <div class="det">${winsLeft(g)} left</div>
+    </div>
+    <div class="res" style="--rc:var(--act)" ${tipA(`${o.n}${g.phase==="org"?`: ${left} of ${total} actions left this turn`:`: ${actionsFor(o)} actions a round`}. Burnout ${o.burnout} of 3.\n\n${RESOURCES.action.tip}\n\n${RESOURCES.burnout.tip}`)}>
+      <div class="rhead">${ri("action","")}<span class="lab"><span class="wide">Actions</span></span><span class="lab sub r-burnout">${ri("burnout","")}${o.burnout}</span></div>
+      <div class="rbody"><span class="big">${left}</span><span class="of">/${total}</span></div>
+      <div class="det">${esc(g.orgs.length>1?o.n.replace(/^The /,""):"left this turn")}</div>
+    </div>`;
+}
+function pips(r,on,n,tip){ let s=""; for(let i=0;i<n;i++)s+=`<span class="pip ${i<on?"on":""}">${ic(RESOURCES[r].icon,"")}</span>`; return `<span class="pips r-${r}" ${tipA(tip)}>${s}</span>`; }
+
+function renderThem(el,g){
+  const slot=g.row[g.round-1]; const rev=revealing(g)&&revealKey.endsWith(":"+g.round);
+  const n=signedCount(g); const nextDraw=1+(g.round+1>=7?1:0)+(n>=12?1:0)+(n>=20?1:0)+((g.row[g.round]&&g.row[g.round].issues.length)||0);
+  const t=tierFor(g); const left=deckLeft(g);
+  el.classList.toggle("acting",rev||g.phase==="absorb");
+  el.innerHTML=`<div class="thead"><h2>${ic("mgmt",SYMBOLS.mgmt)} Management</h2><span class="small">their side of the table</span><span class="spacer"></span>
+      <span class="small" ${tipA(`Next round management draws ${nextDraw}: 1, +1 from round 7, +1 at 12 and again at 20 Signed, +1 for each Small Win you took this round.`)}>${g.phase==="over"?"":`next round draws <b>${nextDraw}</b>`}</span></div>
+    <div class="tbody">
+      <div class="mdeck t${t}" ${tipA(`Management's deck: ${left} cards left. Tier ${t} now (${(g.deck[t]||[]).length} left in it). Tier 1 in rounds 1 to 3, tier 2 from round 4, tier 3 from round 7: harsher each time.`)}><span class="n">${left}</span><span>Tier ${t}</span></div>
+      <div class="played" id="played"></div>
+    </div>
+    <div class="mrow" id="mrow" aria-label="Rounds"></div>`;
+  const played=el.querySelector("#played");
+  if(slot&&slot.cards.length){
+    slot.cards.forEach((id,k)=>{ const m=MGMT.find(x=>x[0]===id); const note=(slot.notes||[])[k];
+      const lines=note&&note.c===id?note.t:[];
+      played.appendChild($(`<div class="mcard t${m[1]} ${rev?"flip":""}" style="--d:${(0.35+k*0.65).toFixed(2)}s"><div class="tier">MANAGEMENT · TIER ${m[1]}</div><b>${esc(m[2])}</b><div class="how">${esc(m[3])}</div>${lines.length?`<ul class="did">${lines.map(l=>`<li>${esc(l)}</li>`).join("")}</ul>`:""}</div>`)); });
+  } else played.appendChild($(`<div class="small">No cards yet this round.</div>`));
+  if(g.phase==="absorb"){ const m=MGMT.find(x=>x[0]===g.mgmt.card); const sts=stewardsAvail(g); const anySeat=g.orgs.some((o,i)=>controls(i));
+    const box=$(`<div class="prompt mcard-next"><div style="font-family:'Barlow Condensed';font-size:18px">Management is about to play: ${esc(m[2])}</div><div style="font-weight:400">${esc(m[3])}</div>
+      <div style="font-weight:400;margin-top:6px">Each Steward has one absorb per game. Tick the ones allowed to spend it if this card hits their department, then resolve.</div><div id="abs" style="margin-top:6px"></div></div>`);
+    const list=box.querySelector("#abs");
+    sts.forEach(st=>list.appendChild($(`<label style="display:block;font-weight:500"><input type="checkbox" data-id="${st.id}"> ${esc(st.name)} may absorb in ${DEPTS[st.dept][0]}</label>`)));
+    const b=$(`<button class="primary" data-act="absorb" style="margin-top:8px" ${anySeat?"":"disabled"}>Resolve the card</button>`);
+    b.onclick=()=>{ const allow={}; list.querySelectorAll("input:checked").forEach(i=>allow[i.dataset.id]=true); act(g=>doAbsorbDecision(g,allow)); };
+    box.appendChild(b); if(!anySeat)box.appendChild($(`<div class="small">Waiting for a seated player.</div>`)); played.appendChild(box); }
+  const row=el.querySelector("#mrow");
+  for(let i=0;i<9;i++){ const s=g.row[i]; const filled=s&&s.cards.length; const now=i===g.round-1;
+    const label=i===7?"vote":i===8?(g.maxRound===9?"vote":"—"):i===3?"tier 2":i===6?"tier 3":"";
+    const tip=filled?`Round ${i+1}: management played\n`+s.cards.map(id=>{const m=MGMT.find(x=>x[0]===id);return m[2]+": "+m[3];}).join("\n"):`Round ${i+1}${label==="vote"?": the vote comes at the end of this round":label?`: management's ${label} cards start`:""}.`;
+    const e=$(`<div class="slot ${filled?"filled":""} ${now?"now":""}" data-slot="${i+1}" ${tipA(tip+(s&&s.issues&&s.issues.length?`\n${s.issues.length} Small Win${s.issues.length===1?"":"s"} taken: +${s.issues.length} management draw.`:""))}><div class="n">${i+1}</div>${filled?`<div class="cards">${s.cards.length} card${s.cards.length===1?"":"s"}</div>`:`<div>${label}</div>`}${s&&s.issues&&s.issues.length?`<div>${s.issues.map(()=>'<span class="iss"></span>').join("")}</div>`:""}</div>`);
+    row.appendChild(e); }
+  const fl=[]; if(g.flags.consultant)fl.push("Consultant: One-on-Ones and Maps cost 2 this round"); if(g.flags.noMap)fl.push("Pizza Friday: no Map actions this round"); if(g.flags.noMapNext)fl.push("Pizza Friday: no Map actions next round"); if(g.flags.reorg)fl.push(`${DEPTS[g.flags.reorg][0]} reorganized: no Steward or Influence there this round`); if(g.flags.decert)fl.push(`${DEPTS[g.flags.decert][0]} decertified`); if(g.flags.vdc)fl.push("Vote Delay Challenge in effect"); if(g.flags.overtime)fl.push("Mandatory Overtime: 2 actions this round instead of 3"); if(g.orgs.some(o=>o.townhall))fl.push("Town Hall: each organizer's next One-on-One costs 2");
+  if(fl.length)el.appendChild($(`<div class="mflags">In effect: ${fl.map(esc).join(" · ")}</div>`));
+}
+// Whose turn it is, in the order a round runs.
+function renderRail(el,g){
+  if(g.phase==="over"){ el.innerHTML=""; el.hidden=true; return; }
+  const rev=revealing(g);
+  const step=rev||g.phase==="mgmt"||g.phase==="absorb"?0:g.phase==="steward"?1:2;
+  const o=g.orgs[g.cur]; const mine=controls(g.cur);
+  const head=step===0?`<span class="who them-c">${ic("mgmt","")} Management's turn</span><span class="small">${g.phase==="absorb"?"decide which Stewards may absorb":"turning over their cards"}</span>`
+    :step===1?`<span class="who us-c">${ri("steward","")} Stewards act</span><span class="small">pick who each Steward brings up</span>`
+    :`<span class="who us-c">${ic("orgs","")} ${mine?"Your turn":esc(o.n)+"'s turn"}</span><span class="small">${esc(o.n)} · ${o.actions} action${o.actions===1?"":"s"} left</span>`;
+  const steps=[["Management plays","mgmt","Management draws and plays its cards: 1 a round, more from round 7, as you sign more workers, and after each Small Win."],["Stewards","steward","Each Steward brings one worker in their department up a step. Then Hostile Leaders drag one down."],["Organizers","orgs","Each organizer spends their actions, then ends their turn. First player rotates each round."],["Status check","fear","Fear 10: the drive collapses. Fear 7 to 9: every organizer takes +1 Burnout. After round "+g.maxRound+", the vote."]];
+  el.innerHTML=`<div class="now">${head}</div><ol class="steps" aria-label="Round order">${steps.map(([n,icn,t],k)=>`<li class="${k===step?"on":k<step?"past":""} ${k===0?"them-s":"us-s"}" ${tipA(t)}>${icn==="steward"?ri("steward",""):ic(icn,"")}<span>${n}</span></li>`).join("")}</ol>`;
+}
+function renderUs(el,g,pend){
+  el.classList.toggle("acting",g.phase==="org"&&!revealing(g)||g.phase==="steward");
+  const cur=g.orgs[g.cur]; const myTurn=g.phase==="org"&&controls(g.cur);
+  const head=$(`<div class="uhead"><h2>${ic("orgs","Your side: the organizing committee. You all win or lose together.")} The committee</h2><span class="small">your side of the table</span><span class="spacer"></span></div>`);
+  el.appendChild(head);
+  if(g.phase==="org"&&!(pend&&pend.type!=="icon")){
+    const eb=$(`<button class="endturn primary" data-act="end" ${myTurn?"":"disabled"} ${tipA(`End ${cur.n}'s turn. Unspent actions are lost.`)}>End turn ${ic("up","")}</button>`);
+    eb.onclick=()=>endTurn(); head.appendChild(eb);
+  }
+  if(g.phase==="steward"&&pend){ const anySeat=g.orgs.some((o,i)=>controls(i));
+    const box=$(`<div class="prompt">${pend.type==="steward"?`Steward phase: ${esc(pend.from)} can bring one worker in ${DEPTS[pend.dept][0]} up a step. Click a highlighted worker on the board.`:`${esc(pend.from)}'s influence: pick ${pend.n} more in ${DEPTS[pend.dept][0]} to move up.`}</div>`);
+    const b=$(`<button style="margin-top:6px">${pend.type==="steward"?"Make no move":"Skip remaining"}</button>`); b.disabled=!anySeat; b.onclick=()=>act(g=>pend.type==="steward"?doStewardSkip(g):doSkipInfluence(g)); box.appendChild(b);
+    if(!anySeat)box.appendChild($(`<div class="small">Waiting for a seated player.</div>`));
+    el.appendChild(box); }
+  const list=$(`<div class="orgs"></div>`); el.appendChild(list);
   g.orgs.forEach((o,i)=>{
     const active=g.phase==="org"&&g.cur===i; const mine=controls(i);
+    const per=actionsFor(o); const left=active?o.actions:per; const total=active?Math.max(o.turnTotal||0,o.actions):per;
     const d=$(`<div class="org ${active?"active":""}">
       <div class="nm"><span>${o.n}</span><small>${DEPTS[o.d][0]}${o.playerId===myId&&!g.hotseat?" · you":""}</small></div>
-      <div><span class="burn b${o.burnout}"></span><span class="small">Burnout ${o.burnout} · ${actionsFor(o)} action${actionsFor(o)===1?"":"s"}/round</span></div>
-      <div class="ab ${hasAbility(g,o)?"":"lost"}">${ORGS.find(x=>x.k===o.k).a}</div>
-      ${active?`<div class="small" style="margin-top:4px">Actions this turn: used <b>${o.turnTotal-o.actions}</b> of <b>${o.turnTotal}</b> · <b>${o.actions}</b> left${o.townhall?" · next 1-on-1 costs 2":""}</div>`:(g.phase==="org"&&o.done?`<div class="small">Done this round</div>`:"")}
+      <div class="ab ${hasAbility(g,o)?"":"lost"}" ${tipA(hasAbility(g,o)?"This organizer's ability.":"Burned out: this ability is lost until Burnout drops below 3.")}>${ORGS.find(x=>x.k===o.k).a}</div>
+      <div class="meters">
+        <span class="meter">${pips("action",left,Math.max(total,left),`${left} of ${total} actions ${active?"left this turn":"a round"}. ${RESOURCES.action.tip}`)}<span class="mlab">${active?`${left} left`:g.phase==="org"&&o.done?"done":`${per} a round`}</span></span>
+        <span class="meter">${pips("burnout",o.burnout,3,`Burnout ${o.burnout} of 3. ${RESOURCES.burnout.tip}`)}<span class="mlab">Burnout ${o.burnout}</span></span>
+      </div>
+      ${active&&o.townhall?`<div class="small">Town Hall: next 1-on-1 costs 2</div>`:""}
     </div>`);
-    if(active&&mine&&g.phase==="org"){
+    if(active&&mine){
       if(pend){ d.appendChild($(`<div class="prompt">${pend.type==="influence"?`${pend.from}'s influence: pick ${pend.n} more in ${DEPTS[pend.dept][0]} to move up.`:"Just Cause: choose an icon."}</div>`));
         if(pend.type==="influence"){const b=$(`<button style="margin-top:6px">Skip remaining</button>`);b.onclick=()=>act(g=>doSkipInfluence(g));d.appendChild(b);}
-        if(pend.type==="icon"){const row=$(`<div class="actions"></div>`);["Crunch","Pay","Layoffs","Credit","Harassment"].forEach(ic=>{const ok=onBoard(g).filter(w=>w.disp>=3&&w.issues.includes(ic)).length>=reqN(g)+1; const b=$(`<button ${ok?"":"disabled"}>${ic}</button>`);b.onclick=()=>act(g=>{g.pending=[];return doSmallWin(g,g.cur,"wild",ic);});row.appendChild(b);});const c=$(`<button data-act="cancel">Cancel</button>`);c.onclick=()=>act(g=>{g.pending=[];return null;});row.appendChild(c);d.appendChild(row);}
+        if(pend.type==="icon"){const row=$(`<div class="actions"></div>`);["Crunch","Pay","Layoffs","Credit","Harassment"].forEach(icn=>{const ok=onBoard(g).filter(w=>w.disp>=3&&w.issues.includes(icn)).length>=reqN(g)+1; const b=$(`<button ${ok?"":"disabled"}>${ic(icn,"")} ${icn}</button>`);b.onclick=()=>act(g=>{g.pending=[];return doSmallWin(g,g.cur,"wild",icn);});row.appendChild(b);});const c=$(`<button data-act="cancel">Cancel</button>`);c.onclick=()=>act(g=>{g.pending=[];return null;});row.appendChild(c);d.appendChild(row);}
       } else {
         const a=$(`<div class="actions"></div>`);
-        const mk=(id,label,fn,dis)=>{const b=$(`<button data-act="${id}" class="${armed===id?"armed":""}" ${dis?"disabled":""}>${label}</button>`);b.onclick=fn;a.appendChild(b);return b;};
-        mk("map","Map",()=>arm("map"),o.actions<1||g.flags.noMap);
-        mk("one","One-on-One",()=>arm("one"),o.actions<1);
-        mk("win","Small Win",()=>arm("win"),o.actions<1);
-        mk("com","Build Committee",()=>arm("com"),o.actions<2||!onBoard(g).some(w=>w.leader&&w.disp===3));
-        mk("re",`Reassure (Fear −1)`,()=>act(g=>doReassure(g,g.cur)),(g.reassuredRound&&!(o.k==="ap"&&!o.apFree&&hasAbility(g,o)))||(o.actions<1&&!(o.k==="ap"&&!o.apFree&&hasAbility(g,o)))||g.fear<=0);
-        mk("reset","Reset",()=>act(g=>doReset(g,g.cur)),o.actions<1||o.burnout===0);
-        mk("ow",won(g,"crunch")?"Overwork (free)":"Overwork (+1 Burnout)",()=>act(g=>doOverwork(g,g.cur)),o.overworked||o.burnout>=3);
-        mk("end","End turn",()=>act(g=>doEnd(g,g.cur)));
+        const one=g.fear>=7||g.flags.consultant||o.townhall?2:1; const winC=g.fear>=8?2:1;
+        const apFree=o.k==="ap"&&!o.apFree&&hasAbility(g,o);
+        const cost=(n,fx)=>`<span class="cost">${n===null?"":`${ri("action","")}${n} <span class="arrow">→</span> `}${fx}</span>`;
+        const mk=(id,label,c,tip,fn,dis)=>{const b=$(`<button data-act="${id}" class="${armed===id?"armed":""}" ${dis?"disabled":""} ${tipA(tip)}><span class="an">${label}</span>${c}</button>`);b.onclick=fn;a.appendChild(b);return b;};
+        mk("map","Map",cost(mapCost(g,o,o.d),`${ic("deck","")}flip`),"Map: turn over the top worker card of a department pile. 1 action in your home department; 2 elsewhere, or 1 once someone there is Signed.",()=>arm("map"),o.actions<1||g.flags.noMap);
+        mk("one","One-on-One",cost(one,`${ic("up","")}1`),`One-on-One: move a revealed worker one step toward Signed. Costs ${one} right now${Object.keys(DEPTS).some(d=>plantsIn(g,d))?", +1 where a Plant sits":""}; free once a round in a department with a Steward.`,()=>arm("one"),o.actions<1);
+        mk("win","Small Win",cost(winC,ri("win","")),`Small Win: win an Issue whose requirement is met. Costs ${winC}. ${RESOURCES.win.tip}`,()=>arm("win"),o.actions<1);
+        mk("com","Build Committee",cost(2,ri("steward","")),"Build Committee: make a Signed Leader a Steward. Costs 2 actions.",()=>arm("com"),o.actions<2||!onBoard(g).some(w=>w.leader&&w.disp===3));
+        mk("re","Reassure",cost(apFree?0:1,`${ri("fear","")}−1`),`Reassure: Fear −1. Once a round for the whole committee${o.k==="ap"&&hasAbility(g,o)?", plus your own free one":""}.`,()=>act(g=>doReassure(g,g.cur)),(g.reassuredRound&&!apFree)||(o.actions<1&&!apFree)||g.fear<=0);
+        mk("reset","Reset",cost(1,`${ri("burnout","")}−1`),"Reset: remove one Burnout from yourself.",()=>act(g=>doReset(g,g.cur)),o.actions<1||o.burnout===0);
+        mk("ow","Overwork",cost(null,`${won(g,"crunch")?"":`${ri("burnout","")}+1 `}${ri("action","")}+1`),`Overwork: +1 action this round${won(g,"crunch")?" (free: End Crunch is won)":" for +1 Burnout"}. Once a round; not at Burnout 3.`,()=>act(g=>doOverwork(g,g.cur)),o.overworked||o.burnout>=3);
         d.appendChild(a);
-        const hints={map:"Click a pile. 1 action in your home department; 2 elsewhere, or 1 once someone there is Signed.",one:"Click a revealed worker below Signed."+(g.fear>=7||g.flags.consultant||o.townhall?" Costs 2 right now.":"")+(Object.keys(DEPTS).some(d=>plantsIn(g,d))?" Plants add +1 in their department.":""),win:"Click an Issue on the right whose requirement is met.",com:onBoard(g).some(w=>w.leader&&w.disp===3)?"Click a Signed Leader (★). Costs 2 actions.":"Only Signed Leaders (★) can become Stewards, and none is Signed yet."};
-        d.appendChild($(`<div class="hint">${armed?hints[armed]:"Choose an action."}</div>`));
+        const hints={map:"Click a face-down pile on the board.",one:"Click a revealed worker below Signed.",win:"Click an Issue whose requirement is met.",com:onBoard(g).some(w=>w.leader&&w.disp===3)?"Click a Signed Leader.":"Only Signed Leaders can become Stewards, and none is Signed yet."};
+        d.appendChild($(`<div class="hint">${armed?hints[armed]:"Choose an action, or end your turn."}</div>`));
       }
     } else if(active&&!mine) d.appendChild($(`<div class="hint">Waiting for this organizer's player…</div>`));
-    el.appendChild(d);
+    else if(g.phase==="org"&&o.done) d.appendChild($(`<div class="hint">Done this round.</div>`));
+    list.appendChild(d);
   });
+  if(g.phase==="over"){const b=$(`<div style="margin-top:10px"><button class="primary" id="again">Back to lobby (same seats)</button></div>`); el.appendChild(b);
+    b.querySelector("#again").onclick=()=>{ if(g.local){ localSave.clear(); G=null; renderLobby(); return; } mutate(x=>{ const ng={phase:"lobby",seats:x.seats,players:x.players,hotseat:x.hotseat,host:x.host,seed:Math.floor(Math.random()*1e9)}; Object.keys(x).forEach(k=>delete x[k]); Object.assign(x,ng); return null; }); };}
+}
+// Ending a turn with actions left asks first.
+function endTurn(){
+  const o=G.orgs[G.cur]; if(!o)return;
+  if(o.actions<=0){ act(g=>doEnd(g,g.cur)); return; }
+  if(document.querySelector(".modal"))return;
+  const heat=G.fear>=7&&!won(G,"harass");
+  const el=$(`<div class="modal" role="alertdialog" aria-modal="true" aria-labelledby="mh"><div class="sheet">
+    <h2 id="mh">End your turn with ${o.actions} action${o.actions===1?"":"s"} left?</h2>
+    <p>${ri("action","")} Unused actions don't carry over. ${o.n} gets ${actionsFor(o)} again next round.</p>
+    ${heat?`<p>${ri("fear","")} Fear is ${G.fear}. If it is still 7 or more when the round ends, every organizer takes +1 Burnout. Reassure lowers it by 1.</p>`:""}
+    <div class="row"><button class="primary" id="keep">Keep playing</button><button id="endanyway">End turn anyway</button></div></div></div>`);
+  const close=()=>{el.remove();document.removeEventListener("keydown",onk);};
+  const onk=e=>{if(e.key==="Escape")close();};
+  el.querySelector("#keep").onclick=close;
+  el.querySelector("#endanyway").onclick=()=>{close();act(g=>doEnd(g,g.cur));};
+  el.addEventListener("click",e=>{if(e.target===el)close();});
+  document.addEventListener("keydown",onk);
+  document.body.appendChild(el); el.querySelector("#keep").focus();
+}
+function fearSvg(f){ const ang=v=>-120+24*v; const pt=(v,r)=>{const a=ang(v)*Math.PI/180;return [46+r*Math.sin(a),50-r*Math.cos(a)];};
+  const [x7,y7]=pt(7,38),[x10,y10]=pt(10,38); const tick=v=>{const [a,b]=pt(v,31),[c,d]=pt(v,45);return `<line x1="${a.toFixed(1)}" y1="${b.toFixed(1)}" x2="${c.toFixed(1)}" y2="${d.toFixed(1)}" stroke="var(--fear)" stroke-width="2"/>`;};
+  const [nx,ny]=pt(f,34);
+  return `<svg class="dial" viewBox="-6 -2 104 96" aria-hidden="true"><path d="M16 74 A38 38 0 1 1 76 74" fill="none" stroke="var(--line)" stroke-width="8" stroke-linecap="round"/>
+  <path d="M${x7.toFixed(1)} ${y7.toFixed(1)} A38 38 0 0 1 ${x10.toFixed(1)} ${y10.toFixed(1)}" fill="none" stroke="var(--fear)" stroke-opacity=".35" stroke-width="8"/>
+  <path d="M16 74 A38 38 0 1 1 76 74" fill="none" stroke="${f>=8?"var(--fear)":f>=7?"var(--amber)":"var(--accent)"}" stroke-width="8" stroke-linecap="round" stroke-dasharray="${(f/10)*159} 200"/>
+  ${tick(7)}${tick(10)}
+  <line x1="46" y1="50" x2="${nx.toFixed(1)}" y2="${ny.toFixed(1)}" stroke="var(--ink)" stroke-width="3" stroke-linecap="round"/><circle cx="46" cy="50" r="4" fill="var(--ink)"/></svg>`; }
+
+function workerTip(g,w){
+  return `${w.name}, ${w.role}${w.contract?" (contract)":""}\n${w.leader?"Leader. ":""}Influence ${infl(g,w)}${infl(g,w)!==w.infl?" (Credit Policy)":""}.\nCares about: ${w.reserve?"nothing. A management Plant: immovable, and every One-on-One in this department costs +1.":(w.issues.join(", ")||"nothing. Immovable: no grievance, no leverage")}.\nNow: ${DISP[w.disp]}.${w.trait?`\n${w.trait}`:""}${w.lock?(locked(g,w)?`\nHoldout: won't sign until ${w.lock==="Pay"?"Pay Transparency":"End Crunch"} is won.`:"\nFormer holdout, now willing to sign."):""}${w.disp===4?(w.absorbUsed?"\nSteward; absorb spent.":"\nSteward; one absorb available.")+(w.freeUsed?" Free One-on-One used this round.":" Free One-on-One available this round."):""}`;
 }
 function renderBoard(el,g,pend){
+  el.appendChild($(`<div class="bhead"><h2>The studio floor</h2><span class="small">Hover or tap any icon or card to see what it means.</span></div>`));
   const b=$(`<div class="board"></div>`);
   b.appendChild($(`<div></div>`));b.appendChild($(`<div></div>`));
-  DISP.forEach((s,i)=>b.appendChild($(`<div class="hdr ${i===0?"hostile":""}">${s}</div>`)));
+  DISP.forEach((s,i)=>b.appendChild($(`<div class="hdr ${i===0?"hostile":""}" ${tipA(DISP_TIPS[i])}>${s}</div>`)));
   const cur=g.orgs[g.cur]; const mine=g.phase==="org"&&controls(g.cur); const anySeat=g.orgs.some((o,i)=>controls(i));
+  const now=new Set(onBoard(g).map(w=>w.id)); const fresh=seenOnBoard?[...now].filter(id=>!seenOnBoard.has(id)):[]; seenOnBoard=now;
   Object.keys(DEPTS).forEach(d=>{
     const [label,color]=DEPTS[d]; const n=g.piles[d].length;
-        const canMap=mine&&armed==="map"&&n>0&&cur.actions>=mapCost(g,cur,d)&&!pend;
-    const p=$(`<div class="pile ${canMap?"ok":""}" data-pile="${d}"><span class="n">${n}</span><span>${n===1?"card":"cards"}</span>${mine&&armed==="map"&&n>0?`<span>${mapCost(g,cur,d)} act.</span>`:""}</div>`);
+    const canMap=mine&&armed==="map"&&n>0&&cur.actions>=mapCost(g,cur,d)&&!pend;
+    const p=$(`<div class="pile ${canMap?"ok":""} ${n?"":"empty"}" data-pile="${d}" ${tipA(n?`${n} face-down worker${n===1?"":"s"} in ${label}. Map turns over the top card${mine?`: ${mapCost(g,cur,d)} action${mapCost(g,cur,d)===1?"":"s"} for you here`:""}.`:`Every ${label} worker is on the board.`)}><span class="n">${n}</span>${mine&&armed==="map"&&n>0?`<span class="mc">${ri("action","")}${mapCost(g,cur,d)}</span>`:`<span>${n===1?"card":"cards"}</span>`}</div>`);
     p.onclick=()=>{ if(canMap)act(g=>doMap(g,g.cur,d)); };
+    b.appendChild($(`<div class="deptlab" style="background:${color}" ${tipA(label+(g.flags.reorg===d?`. ${SYMBOLS.reorg}`:"")+(g.flags.decert===d?`. ${SYMBOLS.decert}`:""))}>${label}${g.flags.reorg===d?ic("reorg",""):""}${g.flags.decert===d?ic("decert",""):""}</div>`));
     b.appendChild(p);
-    b.appendChild($(`<div class="deptlab" style="background:${color}">${label}${g.flags.reorg===d?" ⟲":""}${g.flags.decert===d?" ✕":""}</div>`));
     for(let s=0;s<5;s++){
       const c=$(`<div class="cell c${s}"></div>`);
       onBoard(g,d).filter(w=>w.disp===s).forEach(w=>{
@@ -481,8 +740,10 @@ function renderBoard(el,g,pend){
         if(mine&&!pend){ if(armed==="one"&&s<3&&!immovable(w)&&!(s===2&&locked(g,w)))sel=true; if(armed==="com"&&w.leader&&s===3)sel=true; }
         if(pend&&pend.type==="influence"&&(mine||g.phase==="steward"&&anySeat)&&w.dept===pend.dept&&s<3&&!immovable(w)&&!(s===2&&locked(g,w)))sel=true;
         if(pend&&pend.type==="steward"&&anySeat&&w.dept===pend.dept&&stewardTargets(g,pend.dept).some(x=>x.id===w.id))sel=true;
-        const e=$(`<div class="wk ${sel?"sel":""} ${w.contract?"contract":""}" data-wk="${w.id}"><b><span class="nm">${esc(w.name)}</span><span class="st">${w.leader?"★":""}${w.trait?"⚑":""}${locked(g,w)?"🔒":""}${w.disp===4?(w.absorbUsed?"⊘":"⛨"):""}</span><span class="inf">${"●".repeat(infl(g,w))}${"○".repeat(Math.max(0,2-infl(g,w)))}</span></b><span class="r">${esc(w.role)}</span><span class="i" ${immovable(w)?'style="color:var(--red);font-weight:600"':w.disp===4?'style="color:var(--ok);font-weight:600"':""}>${w.disp===4?`free 1-on-1 ${w.freeUsed?"used":"ready"} · absorb ${w.absorbUsed?"spent":"ready"}`:w.reserve?"+1 One-on-One cost here · immovable":(w.issues.join(", ")||"no issues · immovable")}</span></div>`);
-        e.title=`${w.name} — ${w.role}${w.contract?" (contract)":""}\n${w.leader?"Leader. ":""}Influence ${infl(g,w)}${infl(g,w)!==w.infl?" (Credit Policy)":""}.\nIssues: ${w.reserve?"none — a management Plant. Immovable; every One-on-One in this department costs +1.":(w.issues.join(", ")||"none — immovable: no grievance, no leverage")}.\nDisposition: ${DISP[w.disp]}.${w.trait?`\n${w.trait}`:""}${w.lock?(locked(g,w)?`\nHoldout: won't sign until ${w.lock==="Pay"?"Pay Transparency":"End Crunch"} is won.`:"\nFormer holdout, now willing to sign."):""}${w.disp===4?(w.absorbUsed?"\nSteward; absorb spent.":"\nSteward; one absorb available.")+(w.freeUsed?" Free One-on-One used this round.":" Free One-on-One available this round."):""}`;
+        const k=infl(g,w);
+        const marks=`${w.leader?ic("leader",SYMBOLS.leader,"m-lead"):""}${w.trait?ic("trait",w.trait,"m-trait"):""}${w.lock?(locked(g,w)?ic("lock",`Holdout: stops at Leaning until ${w.lock==="Pay"?"Pay Transparency":"End Crunch"} is won.`,"m-lock"):ic("unlock",SYMBOLS.unlock,"m-unlock")):""}${w.disp===4?(w.absorbUsed?ic("absorbSpent",SYMBOLS.absorbSpent,"r-steward"):ic("steward",SYMBOLS.steward,"r-steward")):""}${w.reserve?ic("plant",SYMBOLS.plant,"m-plant"):""}${w.contract?ic("contract",SYMBOLS.contract,"m-con"):""}`;
+        const issues=w.reserve?`<span class="i bad">Plant · +1 to One-on-Ones here</span>`:w.disp===4?`<span class="i good">free 1-on-1 ${w.freeUsed?"used":"ready"} · absorb ${w.absorbUsed?"spent":"ready"}</span>`:w.issues.length?`<span class="isx">${w.issues.map(x=>ic(x,ISSUE_ICONS[x],"iss-"+x)).join("")}</span>`:`<span class="i bad">no issues · immovable</span>`;
+        const e=$(`<div class="wk ${sel?"sel":""} ${fresh.includes(w.id)?"flip":""}" data-wk="${w.id}" ${tipA(workerTip(g,w))}><b><span class="nm">${esc(w.name)}</span><span class="st">${marks}</span><span class="inf" ${tipA(influenceTip(k,k!==w.infl))}>${"●".repeat(k)}${"○".repeat(Math.max(0,2-k))}</span></b><span class="r">${esc(w.role)}</span>${issues}</div>`);
         if(sel)e.onclick=()=>{ if(pend&&pend.type==="steward")act(g=>doStewardPick(g,w.id)); else if(pend)act(g=>doInfluencePick(g,w.id)); else if(armed==="one")act(g=>doOne(g,g.cur,w.id)); else if(armed==="com")act(g=>doCommittee(g,g.cur,w.id)); };
         c.appendChild(e);
       });
@@ -490,47 +751,37 @@ function renderBoard(el,g,pend){
     }
   });
   el.appendChild(b);
-  el.appendChild($(`<div class="small" style="margin-top:6px">● influence · ★ leader (a Hostile ★ pulls one worker down each round) · ⚑ special rule (hover or tap the card) · 🔒 holdout: stops at Leaning until their demand is won · ⛨ Steward absorb ready · ⊘ absorb spent · ⟲ reorganized this round · ✕ decertified</div>`));
 }
-function renderMgmt(el,g){
-  const n=signedCount(g); const nextDraw=1+(g.round+1>=7?1:0)+(n>=12?1:0)+(n>=20?1:0)+((g.row[g.round]&&g.row[g.round].issues.length)||0);
-  el.appendChild($(`<div class="mhead"><h2>Management</h2><span class="small">Tier ${tierFor(g)} now · ${(g.deck[tierFor(g)]||[]).length} left in it, ${deckLeft(g)} in all</span><span class="spacer"></span><span class="small">${g.phase==="over"?"":`next round draws <b>${nextDraw}</b> card${nextDraw===1?"":"s"}`}</span></div>`));
-  const row=$(`<div class="mrow"></div>`);
-  for(let i=0;i<9;i++){ const s=g.row[i]; const filled=s&&s.cards.length; const now=i===g.round-1;
-    const label=i===7?"vote":i===8?(g.maxRound===9?"vote":"—"):i===3?"tier 2":i===6?"tier 3":"";
-    const e=$(`<div class="slot ${filled?"filled":""} ${now?"now":""}" data-slot="${i+1}"><div class="n">${i+1}</div>${filled?`<div class="cards">${s.cards.map(id=>MGMT.find(m=>m[0]===id)[2]).join("<br>")}</div>`:`<div>${label}</div>`}${s&&s.issues&&s.issues.length?`<div title="${s.issues.length} Issue card${s.issues.length===1?"":"s"}: +${s.issues.length} draw">${s.issues.map(()=>'<span class="iss"></span>').join("")}</div>`:""}</div>`);
-    if(filled)e.title=s.cards.map(id=>{const m=MGMT.find(x=>x[0]===id);return m[2]+": "+m[3];}).join("\n");
-    row.appendChild(e); }
-  el.appendChild(row);
-  if(g.phase==="absorb"){ const m=MGMT.find(x=>x[0]===g.mgmt.card); const sts=stewardsAvail(g); const anySeat=g.orgs.some((o,i)=>controls(i));
-    const box=$(`<div class="prompt" style="margin-top:10px"><div style="font-family:'Barlow Condensed';font-size:18px">Management is about to play: ${esc(m[2])}</div><div style="font-weight:400">${esc(m[3])}</div>
-      <div style="font-weight:400;margin-top:6px">Each Steward has one absorb per game. Tick the ones allowed to spend it if this card hits their department, then resolve.</div><div id="abs" style="margin-top:6px"></div></div>`);
-    const list=box.querySelector("#abs");
-    sts.forEach(st=>list.appendChild($(`<label style="display:block;font-weight:500"><input type="checkbox" data-id="${st.id}"> ${esc(st.name)} may absorb in ${DEPTS[st.dept][0]}</label>`)));
-    const b=$(`<button class="primary" data-act="absorb" style="margin-top:8px" ${anySeat?"":"disabled"}>Resolve the card</button>`);
-    b.onclick=()=>{ const allow={}; list.querySelectorAll("input:checked").forEach(i=>allow[i.dataset.id]=true); act(g=>doAbsorbDecision(g,allow)); };
-    box.appendChild(b); if(!anySeat)box.appendChild($(`<div class="small">Waiting for a seated player.</div>`)); el.appendChild(box); }
-  const slot=g.row[g.round-1];
-  if(slot&&slot.cards.length){ el.appendChild($(`<h3 style="margin-top:10px">This round management played</h3>`)); const cs=$(`<div class="mcards"></div>`);
-    slot.cards.forEach(id=>{const m=MGMT.find(x=>x[0]===id);cs.appendChild($(`<div class="mcard t${m[1]}"><div class="tier">TIER ${m[1]}</div><b>${m[2]}</b><div class="how">${m[3]}</div></div>`));}); el.appendChild(cs); }
-  const fl=[]; if(g.flags.consultant)fl.push("Consultant: One-on-Ones and Maps cost 2 this round"); if(g.flags.noMap)fl.push("Pizza Friday: no Map actions this round"); if(g.flags.noMapNext)fl.push("Pizza Friday: no Map actions next round"); if(g.flags.reorg)fl.push(`${DEPTS[g.flags.reorg][0]} reorganized: no Steward or Influence there this round`); if(g.flags.decert)fl.push(`${DEPTS[g.flags.decert][0]} decertified`); if(g.flags.vdc)fl.push("Vote Delay Challenge in effect"); if(g.flags.overtime)fl.push("Mandatory Overtime: 2 actions this round instead of 3"); if(g.orgs.some(o=>o.townhall))fl.push("Town Hall: each organizer's next One-on-One costs 2");
-  if(fl.length)el.appendChild($(`<div class="small" style="margin-top:8px;color:var(--red)">${fl.map(esc).join(" · ")}</div>`));
-}
+// The Issues: each one is a Small Win, drawn in the colour and icons of the
+// resources it moves.
 function renderRight(el,g){
   const mine=g.phase==="org"&&controls(g.cur)&&!(g.pending&&g.pending.length);
   const used=3-winsLeft(g);
-  const ip=$(`<div class="panel stack"><h2>Issues</h2><div class="small">Small Win slots: ${"■".repeat(used)}${"□".repeat(3-used)} · ${winsLeft(g)} left this game</div></div>`);
+  const ip=$(`<div class="panel stack issues"><div class="ihead"><h2>${ri("win","")} Small Wins</h2><span class="small">${used} of 3 taken</span></div></div>`);
+  const harass=won(g,"harass"); const cm=g.orgs.some(x=>x.k==="cm"&&hasAbility(g,x));
   ISSUES.forEach(def=>{ const st=g.issues.find(i=>i.id===def.id); const n=readyCount(g,def.id); const R=def.id==="wild"?reqN(g)+1:reqN(g); const ready=st.state==="open"&&n>=R&&winsLeft(g)>0;
+    const res=issueResources(def.id); const prim=res[0];
+    const iconName=def.icon==="any"?"any":def.icon;
     const who=def.icon==="any"?"":onBoard(g).filter(w=>w.disp>=3&&w.issues.includes(def.icon)).map(w=>w.name).join(", ");
     const hold=(def.icon==="Pay"||def.icon==="Crunch")?onBoard(g).filter(w=>w.lock===def.icon&&locked(g,w)).length:def.id==="wild"?onBoard(g).filter(w=>locked(g,w)).length:0;
-    const need=(def.icon==="any"?`Needs ${R} Signed or Steward workers sharing any one icon.`:`Needs ${R} Signed or Steward workers with ${def.icon}. Have ${n}${who?": "+who:""}.`)+(hold?` Unlocks ${hold} holdout${hold===1?"":"s"} on the board.`:"");
-    const cost=`Cost: ${g.fear>=8?"2 actions (Fear 8+)":"1 action"}, and management draws +1 next round. Effect: every worker with ${def.icon==="any"?"the chosen icon":def.icon} moves up one, Fear ${def.id==="harass"?"−2":"−1"}. Then: ${def.x}`;
-    const e=$(`<div class="issue ${ready?"ready":""} ${st.state==="done"?"done":st.state==="gone"?"gone":""}" data-issue="${def.id}"><div><b>${def.n}</b><small>${st.state==="open"?(winsLeft(g)>0?need:"No Small Win slots left. ")+" Then: "+def.x:st.state==="done"?"In effect: "+def.x:"Lost to Counter-Offer."}</small></div><div class="req">${st.state==="open"?`${Math.min(n,R)}/${R}`:st.state==="done"?"won":"lost"}</div></div>`);
-    e.title=need+" "+cost;
-    if(mine&&armed==="win"&&ready){e.style.cursor="pointer";e.style.boxShadow="0 0 0 2px var(--sel)";e.onclick=()=>act(g=>doSmallWin(g,g.cur,def.id));}
+    const need=def.icon==="any"?`Needs ${R} Signed or Steward workers sharing any one icon.`:`Needs ${R} Signed or Steward workers who care about ${def.icon}. Have ${n}${who?": "+who:""}.`;
+    const f=(def.id==="harass"||harass?2:1)+(cm?1:0);
+    const fx=[`<span class="chip r-fear" ${tipA(`Fear −${f} when it's won.`)}>${ri("fear","")}−${f}</span>`,
+      `<span class="chip r-signed" ${tipA(`Every worker who cares about ${def.icon==="any"?"the chosen icon":def.icon} moves up a step.`)}>${ic(iconName,"")}${ic("up","")}</span>`]
+      .concat(ISSUE_EFFECTS[def.id].map(e=>`<span class="chip r-${e.r}" ${tipA(`${RESOURCES[e.r].n}: ${e.t}. Lasts the rest of the game.`)}>${ri(e.r,"")}${esc(e.t)}</span>`)).join("");
+    const pipsReq=Array.from({length:R},(_,k)=>`<span class="pip ${k<Math.min(n,R)?"on":""}">${ic("signed","")}</span>`).join("");
+    const e=$(`<div class="issue ${ready?"ready":""} ${st.state}" style="--rc:var(${RESOURCES[prim].color})" data-issue="${def.id}">
+      <div class="ih">${ic(iconName,def.icon==="any"?"Just Cause: any one icon, shared by four.":ISSUE_ICONS[def.icon],"big")}<b>${def.n}</b><span class="rres">${res.map(r=>ri(r,`${def.n} moves ${RESOURCES[r].n}.`)).join("")}</span></div>
+      ${st.state==="open"?`<div class="need" ${tipA(need+(hold?` Unlocks ${hold} holdout${hold===1?"":"s"} on the board.`:""))}><span class="pips r-signed">${pipsReq}</span><span class="small">${Math.min(n,R)}/${R} Signed with ${def.icon==="any"?"one icon":ic(iconName,"")}</span></div>`:`<div class="small state">${st.state==="done"?"Won. In effect for the rest of the game.":"Lost to Counter-Offer."}</div>`}
+      <div class="fx">${fx}</div>
+      ${st.state==="open"?`<div class="cost small" ${tipA("A Small Win costs 1 action, 2 at Fear 8+, and management draws an extra card next round.")}>Costs ${ri("action","")}${g.fear>=8?2:1} · Management ${ic("draw","")}+1 next round</div>`:""}
+    </div>`);
+    if(mine&&armed==="win"&&ready){e.classList.add("pick");e.onclick=()=>act(g=>doSmallWin(g,g.cur,def.id));}
     ip.appendChild(e); });
   el.appendChild(ip);
-  const lg=$(`<div class="panel"><h2>Log</h2><div class="log"></div></div>`); const L=lg.querySelector(".log");
+  const lg=$(`<details class="panel logp"><summary><h2 style="display:inline">Log</h2></summary><div class="log"></div></details>`); const L=lg.querySelector(".log");
+  try{ if(ls("cc_log_open")==="1")lg.open=true; }catch(e){}
+  lg.addEventListener("toggle",()=>ls("cc_log_open",lg.open?"1":"0"));
   g.log.slice().reverse().forEach(x=>L.appendChild($(`<div class="${x.r?"r":""}">${esc(x.r||x.t)}</div>`)));
   el.appendChild(lg);
 }
@@ -560,7 +811,7 @@ function tutorialSkip(){ const g=G; const t=guideOf(g); if(!t)return; t.skip(); 
 setInterval(()=>{ if(!G||!guide||!G.tutorial||G.tutorial.done)return; const h=guide.hint(G); const id=h?h.body:null; if(id!==lastHint)render(); },4000);
 function renderGuide(root,g){
   if(g.phase==="over")return;
-  const grid=root.querySelector(".grid");
+  const grid=root.querySelector(".table");
   const t=guideOf(g);
   if(t&&t.status==="active"){
     const before=t.index; const st=t.observe(g); if(t.index!==before||t.status!=="active")saveGuide(g);
@@ -627,8 +878,12 @@ function openRules(){
     <h3>Tier 1 (rounds 1 to 3)</h3><table>${tier(1)}</table>
     <h3>Tier 2 (from round 4)</h3><table>${tier(2)}</table>
     <h3>Tier 3 (from round 7)</h3><table>${tier(3)}</table>
-    <h2>Symbols</h2>
-    <p>● influence · ★ Leader · ⚑ special rule · 🔒 holdout · ⛨ Steward absorb ready · ⊘ absorb spent · ⟲ department reorganized this round · ✕ department decertified</p>
+    <h2>Resources and symbols</h2>
+    <p>Hover or tap any icon in the game for what it means. For reference:</p>
+    <table class="symbols">${Object.keys(RESOURCES).map(r=>`<tr><td class="k">${ri(r,"")} ${RESOURCES[r].n}</td><td>${esc(RESOURCES[r].tip.replace(/^[^:]+: /,""))}</td></tr>`).join("")}
+    ${Object.keys(ISSUE_ICONS).map(k=>`<tr><td class="k">${ic(k,"")} ${k}</td><td>${esc(ISSUE_ICONS[k].replace(/^[^:]+: /,""))}</td></tr>`).join("")}
+    <tr><td class="k">●○ Influence</td><td>When this worker signs, move that many colleagues in their department up a step.</td></tr>
+    ${["leader","trait","lock","unlock","steward","absorbSpent","plant","contract","reorg","decert"].map(k=>`<tr><td class="k">${ic(k,"")}</td><td>${esc(SYMBOLS[k])}</td></tr>`).join("")}</table>
     <div class="row" style="margin-top:16px"><button class="primary" id="rclose2">Close</button></div>
   </div></div>`);
   const close=()=>{el.remove();document.removeEventListener("keydown",onk);};
@@ -644,6 +899,7 @@ function g0AnySeat(){ return G.orgs?G.orgs.some((o,i)=>controls(i)):true; }
 window.addEventListener("hashchange",()=>{const h=location.hash.replace("#","").toUpperCase(); if(h&&h!==code&&/^[A-Z0-9]{5}$/.test(h)&&!offline)join(h);});
 // Inline onclick handlers reach these through window, since this is a module.
 Object.assign(window,{openRules,tutorialNext,tutorialSkip});
+tooltips=mountTooltips();
 mountSignupForm(document.getElementById("signup-form"),{newsletter:createNewsletter({source:"card-check",doneKey:"cc-newsletter"})});
 init();
 </script>

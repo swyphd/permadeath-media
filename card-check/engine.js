@@ -124,7 +124,7 @@ function setupFlips(g){ g.orgs.forEach(o=>{ for(let i=0;i<2;i++){const w=mapTop(
 function wArr(g){return Object.values(g.workers);}
 function onBoard(g,d){return wArr(g).filter(w=>w.onBoard&&(!d||w.dept===d));}
 function signedCount(g,d){return onBoard(g,d).filter(w=>w.disp>=3).length;}
-function logit(g,t,round){g.log.push(round?{r:t}:{t});if(g.log.length>160)g.log.shift();}
+function logit(g,t,round){g.log.push(round?{r:t}:{t});if(g.log.length>160)g.log.shift();if(g._notes&&!round)g._notes.push(t);}
 
 /* ---- movement helpers ---- */
 function immovable(w){return !w.issues.length;}
@@ -240,7 +240,10 @@ function continueRound(g){
     if(g.mgmt.card==null){ const id=drawMgmt(g); if(id==null){g.mgmt.left=0;break;} g.mgmt.card=id; slot.cards.push(id); g.mgmt.decided=false; g.mgmt.allow={}; }
     const id=g.mgmt.card;
     if(ABSORBABLE.has(id)&&stewardsAvail(g).length&&!g.mgmt.decided){ g.phase="absorb"; return; }
-    resolveMgmt(g,id); g.mgmt.card=null; g.mgmt.left--;
+    // what the card did, kept on the round's slot so the page can show it under the card
+    g._notes=[]; resolveMgmt(g,id); const notes=g._notes.slice(1); delete g._notes;
+    (slot.notes=slot.notes||[]).push({c:id,t:notes});
+    g.mgmt.card=null; g.mgmt.left--;
     if(checkLoss(g))return;
   }
   // steward phase: each Steward's flip is the players' choice
