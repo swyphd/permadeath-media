@@ -12,9 +12,12 @@ so `node homies/tests/quiz.test.mjs` can check it. `../homies.sql` is the schema
 
 ## What it does
 
-1. **Pick the game.** Thirty this-or-that questions, one pair of real games at
-   a time (Project Zomboid or Helldivers 2; Catan but online or Chess but
-   faster). Each side votes for poles on sixteen axes (pace, what it tests,
+1. **Pick the game.** Thirty this-or-that questions between kinds of game
+   (sci-fi survival or fantasy survival; a deckbuilding roguelike or an action
+   roguelike; a daily puzzle or a run game), each side with two or three
+   well-known examples (Space Engineers, Stationeers; Valheim, Enshrouded), so a
+   pick takes a taste, not a play history. Each side votes for poles on sixteen
+   axes (pace, what it tests,
    runs or a persistent world, company, co-op or versus, rules, story, tone,
    world, setting, era, look, session length, scope, where it lives, device).
    Nobody's answers show until everyone has finished, or until someone taps
@@ -106,7 +109,9 @@ summary line).
 
 ## Changing the questions
 
-Edit `QUESTIONS` in `quiz.js`. Each side is a game, a one-line note, and the
-poles it votes for; the ids in `AXES` are the only valid tags. Keep ids under 40
+Edit `QUESTIONS` in `quiz.js`. Each side is a kind of game, two or three example
+games, and the poles it votes for; the ids in `AXES` are the only valid tags.
+The examples are what the results page's shelf and the launch meeting's
+reference-game chips are made of. Keep ids under 40
 characters (the `homies_answers.question` column) and don't rename an id people
 have already answered. Run the tests after.

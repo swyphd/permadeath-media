@@ -48,8 +48,8 @@ or Global Privacy Control send nothing. A game must be listed in `GAMES` in
 ## Homies
 
 `/homies/` is the private page for the people building the next game: a
-this-or-that quiz of real games that picks the genre, setting and reference
-games; a launch meeting and check-ins with fixed agendas that can't close until
+this-or-that quiz between kinds of game, with real games as examples, that
+picks the genre, setting and reference games; a launch meeting and check-ins with fixed agendas that can't close until
 everyone leaves with a task; and the task board in between. Google sign-in,
 crew-only (`homies.sql` has the row-level security; the first person to sign in
 claims the crew and adds the rest). Setup, including the Google OAuth client and

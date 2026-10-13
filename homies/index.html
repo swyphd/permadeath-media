@@ -421,7 +421,7 @@ function home() {
   if (ph === 'quiz') {
     const mineDone = myProgress(S.me.email) >= QUESTIONS.length;
     lead = `<div class="card gold"><div class="card-top"><h2 class="stencil">Pick the game</h2><span class="badge warn">step 1</span></div>
-      <p class="small dim">Thirty quick this-or-that picks each. Nobody sees anyone's answers until everyone's done. Then the results are the agenda for the launch meeting.</p>
+      <p class="small dim">Thirty quick this-or-that picks each: kinds of game, with examples. Nobody sees anyone's answers until everyone's done. Then the results are the agenda for the launch meeting.</p>
       <div class="hr"></div>
       ${crewProgress(r)}
       <div class="row" style="margin-top:0.9rem">
@@ -502,8 +502,8 @@ function quiz() {
     <div class="progress"><i style="width:${(n / total) * 100}%"></i></div>
     <p class="ask">${esc(x.ask)}</p>
     <div class="choices">
-      <button class="choice ${picked === 'a' ? 'picked' : ''}" data-act="pick" data-q="${attr(x.id)}" data-pick="a"><span class="k">A</span><span class="game">${esc(x.a.game)}</span><div class="note">${esc(x.a.note)}</div></button>
-      <button class="choice ${picked === 'b' ? 'picked' : ''}" data-act="pick" data-q="${attr(x.id)}" data-pick="b"><span class="k">B</span><span class="game">${esc(x.b.game)}</span><div class="note">${esc(x.b.note)}</div></button>
+      <button class="choice ${picked === 'a' ? 'picked' : ''}" data-act="pick" data-q="${attr(x.id)}" data-pick="a"><span class="k">A</span><span class="game">${esc(x.a.label)}</span><div class="note">${esc(x.a.examples.join(' · '))}</div></button>
+      <button class="choice ${picked === 'b' ? 'picked' : ''}" data-act="pick" data-q="${attr(x.id)}" data-pick="b"><span class="k">B</span><span class="game">${esc(x.b.label)}</span><div class="note">${esc(x.b.examples.join(' · '))}</div></button>
     </div>
     <div class="quiz-nav">
       <button class="btn ghost sm" data-act="quiz-go" data-to="${S.quizAt - 1}" ${S.quizAt === 0 ? 'disabled' : ''}>← Back</button>
@@ -521,9 +521,9 @@ function quizDone(mine) {
           : `<div class="card hot"><p>You've skipped some. Tap a side on each to finish.</p></div>`}
     <h3 style="margin:1rem 0 0.25rem">Change any answer</h3>
     <ul class="review">${QUESTIONS.map((x) => `<li>
-      <button class="${mine[x.id] === 'a' ? 'on' : ''}" data-act="pick-stay" data-q="${attr(x.id)}" data-pick="a">${esc(x.a.game)}</button>
+      <button class="${mine[x.id] === 'a' ? 'on' : ''}" data-act="pick-stay" data-q="${attr(x.id)}" data-pick="a">${esc(x.a.label)}</button>
       <span class="vs">VS</span>
-      <button class="${mine[x.id] === 'b' ? 'on' : ''}" data-act="pick-stay" data-q="${attr(x.id)}" data-pick="b">${esc(x.b.game)}</button></li>`).join('')}</ul>`;
+      <button class="${mine[x.id] === 'b' ? 'on' : ''}" data-act="pick-stay" data-q="${attr(x.id)}" data-pick="b">${esc(x.b.label)}</button></li>`).join('')}</ul>`;
 }
 
 // ---------- results
@@ -542,12 +542,12 @@ function resultsView() {
   }).join('');
 
   const un = r.unanimous.map((x) => { const q = byId[x.id]; const w = x.a.length ? 'a' : 'b'; const l = w === 'a' ? 'b' : 'a';
-    return `<li><b>${esc(q[w].game)}</b> <span class="over">over ${esc(q[l].game)}</span></li>`; }).join('');
+    return `<li><b>${esc(q[w].label)}</b> <span class="over">over ${esc(q[l].label.toLowerCase())}</span></li>`; }).join('');
   const sp = r.splits.map((x) => { const q = byId[x.id];
-    return `<li><div class="vs-split"><span><b>${esc(q.a.game)}</b><span class="names">${esc(x.a.join(', '))}</span></span><span class="vs dim tiny" style="padding-top:0.3rem">VS</span><span><b>${esc(q.b.game)}</b><span class="names">${esc(x.b.join(', '))}</span></span></div></li>`; }).join('');
+    return `<li><div class="vs-split"><span><b>${esc(q.a.label)}</b><span class="names">${esc(x.a.join(', '))}</span></span><span class="vs dim tiny" style="padding-top:0.3rem">VS</span><span><b>${esc(q.b.label)}</b><span class="names">${esc(x.b.join(', '))}</span></span></div></li>`; }).join('');
   const ln = r.questions.filter((x) => x.verdict === 'lean').map((x) => { const q = byId[x.id]; const w = x.winner; const l = w === 'a' ? 'b' : 'a';
-    return `<li><b>${esc(q[w].game)}</b> <span class="over">over ${esc(q[l].game)}</span> <span class="names">${esc(x[l].join(', '))} disagree${x[l].length === 1 ? 's' : ''}</span></li>`; }).join('');
-  const shelf = r.shelf.slice(0, 14).map((s) => `<span class="chip static ${s.picks === r.done.length && r.done.length > 1 ? 'on' : ''}">${esc(s.game)}<span class="ct">${s.picks}</span></span>`).join('');
+    return `<li><b>${esc(q[w].label)}</b> <span class="over">over ${esc(q[l].label.toLowerCase())}</span> <span class="names">${esc(x[l].join(', '))} disagree${x[l].length === 1 ? 's' : ''}</span></li>`; }).join('');
+  const shelf = r.shelf.slice(0, 16).map((s, i) => `<span class="chip static ${i < 3 ? 'on' : ''}">${esc(s.game)}<span class="ct">${s.picks}</span></span>`).join('');
   const people = S.members.filter((m) => r.done.includes(m.email)).map((m) => {
     const p = r.profiles[m.email];
     const strong = AXES.filter((ax) => p[ax.id].lean !== null && Math.abs(p[ax.id].lean) >= 0.5)
@@ -564,7 +564,7 @@ function resultsView() {
     ${sp ? `<div class="card hot"><div class="card-top"><h2 class="stencil">Split the room</h2><span class="badge bad">settle at the launch meeting</span></div><ul class="verdicts">${sp}</ul></div>` : ''}
     ${un ? `<div class="card done"><div class="card-top"><h2 class="stencil">Everyone agreed</h2></div><ul class="verdicts">${un}</ul></div>` : ''}
     ${ln ? `<div class="card quiet"><div class="card-top"><h2 class="stencil">Leaning</h2></div><ul class="verdicts">${ln}</ul></div>` : ''}
-    <div class="card quiet"><div class="card-top"><h2 class="stencil">The shelf</h2><span class="tiny dim">times picked</span></div><div class="chips">${shelf}</div></div>
+    <div class="card quiet"><div class="card-top"><h2 class="stencil">The shelf</h2><span class="tiny dim">examples of what we picked, most often first</span></div><div class="chips">${shelf}</div></div>
     <div class="card quiet"><div class="card-top"><h2 class="stencil">Each of us</h2></div>${people}</div>
     ${phase() !== 'build' ? `<a class="btn wide" href="#/meetings">Take this into the launch meeting →</a>` : ''}`;
 }
