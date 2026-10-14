@@ -100,6 +100,30 @@
   .hint.warn { color: var(--yellow); }
   .sub-row { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
 
+  /* Thumbnail maker */
+  .thumb { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(280px, 1fr); gap: 1.25rem; background: var(--soot-2); border: 1px solid var(--line); padding: 1rem; margin-top: 1.25rem; }
+  .thumb-preview { display: grid; gap: 0.4rem; justify-items: center; align-content: start; }
+  .thumb-preview canvas { display: block; max-width: 100%; max-height: 72vh; width: auto; height: auto; border: 1px solid var(--line); cursor: grab; touch-action: none; background: var(--soot); }
+  .thumb-preview canvas:active { cursor: grabbing; }
+  .thumb-controls { display: grid; gap: 0.9rem; align-content: start; }
+  .thumb-controls .field input[type=text], .thumb-controls select { width: 100%; }
+  .shots { display: grid; grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); gap: 0.4rem; }
+  .shots button, .shots label { position: relative; padding: 0; border: 2px solid var(--line); background: var(--soot); aspect-ratio: 16 / 10; overflow: hidden; cursor: pointer; display: grid; place-items: center; font-family: "IBM Plex Mono", monospace; font-size: 0.68rem; color: var(--paper-dim); text-align: center; }
+  .shots img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .shots .on { border-color: var(--yellow); }
+  .shots button:hover, .shots label:hover { border-color: var(--paper-dim); }
+  .shots .on:hover { border-color: var(--yellow); }
+  .seg { display: flex; flex-wrap: wrap; gap: 0.25rem; }
+  .seg button { font-family: "IBM Plex Mono", monospace; font-size: 0.72rem; letter-spacing: 0.05em; background: none; border: 1px solid var(--line); color: var(--paper-dim); padding: 0.3rem 0.6rem; cursor: pointer; }
+  .seg button:hover { color: var(--paper); border-color: var(--paper-dim); }
+  .seg button.on { background: var(--yellow); color: var(--soot); border-color: var(--yellow); }
+  .ranges { display: grid; grid-template-columns: auto 1fr; gap: 0.35rem 0.75rem; align-items: center; font-size: 0.8rem; color: var(--paper-dim); }
+  .ranges input { width: 100%; accent-color: var(--yellow); }
+  .row-btns { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+  .btn-y { background: var(--yellow); color: var(--soot); border: 0; padding: 0.5rem 0.9rem; font-family: "IBM Plex Mono", monospace; font-size: 0.75rem; letter-spacing: 0.05em; text-transform: uppercase; font-weight: 600; cursor: pointer; }
+  .btn-y:hover { background: #ffd83a; }
+  @media (max-width: 760px) { .thumb { grid-template-columns: 1fr; } }
+
   .notes { margin-top: 2.5rem; padding-top: 1rem; border-top: 1px solid var(--line); color: var(--paper-dim); font-size: 0.78rem; }
   .notes li { margin: 0.25rem 0 0.25rem 1.1rem; }
   .err { background: rgba(192,57,43,0.15); border: 1px solid var(--oxide); padding: 0.75rem 1rem; margin: 1rem 0; font-size: 0.85rem; }
@@ -118,6 +142,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script type="module">
 import { SUPABASE_URL, SUPABASE_KEY } from '/kit/config.js';
+import { FORMATS, LAYOUTS, drawThumb } from '/marketing/thumb.js';
 
 // Sign-in is the same as /stats/: Google through Supabase, and /api/marketing
 // (api/_admin.js) decides who gets in. Nothing below renders until it says yes.
@@ -295,7 +320,7 @@ function render() {
     + `<nav class="tabs"><a href="#links" class="${t === 'links' ? 'on' : ''}">Ref links</a><a href="#posts" class="${t === 'posts' ? 'on' : ''}">Post builder</a></nav>`
     + (t === 'links' ? linksView() : postsView())
     + notes();
-  if (t === 'posts') refreshPosts();
+  if (t === 'posts') { refreshPosts(); drawThumbNow(); }
 }
 
 // ---------------------------------------------------------------- ref links
@@ -359,8 +384,148 @@ function postsView() {
       <label class="check field wide"><input type="checkbox" name="ai" ${P.ai ? 'checked' : ''}> Say the games are made with help from AI tools</label>
       <div class="field wide"><button class="ghost" type="button" data-act="resetall">Start over from this game's blurb</button></div>
     </form>
-    <div class="posts">${cards}</div>`;
+    <div class="posts">${cards}</div>
+    ${thumbView()}`;
 }
+
+// ---------------------------------------------------------------- thumbnails
+// A screenshot of the selected game, cropped to a platform size with the
+// studio's title treatment (marketing/thumb.js). Settings stay on this device.
+const LOGO = '/press/logos/permadeath-logo-light.png';
+const T = { format: 'landscape', layout: 'band', zoom: 1, fx: 0.5, fy: 0.3, text: '', status: '', url: true, logo: true, shot: {}, ...store.get('pm-marketing-thumb', {}) };
+const saveT = () => store.set('pm-marketing-thumb', { ...T });
+const uploads = {};
+const shotsFor = (game) => [...(game.shots || []), ...(uploads[game.id] ? [uploads[game.id]] : [])];
+function currentShot(game) {
+  const list = shotsFor(game);
+  const i = Math.min(Number(T.shot[game.id]) || 0, Math.max(0, list.length - 1));
+  return { list, i, shot: list[i] || null };
+}
+const formatOf = () => FORMATS.find((f) => f.id === T.format) || FORMATS[0];
+const badgeFor = (game) => (game.status === 'Playtest' ? 'Playtest · free' : 'Free in your browser');
+
+function thumbView() {
+  const game = gameById(P.game);
+  const { list, i } = currentShot(game);
+  const fmt = formatOf();
+  const shots = list.map((sh, n) => `<button type="button" class="${n === i ? 'on' : ''}" data-act="shot" data-i="${n}" title="${esc(sh.label)}" aria-label="${esc(sh.label)}"><img src="${esc(sh.src)}" alt="" loading="lazy"></button>`).join('');
+  return `<h2 class="stencil">Thumbnail</h2>
+    <p class="sub">A screenshot of ${esc(game.name)} with the title on it, sized for each platform. Drag the preview to move the crop.</p>
+    <section class="thumb">
+      <div class="thumb-preview"><canvas id="thumb-canvas" width="${fmt.w}" height="${fmt.h}" aria-label="Thumbnail preview"></canvas><span class="hint" data-thumb-size>${fmt.w} × ${fmt.h}</span></div>
+      <div class="thumb-controls">
+        <div class="field"><span class="label">Screenshot</span>
+          <div class="shots">${shots}<label title="Use your own screenshot">+ your own<input type="file" accept="image/*" data-thumb="upload" hidden></label></div></div>
+        <label class="field"><span class="label">Size</span><select data-thumb="format">${FORMATS.map((f) => `<option value="${f.id}" ${f.id === fmt.id ? 'selected' : ''}>${esc(f.name)} · ${f.w}×${f.h}</option>`).join('')}</select></label>
+        <div class="field"><span class="label">Layout</span><div class="seg">${LAYOUTS.map((l) => `<button type="button" data-act="layout" data-layout="${l.id}" class="${l.id === T.layout ? 'on' : ''}">${esc(l.name)}</button>`).join('')}</div></div>
+        <label class="field"><span class="label">Words on the image</span><input type="text" data-thumb="text" value="${esc(T.text)}" placeholder="${esc(P.hook || game.short)}"></label>
+        <label class="field"><span class="label">Badge</span><input type="text" data-thumb="status" value="${esc(T.status)}" placeholder="${esc(badgeFor(game))}"></label>
+        <div class="ranges">
+          <span>Zoom</span><input type="range" min="1" max="3" step="0.05" value="${T.zoom}" data-thumb="zoom" aria-label="Zoom">
+          <span>Left–right</span><input type="range" min="0" max="1" step="0.01" value="${T.fx}" data-thumb="fx" aria-label="Crop left to right">
+          <span>Up–down</span><input type="range" min="0" max="1" step="0.01" value="${T.fy}" data-thumb="fy" aria-label="Crop top to bottom">
+        </div>
+        <label class="check"><input type="checkbox" data-thumb="url" ${T.url ? 'checked' : ''}> Show permadeathmedia.com</label>
+        <label class="check"><input type="checkbox" data-thumb="logo" ${T.logo ? 'checked' : ''}> Show the studio logo</label>
+        <div class="row-btns"><button type="button" class="btn-y" data-act="thumbdl">Download PNG</button><button type="button" class="copy" data-act="thumbcopy">Copy image</button></div>
+      </div>
+    </section>`;
+}
+
+const imgCache = new Map();
+function loadImg(src) {
+  if (!imgCache.has(src)) {
+    imgCache.set(src, new Promise((resolve) => {
+      const im = new Image();
+      im.onload = () => resolve(im);
+      im.onerror = () => { imgCache.delete(src); resolve(null); };
+      im.src = src;
+    }));
+  }
+  return imgCache.get(src);
+}
+let fontsReady = null;
+const fonts = () => (fontsReady ||= Promise.all([
+  document.fonts.load('800 80px "Big Shoulders Stencil"'),
+  document.fonts.load('600 30px "IBM Plex Sans"'),
+  document.fonts.load('500 20px "IBM Plex Mono"'),
+]).catch(() => {}));
+
+let drawToken = 0;
+async function drawThumbNow() {
+  const canvas = app.querySelector('#thumb-canvas');
+  if (!canvas || !S.data) return;
+  const token = ++drawToken;
+  const game = gameById(P.game);
+  const fmt = formatOf();
+  const { shot } = currentShot(game);
+  const [img, logo] = await Promise.all([shot ? loadImg(shot.src) : null, T.logo ? loadImg(LOGO) : null, fonts()]);
+  if (token !== drawToken) return;
+  if (canvas.width !== fmt.w) canvas.width = fmt.w;
+  if (canvas.height !== fmt.h) canvas.height = fmt.h;
+  const size = app.querySelector('[data-thumb-size]');
+  if (size) size.textContent = `${fmt.w} × ${fmt.h}`;
+  drawThumb(canvas.getContext('2d'), {
+    w: fmt.w, h: fmt.h, img, logo, layout: T.layout, zoom: T.zoom, fx: T.fx, fy: T.fy,
+    title: game.name, status: T.status || badgeFor(game), headline: T.text || P.hook || game.short,
+    footer: T.url ? 'Play free · permadeathmedia.com' : '',
+  });
+}
+
+function thumbBlob() {
+  const canvas = app.querySelector('#thumb-canvas');
+  return new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+}
+async function downloadThumb() {
+  const blob = await thumbBlob();
+  if (!blob) return;
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `${P.game}-${T.format}-${T.layout}.png`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+}
+async function copyThumb(btn) {
+  let done = false;
+  try { await navigator.clipboard.write([new ClipboardItem({ 'image/png': thumbBlob() })]); done = true; } catch {}
+  const was = btn.dataset.label || btn.textContent;
+  btn.dataset.label = was;
+  btn.textContent = done ? 'Copied' : 'Use download';
+  btn.classList.toggle('done', done);
+  clearTimeout(btn._t);
+  btn._t = setTimeout(() => { btn.textContent = was; btn.classList.remove('done'); }, 1800);
+}
+function pickShot(game, i) {
+  const { list } = currentShot(game);
+  const sh = list[i];
+  if (!sh) return;
+  T.shot[game.id] = i;
+  T.zoom = 1; T.fx = sh.fx ?? 0.5; T.fy = sh.fy ?? 0.3;
+  saveT();
+  render();
+}
+function syncRanges() {
+  for (const k of ['zoom', 'fx', 'fy']) { const el = app.querySelector(`[data-thumb="${k}"]`); if (el) el.value = T[k]; }
+}
+
+// Dragging the preview moves the crop: the picture follows the pointer.
+let drag = null;
+app.addEventListener('pointerdown', (e) => {
+  if (e.target.id !== 'thumb-canvas') return;
+  drag = { x: e.clientX, y: e.clientY, fx: T.fx, fy: T.fy, r: e.target.getBoundingClientRect() };
+  e.target.setPointerCapture?.(e.pointerId);
+});
+app.addEventListener('pointermove', (e) => {
+  if (!drag) return;
+  const k = 1 / Math.max(1, T.zoom);
+  T.fx = Math.min(1, Math.max(0, drag.fx - ((e.clientX - drag.x) / drag.r.width) * 2 * k));
+  T.fy = Math.min(1, Math.max(0, drag.fy - ((e.clientY - drag.y) / drag.r.height) * 2 * k));
+  syncRanges();
+  drawThumbNow();
+});
+const endDrag = () => { if (drag) { drag = null; saveT(); } };
+app.addEventListener('pointerup', endDrag);
+app.addEventListener('pointercancel', endDrag);
 
 // A draft's box grows to show the whole post.
 function fit(el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 2 + 'px'; }
@@ -421,6 +586,7 @@ function readForm(form) {
   P = { game: game.id, hook: f.get('hook') || '', body: f.get('body') || '', cta: f.get('cta') || '', tags: f.get('tags') || '', ai: f.get('ai') === 'on' };
   store.set('pm-marketing-post', P);
   refreshPosts();
+  drawThumbNow();
 }
 
 function notes() {
@@ -456,6 +622,10 @@ app.addEventListener('click', async (e) => {
       refreshPosts();
       break;
     }
+    case 'shot': pickShot(gameById(P.game), Number(d.i)); break;
+    case 'layout': T.layout = d.layout; saveT(); app.querySelectorAll('[data-act="layout"]').forEach((b) => b.classList.toggle('on', b === el)); drawThumbNow(); break;
+    case 'thumbdl': downloadThumb(); break;
+    case 'thumbcopy': copyThumb(el); break;
     case 'resetall': {
       P = defaultsFor(gameById(P.game));
       edited.clear();
@@ -480,6 +650,15 @@ app.addEventListener('submit', (e) => {
 });
 
 app.addEventListener('input', (e) => {
+  const key = e.target.dataset?.thumb;
+  if (key && key !== 'upload') {
+    if (key === 'url' || key === 'logo') T[key] = e.target.checked;
+    else if (key === 'zoom' || key === 'fx' || key === 'fy') T[key] = Number(e.target.value);
+    else T[key] = e.target.value;
+    saveT();
+    drawThumbNow();
+    return;
+  }
   const form = e.target.closest('[data-form="post"]');
   if (form) { if (e.target.name !== 'game') readForm(form); return; }
   const post = e.target.dataset?.post;
@@ -493,6 +672,15 @@ app.addEventListener('input', (e) => {
   }
 });
 app.addEventListener('change', (e) => {
+  if (e.target.dataset?.thumb === 'upload') {
+    const file = e.target.files && e.target.files[0];
+    if (!file || !/^image\//.test(file.type)) return;
+    const game = gameById(P.game);
+    if (uploads[game.id]) URL.revokeObjectURL(uploads[game.id].src);
+    uploads[game.id] = { src: URL.createObjectURL(file), label: file.name };
+    pickShot(game, shotsFor(game).length - 1);
+    return;
+  }
   const form = e.target.closest('[data-form="post"]');
   if (form && e.target.name === 'game') readForm(form);
 });
