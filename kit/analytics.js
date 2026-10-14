@@ -10,6 +10,12 @@
 //   stats.progress(() => ({ t: s.t, tier: s.tier }));   read when the tab closes mid-run
 //   stats.runStart(props, { id });                     a new run with an id chosen up front
 //
+// Where a player came from: a link like /hedy-plant/?ref=galaxy-click tags the
+// visit, and run_start / run_resume carry it as props.ref. The first tag this
+// browser ever arrived with stays as props.first_ref, so a player who found the
+// game on itch.io and came back from a bookmark still counts for itch.io.
+// The /marketing/ page builds these links.
+//
 // A run that starts and never ends is a player who left; the last milestone
 // before that is where they quit (see the read-outs in game-events.sql).
 //
@@ -23,6 +29,8 @@ import { SITE_ORIGIN } from './config.js';
 export const EVENTS_URL = `${SITE_ORIGIN}/api/events`;
 const PLAYER_KEY = 'pm-player';
 const OPTOUT_KEY = 'pm-analytics-off';
+const REF_KEY = 'pm-ref';
+const REF_RE = /^[a-z0-9][a-z0-9_-]{0,39}$/;
 const MAX_BATCH = 50;
 
 const storage = () => { try { return globalThis.localStorage || null; } catch { return null; } };
@@ -41,10 +49,19 @@ export function privacySignal(nav = globalThis.navigator) {
   return nav.globalPrivacyControl === true || nav.doNotTrack === '1' || nav.doNotTrack === 'yes';
 }
 
+// The ?ref= tag in a query string, or null when there's none or it isn't a tag.
+export function refFrom(search) {
+  try {
+    const r = new URLSearchParams(search || '').get('ref');
+    const tag = r == null ? '' : r.trim().toLowerCase();
+    return REF_RE.test(tag) ? tag : null;
+  } catch { return null; }
+}
+
 export function createAnalytics({
   game, version = null, url = EVENTS_URL, flushEvery = 10000, batchSize = 20,
   fetch: fetchImpl = null, beacon = null, navigator: nav = globalThis.navigator,
-  clock = () => Date.now(), enabled = true,
+  clock = () => Date.now(), enabled = true, location: loc = globalThis.location,
 } = {}) {
   if (!game) throw new Error('createAnalytics needs a game');
   const doFetch = fetchImpl || ((...a) => globalThis.fetch(...a));
@@ -53,6 +70,12 @@ export function createAnalytics({
   let player = get(PLAYER_KEY);
   const on = () => enabled && !get(OPTOUT_KEY) && !privacySignal(nav);
   if (!player && on()) { player = newId(); set(PLAYER_KEY, player); }
+  const ref = refFrom(loc?.search);
+  if (ref && on() && !get(REF_KEY)) set(REF_KEY, ref);
+  const refProps = () => {
+    const first = get(REF_KEY);
+    return { ...(ref ? { ref } : {}), ...(first ? { first_ref: first } : {}) };
+  };
   const session = newId();
   let run = null;
   let runStartedAt = null;
@@ -125,6 +148,7 @@ export function createAnalytics({
     get player() { return player; },
     session,
     get run() { return run; },
+    ref,
     get enabled() { return on(); },
     track,
     // A resumed save keeps its run id: pass it back as `resume` (store stats.run in the save).
@@ -133,7 +157,7 @@ export function createAnalytics({
     runStart(props = {}, { resume = null, id = null } = {}) {
       run = resume || id || newId();
       runStartedAt = clock() - (props.t ?? 0) * 1000;
-      track(resume ? 'run_resume' : 'run_start', props);
+      track(resume ? 'run_resume' : 'run_start', { ...refProps(), ...props });
       return run;
     },
     runEnd(outcome, props = {}) {

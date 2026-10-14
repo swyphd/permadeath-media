@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Marketing — Permadeath Media</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Stencil:wght@600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    color-scheme: dark;
+    --soot: #1A1A18; --soot-2: #232320; --soot-3: #2C2C28;
+    --oxide: #C0392B; --yellow: #F1C40F; --ok: #0ca30c;
+    --paper: #E9E4D8; --paper-dim: #B8B2A2; --muted: #898781;
+    --line: rgba(233, 228, 216, 0.14);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { background: var(--soot); color: var(--paper); font-family: "IBM Plex Sans", system-ui, sans-serif; line-height: 1.5; min-height: 100vh; }
+  button, input, textarea, select { font: inherit; color: inherit; }
+  a { color: var(--yellow); }
+  .stencil { font-family: "Big Shoulders Stencil", sans-serif; text-transform: uppercase; letter-spacing: 0.01em; }
+  .mono { font-family: "IBM Plex Mono", monospace; }
+  .dim { color: var(--paper-dim); }
+  .tiny { font-size: 0.75rem; }
+  .hazard-rule { height: 6px; background: repeating-linear-gradient(135deg, var(--yellow) 0 14px, var(--soot) 14px 28px); }
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 0 1rem 4rem; }
+
+  .top { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1rem 0 0.75rem; border-bottom: 1px solid var(--line); }
+  .brand { font-size: 2rem; font-weight: 800; color: var(--paper); text-decoration: none; line-height: 1; }
+  .brand .hit { color: var(--oxide); }
+  .brand small { display: block; font-family: "IBM Plex Mono", monospace; text-transform: none; letter-spacing: 0.1em; font-size: 0.6rem; color: var(--paper-dim); margin-top: 0.3rem; font-weight: 400; }
+  .who { font-size: 0.75rem; color: var(--paper-dim); text-align: right; overflow-wrap: anywhere; }
+  .link { background: none; border: 0; color: var(--yellow); cursor: pointer; padding: 0; text-decoration: underline; font-size: inherit; }
+
+  .gate { padding: 4rem 0; text-align: center; }
+  .gate h1 { font-size: 2.4rem; margin-bottom: 0.5rem; }
+  .gate p { color: var(--paper-dim); margin: 0.5rem auto 1.5rem; max-width: 34rem; }
+  .btn { display: inline-flex; align-items: center; gap: 0.6rem; background: var(--paper); color: var(--soot); border: 0; padding: 0.7rem 1.2rem; font-weight: 600; cursor: pointer; }
+  .btn:hover { background: #fff; }
+
+  .tabs { display: flex; gap: 0.25rem; padding: 0.75rem 0; border-bottom: 1px solid var(--line); }
+  .tabs a { font-family: "IBM Plex Mono", monospace; font-size: 0.78rem; letter-spacing: 0.06em; text-transform: uppercase; text-decoration: none; color: var(--paper-dim); border: 1px solid var(--line); padding: 0.35rem 0.75rem; }
+  .tabs a:hover { color: var(--paper); border-color: var(--paper-dim); }
+  .tabs a.on { background: var(--yellow); color: var(--soot); border-color: var(--yellow); }
+
+  h2 { font-size: 1.4rem; margin: 1.75rem 0 0.25rem; }
+  h2 + .sub { color: var(--paper-dim); font-size: 0.85rem; margin-bottom: 1rem; max-width: 46rem; }
+  .label { font-family: "IBM Plex Mono", monospace; font-size: 0.68rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--paper-dim); }
+
+  /* Copy buttons: say what happened, in words. */
+  .copy { font-family: "IBM Plex Mono", monospace; font-size: 0.72rem; letter-spacing: 0.05em; text-transform: uppercase; background: none; border: 1px solid var(--paper-dim); color: var(--paper); padding: 0.3rem 0.65rem; cursor: pointer; white-space: nowrap; }
+  .copy:hover { border-color: var(--yellow); color: var(--yellow); }
+  .copy.done { border-color: var(--ok); color: var(--ok); }
+  .ghost { font-family: "IBM Plex Mono", monospace; font-size: 0.72rem; background: none; border: 0; color: var(--paper-dim); cursor: pointer; text-decoration: underline; padding: 0.3rem 0.2rem; }
+
+  /* Ref links */
+  .tagbar { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; margin-bottom: 1.25rem; }
+  .chip { display: inline-flex; align-items: center; gap: 0.35rem; font-family: "IBM Plex Mono", monospace; font-size: 0.74rem; border: 1px solid var(--line); padding: 0.25rem 0.55rem; background: var(--soot-2); }
+  .chip button { background: none; border: 0; color: var(--paper-dim); cursor: pointer; padding: 0 0.1rem; }
+  .chip button:hover { color: var(--oxide); }
+  .addtag { display: inline-flex; gap: 0.3rem; }
+  .addtag input { width: 11rem; }
+  input[type=text], textarea, select { background: var(--soot-2); border: 1px solid var(--line); padding: 0.4rem 0.55rem; border-radius: 0; }
+  input[type=text]:focus, textarea:focus, select:focus { outline: 2px solid var(--yellow); outline-offset: -1px; }
+  .games { display: grid; gap: 1rem; }
+  .game { background: var(--soot-2); border: 1px solid var(--line); }
+  .game-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 0.25rem 1rem; padding: 0.7rem 0.9rem; border-bottom: 1px solid var(--line); }
+  .game-head h3 { font-size: 1.35rem; }
+  .flag { font-size: 0.75rem; color: var(--paper-dim); }
+  .flag.warn { color: var(--yellow); }
+  .rows { display: grid; }
+  .row { display: grid; grid-template-columns: 8.5rem 1fr auto; align-items: center; gap: 0.75rem; padding: 0.45rem 0.9rem; border-bottom: 1px solid var(--line); }
+  .row:last-child { border-bottom: 0; }
+  .row .ch { font-size: 0.85rem; }
+  .row .url { font-family: "IBM Plex Mono", monospace; font-size: 0.78rem; color: var(--paper-dim); overflow-wrap: anywhere; }
+  .row .url b { color: var(--yellow); font-weight: 500; }
+
+  /* Post builder */
+  .compose { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 0.9rem 1.25rem; background: var(--soot-2); border: 1px solid var(--line); padding: 1rem; }
+  .field { display: grid; gap: 0.3rem; align-content: start; }
+  .field.wide { grid-column: 1 / -1; }
+  .field textarea { resize: vertical; min-height: 4.5rem; }
+  .check { display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; }
+  .check input { width: 1rem; height: 1rem; accent-color: var(--yellow); }
+  .posts { display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 1rem; margin-top: 1.25rem; }
+  .post { background: var(--soot-2); border: 1px solid var(--line); display: grid; grid-template-rows: auto 1fr auto; }
+  .post-head { display: flex; align-items: baseline; justify-content: space-between; gap: 0.5rem; padding: 0.6rem 0.9rem; border-bottom: 1px solid var(--line); }
+  .post-head h3 { font-size: 1.25rem; }
+  .post-body { padding: 0.75rem 0.9rem; display: grid; gap: 0.6rem; align-content: start; }
+  .post-body textarea { width: 100%; resize: vertical; min-height: 12rem; overflow: hidden; font-size: 0.9rem; line-height: 1.45; }
+  .post-body textarea.title { min-height: 3.2rem; }
+  .field .ghost { justify-self: start; }
+  .post-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem; padding: 0.55rem 0.9rem; border-top: 1px solid var(--line); }
+  .count { font-family: "IBM Plex Mono", monospace; font-size: 0.75rem; color: var(--paper-dim); font-variant-numeric: tabular-nums; }
+  .count.over { color: #ff6b5b; font-weight: 600; }
+  .hint { font-size: 0.75rem; color: var(--paper-dim); }
+  .hint.warn { color: var(--yellow); }
+  .sub-row { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+
+  .notes { margin-top: 2.5rem; padding-top: 1rem; border-top: 1px solid var(--line); color: var(--paper-dim); font-size: 0.78rem; }
+  .notes li { margin: 0.25rem 0 0.25rem 1.1rem; }
+  .err { background: rgba(192,57,43,0.15); border: 1px solid var(--oxide); padding: 0.75rem 1rem; margin: 1rem 0; font-size: 0.85rem; }
+  @media (max-width: 560px) {
+    .brand { font-size: 1.6rem; }
+    .posts { grid-template-columns: 1fr; }
+    .row { grid-template-columns: 1fr auto; }
+    .row .url { grid-column: 1 / -1; grid-row: 2; }
+  }
+</style>
+</head>
+<body>
+<div class="hazard-rule"></div>
+<div id="app" class="wrap"><div class="gate"><p>Loading…</p></div></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script type="module">
+import { SUPABASE_URL, SUPABASE_KEY } from '/kit/config.js';
+
+// Sign-in is the same as /stats/: Google through Supabase, and /api/marketing
+// (api/_admin.js) decides who gets in. Nothing below renders until it says yes.
+const HOME = location.origin + '/marketing/';
+const app = document.getElementById('app');
+const sb = window.supabase?.createClient ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
+
+const S = { session: undefined, data: null, error: null, denied: false, loading: false };
+
+// ---------------------------------------------------------------- helpers
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const store = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
+};
+const tab = () => (location.hash === '#posts' ? 'posts' : 'links');
+
+// Tags look like the kit expects (kit/analytics.js refFrom): lowercase, digits, dashes.
+const slug = (s) => String(s || '').trim().toLowerCase().replace(/[^a-z0-9_-]+/g, '-').replace(/^[-_]+|-+$/g, '').slice(0, 40);
+const refUrl = (game, ref) => `${S.data.site}${game.path}?ref=${encodeURIComponent(ref)}`;
+const gameById = (id) => S.data.games.find((g) => g.id === id) || S.data.games[0];
+
+async function copyText(text, btn) {
+  let done = false;
+  try { await navigator.clipboard.writeText(text); done = true; } catch {
+    const t = document.createElement('textarea');
+    t.value = text; t.setAttribute('readonly', ''); t.style.position = 'fixed'; t.style.opacity = '0';
+    document.body.appendChild(t); t.select();
+    try { done = document.execCommand('copy'); } catch {}
+    t.remove();
+  }
+  if (!btn) return;
+  const was = btn.dataset.label || btn.textContent;
+  btn.dataset.label = was;
+  btn.textContent = done ? 'Copied' : 'Copy failed';
+  btn.classList.toggle('done', done);
+  clearTimeout(btn._t);
+  btn._t = setTimeout(() => { btn.textContent = was; btn.classList.remove('done'); }, 1600);
+}
+
+// ---------------------------------------------------------------- counting
+// Each platform counts its own way: Bluesky in graphemes (an emoji is one),
+// X with every link as 23 and emoji as 2, Reddit and Instagram in characters.
+const seg = typeof Intl !== 'undefined' && Intl.Segmenter ? new Intl.Segmenter('en', { granularity: 'grapheme' }) : null;
+const graphemes = (s) => (seg ? [...seg.segment(s)].length : [...s].length);
+const URL_RE = /https?:\/\/[^\s]+/g;
+function xLength(s) {
+  const links = s.match(URL_RE) || [];
+  const rest = s.replace(URL_RE, '');
+  let n = 0;
+  for (const g of seg ? [...seg.segment(rest)].map((x) => x.segment) : [...rest]) n += /\p{Extended_Pictographic}/u.test(g) ? 2 : 1;
+  return n + links.length * 23;
+}
+function lengthFor(platform, text) {
+  if (platform.count === 'graphemes') return graphemes(text);
+  if (platform.count === 'x') return xLength(text);
+  return [...text].length;
+}
+const hashtagCount = (s) => (s.match(/(^|\s)#[\p{L}\p{N}_]+/gu) || []).length;
+
+// ---------------------------------------------------------------- post drafts
+// The inputs the four drafts are written from, kept per device.
+function defaultsFor(game) {
+  return { game: game.id, hook: '', body: game.short, cta: 'Play free in your browser, no account needed', tags: game.tags.map((t) => '#' + t).join(' '), ai: true };
+}
+let P = null;
+
+const AI_LINE = 'Made by a small studio with help from AI tools.';
+const join = (...parts) => parts.filter((p) => p && String(p).trim()).join('\n\n');
+const takeTags = (tags, n) => tags.split(/\s+/).filter((t) => t.startsWith('#')).slice(0, n).join(' ');
+
+// Fullest first; the first one that fits is the draft. If none fits, the
+// shortest is shown with its count in red.
+function candidates(platform) {
+  const game = gameById(P.game);
+  const url = refUrl(game, platform.ref);
+  const hook = P.hook.trim();
+  const body = P.body.trim();
+  const longBody = game.pitch;
+  const cta = P.cta.trim();
+  const ai = P.ai ? AI_LINE : '';
+  // Long formats take the full pitch unless the blurb was rewritten by hand.
+  const desc = body && body !== game.short ? body : longBody;
+  const named = hook && !hook.includes(game.name) ? `${game.name} | ${hook}` : hook;
+  switch (platform.id) {
+    case 'bluesky':
+    case 'x': {
+      const head = hook ? named : `${game.name}: ${body}`;
+      const mid = hook ? body : '';
+      const link = `${cta ? cta + ': ' : ''}${url}`;
+      return [
+        join(head, mid, link, ai, takeTags(P.tags, 3)),
+        join(head, mid, link, ai, takeTags(P.tags, 2)),
+        join(head, mid, link, ai),
+        join(head, link, ai, takeTags(P.tags, 2)),
+        join(head, link, ai),
+        join(head, url, ai),
+        join(head, link),
+        join(head, url),
+      ];
+    }
+    case 'reddit': {
+      const title = hook ? named : `${game.name}, ${body.charAt(0).toLowerCase()}${body.slice(1).replace(/\.$/, '')}`;
+      const text = join(desc, `${cta || 'Play it here'}: ${url}`, ai, 'Feedback welcome, especially on what confused you or dragged.');
+      return [{ title, body: text }];
+    }
+    case 'instagram': {
+      const bio = `${cta || 'Play free'}: link in bio`;
+      const allTags = P.tags.split(/\s+/).filter((t) => t.startsWith('#')).slice(0, 30).join(' ');
+      return [join(named || game.name, desc, bio, ai, allTags)];
+    }
+  }
+  return [''];
+}
+
+function draftFor(platform) {
+  const list = candidates(platform);
+  if (platform.id === 'reddit') return list[0];
+  return list.find((t) => lengthFor(platform, t) <= platform.limit) ?? list[list.length - 1];
+}
+
+// ---------------------------------------------------------------- data
+async function load() {
+  if (!S.session) return;
+  S.loading = true; S.error = null; render();
+  try {
+    const res = await fetch('/api/marketing', { headers: { Authorization: `Bearer ${S.session.access_token}` } });
+    const body = await res.json().catch(() => ({}));
+    if (res.status === 401) { await sb.auth.signOut(); S.session = null; S.error = body.error || 'Sign in again.'; }
+    else if (res.status === 403) { S.denied = true; }
+    else if (!res.ok || !body.ok) { S.error = body.error || `The server answered ${res.status}.`; }
+    else {
+      S.data = body;
+      const saved = store.get('pm-marketing-post', null);
+      const game = body.games.find((g) => g.id === saved?.game) || body.games[0];
+      P = saved && saved.game === game.id ? { ...defaultsFor(game), ...saved } : defaultsFor(game);
+    }
+  } catch (e) {
+    S.error = 'Could not reach the server.';
+  }
+  S.loading = false;
+  render();
+}
+
+// ---------------------------------------------------------------- render
+function googleMark() {
+  return '<svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.9 6.1C12.5 13.7 17.8 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.7 6c4.5-4.2 6.9-10.3 6.9-17.7z"/><path fill="#FBBC05" d="M10.6 28.6c-.5-1.4-.8-3-.8-4.6s.3-3.2.8-4.6l-7.9-6.1C1 16.6 0 20.2 0 24s1 7.4 2.7 10.7l7.9-6.1z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.7-6c-2.2 1.5-5 2.3-8.2 2.3-6.2 0-11.5-4.2-13.4-9.9l-7.9 6.1C6.6 42.6 14.6 48 24 48z"/></svg>';
+}
+function gate(title, text, action) {
+  return `<div class="gate"><h1 class="stencil">${title}</h1><p>${text}</p>${action}</div>`;
+}
+function header() {
+  const who = S.session ? `${esc(S.session.user.email)}<br><button class="link" data-act="signout">sign out</button>` : '';
+  return `<div class="top"><a class="brand stencil" href="/">Permadeath <span class="hit">Marketing</span><small>tagged links and post drafts</small></a><div class="who">${who}</div></div>`;
+}
+
+function render() {
+  if (!sb) { app.innerHTML = gate('Could not load sign-in', 'The sign-in library didn\'t load. Check your connection and reload.', ''); return; }
+  if (S.session === undefined) { app.innerHTML = '<div class="gate"><p>Loading…</p></div>'; return; }
+  if (!S.session) {
+    app.innerHTML = gate('Studio marketing', 'Private. Sign in with the Google account this page belongs to.',
+      `<button class="btn" data-act="signin">${googleMark()} Sign in with Google</button>${S.error ? `<p class="tiny">${esc(S.error)}</p>` : ''}`);
+    return;
+  }
+  if (S.denied) {
+    app.innerHTML = header() + gate('Private', `${esc(S.session.user.email)} isn't allowed here.`, '<button class="btn" data-act="signout">Sign out</button>');
+    return;
+  }
+  if (!S.data) {
+    app.innerHTML = header() + (S.error ? `<div class="err">${esc(S.error)} <button class="link" data-act="reload">Try again</button></div>` : '<div class="gate"><p>Loading…</p></div>');
+    return;
+  }
+  const t = tab();
+  app.innerHTML = header()
+    + `<nav class="tabs"><a href="#links" class="${t === 'links' ? 'on' : ''}">Ref links</a><a href="#posts" class="${t === 'posts' ? 'on' : ''}">Post builder</a></nav>`
+    + (t === 'links' ? linksView() : postsView())
+    + notes();
+  if (t === 'posts') refreshPosts();
+}
+
+// ---------------------------------------------------------------- ref links
+const customTags = () => store.get('pm-marketing-tags', []);
+function channels() {
+  const base = S.data.channels.map((c) => ({ ...c, custom: false }));
+  const extra = customTags().filter((r) => !base.some((c) => c.ref === r)).map((r) => ({ ref: r, name: r, kind: 'custom', custom: true }));
+  return [...base, ...extra];
+}
+
+function linksView() {
+  const chs = channels();
+  const chips = chs.map((c) => `<span class="chip">${esc(c.ref)}${c.custom ? `<button data-act="untag" data-ref="${esc(c.ref)}" aria-label="Remove ${esc(c.ref)}">×</button>` : ''}</span>`).join('');
+  const games = S.data.games.map((g) => `
+    <section class="game">
+      <div class="game-head"><h3 class="stencil">${esc(g.name)}</h3>
+        <span class="flag ${g.recordsRef ? '' : 'warn'}">${g.recordsRef ? 'Records the tag on every run' : 'Live build doesn\'t record tags yet'}</span></div>
+      <div class="rows">${chs.map((c) => {
+        const url = refUrl(g, c.ref);
+        return `<div class="row"><span class="ch">${esc(c.name)}</span><span class="url">${esc(url.replace(/\?ref=.*$/, ''))}?ref=<b>${esc(c.ref)}</b></span><button class="copy" data-act="copy" data-text="${esc(url)}">Copy</button></div>`;
+      }).join('')}</div>
+    </section>`).join('');
+  return `<h2 class="stencil">Ref links</h2>
+    <p class="sub">One link per game and channel. A run started from one carries the tag as <span class="mono">ref</span> in its run_start event, and the first tag a player ever arrived with stays as <span class="mono">first_ref</span>.</p>
+    <div class="tagbar"><span class="label">Tags</span>${chips}
+      <form class="addtag" data-form="tag"><input type="text" name="tag" placeholder="add a tag, e.g. discord" aria-label="New tag" maxlength="40"><button class="copy" type="submit">Add</button></form></div>
+    <div class="games">${games}</div>`;
+}
+
+// ---------------------------------------------------------------- post builder
+function postsView() {
+  const opts = S.data.games.map((g) => `<option value="${esc(g.id)}" ${g.id === P.game ? 'selected' : ''}>${esc(g.name)}</option>`).join('');
+  const cards = S.data.platforms.map((p) => {
+    const limit = p.id === 'reddit' ? `title ${p.titleLimit}, body ${p.limit.toLocaleString('en-US')}` : `${p.limit.toLocaleString('en-US')}`;
+    const fields = p.id === 'reddit'
+      ? `<div class="sub-row"><span class="label">Title</span><span class="count" data-count="reddit-title"></span></div>
+         <textarea class="title" data-post="reddit-title" aria-label="Reddit title"></textarea>
+         <div class="sub-row"><span class="label">Body</span><button class="copy" data-act="copypost" data-post="reddit-title">Copy title</button></div>
+         <textarea data-post="reddit" aria-label="Reddit body"></textarea>`
+      : `<textarea data-post="${p.id}" aria-label="${esc(p.name)} post"></textarea>`;
+    const hint = p.id === 'instagram'
+      ? `<p class="hint">Links in captions aren't clickable. Put this in your bio: <span class="mono">${esc(refUrl(gameById(P.game), p.ref))}</span> <button class="ghost" data-act="copybio">copy bio link</button></p><p class="hint" data-hint="instagram"></p>`
+      : p.id === 'x' ? '<p class="hint">X counts every link as 23 characters.</p>'
+      : p.id === 'reddit' ? '<p class="hint">Check each subreddit\'s rules on self-promotion first.</p>' : '';
+    return `<section class="post">
+      <div class="post-head"><h3 class="stencil">${esc(p.name)}</h3><span class="label">limit ${limit}</span></div>
+      <div class="post-body">${fields}${hint}</div>
+      <div class="post-foot"><span class="count" data-count="${p.id}"></span>
+        <span><button class="ghost" data-act="reset" data-post="${p.id}" hidden>reset to draft</button>
+        <button class="copy" data-act="copypost" data-post="${p.id}">${p.id === 'reddit' ? 'Copy body' : 'Copy'}</button></span></div>
+    </section>`;
+  }).join('');
+  return `<h2 class="stencil">Post builder</h2>
+    <p class="sub">Write it once and get a draft sized for each platform, with the game's link tagged for that platform. Edit any draft directly; it stops following the inputs until you reset it.</p>
+    <form class="compose" data-form="post">
+      <label class="field"><span class="label">Game</span><select name="game">${opts}</select></label>
+      <label class="field"><span class="label">Hook or news (optional)</span><input type="text" name="hook" value="${esc(P.hook)}" placeholder="e.g. New build: the company now rewrites the deal mid-shift"></label>
+      <label class="field wide"><span class="label">What it is</span><textarea name="body" rows="2">${esc(P.body)}</textarea></label>
+      <label class="field"><span class="label">Call to action</span><input type="text" name="cta" value="${esc(P.cta)}"></label>
+      <label class="field"><span class="label">Hashtags (Bluesky and X use the first few, Reddit none)</span><input type="text" name="tags" value="${esc(P.tags)}"></label>
+      <label class="check field wide"><input type="checkbox" name="ai" ${P.ai ? 'checked' : ''}> Say the games are made with help from AI tools</label>
+      <div class="field wide"><button class="ghost" type="button" data-act="resetall">Start over from this game's blurb</button></div>
+    </form>
+    <div class="posts">${cards}</div>`;
+}
+
+// A draft's box grows to show the whole post.
+function fit(el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 2 + 'px'; }
+
+// Drafts follow the inputs unless edited by hand.
+const edited = new Set();
+function refreshPosts() {
+  const edits = store.get('pm-marketing-edits', {});
+  const put = (key, draft) => {
+    const el = app.querySelector(`[data-post="${key}"]`);
+    if (el) { el.value = edited.has(key) ? (edits[key] ?? draft) : draft; fit(el); }
+  };
+  for (const p of S.data.platforms) {
+    const d = draftFor(p);
+    if (p.id === 'reddit') { put('reddit-title', d.title); put('reddit', d.body); }
+    else put(p.id, d);
+  }
+  updateCounts();
+}
+
+function setCount(key, n, limit) {
+  const el = app.querySelector(`[data-count="${key}"]`);
+  if (!el) return;
+  el.textContent = `${n.toLocaleString('en-US')} / ${limit.toLocaleString('en-US')}${n > limit ? ` · ${(n - limit).toLocaleString('en-US')} over` : ''}`;
+  el.classList.toggle('over', n > limit);
+}
+function updateCounts() {
+  for (const p of S.data.platforms) {
+    const el = app.querySelector(`[data-post="${p.id}"]`);
+    if (!el) continue;
+    setCount(p.id, lengthFor(p, el.value), p.limit);
+    if (p.id === 'reddit') {
+      const t = app.querySelector('[data-post="reddit-title"]');
+      setCount('reddit-title', [...t.value].length, p.titleLimit);
+    }
+    if (p.id === 'instagram') {
+      const n = hashtagCount(el.value);
+      const h = app.querySelector('[data-hint="instagram"]');
+      h.textContent = `${n} of ${p.maxHashtags} hashtags allowed.`;
+      h.classList.toggle('warn', n > p.maxHashtags);
+    }
+    const reset = app.querySelector(`[data-act="reset"][data-post="${p.id}"]`);
+    if (reset) reset.hidden = !(edited.has(p.id) || (p.id === 'reddit' && edited.has('reddit-title')));
+  }
+}
+
+function readForm(form) {
+  const f = new FormData(form);
+  const game = gameById(f.get('game'));
+  if (game.id !== P.game) {
+    P = defaultsFor(game);
+    edited.clear();
+    store.set('pm-marketing-edits', {});
+    store.set('pm-marketing-post', P);
+    render();
+    return;
+  }
+  P = { game: game.id, hook: f.get('hook') || '', body: f.get('body') || '', cta: f.get('cta') || '', tags: f.get('tags') || '', ai: f.get('ai') === 'on' };
+  store.set('pm-marketing-post', P);
+  refreshPosts();
+}
+
+function notes() {
+  return `<ul class="notes">
+    <li>Only an address in STATS_ADMIN_EMAILS, signed in with Google, gets this page's data. It's the same check as /stats/.</li>
+    <li>Tags are lowercase letters, digits and dashes, up to 40 characters; anything else in ?ref= is ignored by the games.</li>
+    <li>Limits: Bluesky 300 graphemes; X 280 with links as 23; Reddit titles 300 and text posts 40,000; Instagram captions 2,200 with up to 30 hashtags.</li>
+  </ul>`;
+}
+
+// ---------------------------------------------------------------- actions
+app.addEventListener('click', async (e) => {
+  const el = e.target.closest('[data-act]');
+  if (!el) return;
+  const d = el.dataset;
+  switch (d.act) {
+    case 'signin': {
+      const { error } = await sb.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: HOME } });
+      if (error) { S.error = error.message; render(); }
+      break;
+    }
+    case 'signout': await sb.auth.signOut(); S.data = null; S.denied = false; break;
+    case 'reload': load(); break;
+    case 'copy': copyText(d.text, el); break;
+    case 'copybio': copyText(refUrl(gameById(P.game), 'instagram'), el); break;
+    case 'copypost': copyText(app.querySelector(`textarea[data-post="${d.post}"]`).value, el); break;
+    case 'untag': store.set('pm-marketing-tags', customTags().filter((r) => r !== d.ref)); render(); break;
+    case 'reset': {
+      const keys = d.post === 'reddit' ? ['reddit', 'reddit-title'] : [d.post];
+      const edits = store.get('pm-marketing-edits', {});
+      keys.forEach((k) => { edited.delete(k); delete edits[k]; });
+      store.set('pm-marketing-edits', edits);
+      refreshPosts();
+      break;
+    }
+    case 'resetall': {
+      P = defaultsFor(gameById(P.game));
+      edited.clear();
+      store.set('pm-marketing-edits', {});
+      store.set('pm-marketing-post', P);
+      render();
+      break;
+    }
+  }
+});
+
+app.addEventListener('submit', (e) => {
+  const form = e.target.closest('[data-form="tag"]');
+  if (!form) { e.preventDefault(); return; }
+  e.preventDefault();
+  const tag = slug(new FormData(form).get('tag'));
+  if (!tag || !/^[a-z0-9]/.test(tag)) return;
+  const tags = customTags();
+  if (!tags.includes(tag) && !S.data.channels.some((c) => c.ref === tag)) store.set('pm-marketing-tags', [...tags, tag]);
+  render();
+  app.querySelector('[data-form="tag"] input')?.focus();
+});
+
+app.addEventListener('input', (e) => {
+  const form = e.target.closest('[data-form="post"]');
+  if (form) { if (e.target.name !== 'game') readForm(form); return; }
+  const post = e.target.dataset?.post;
+  if (post) {
+    edited.add(post);
+    const edits = store.get('pm-marketing-edits', {});
+    edits[post] = e.target.value;
+    store.set('pm-marketing-edits', edits);
+    fit(e.target);
+    updateCounts();
+  }
+});
+app.addEventListener('change', (e) => {
+  const form = e.target.closest('[data-form="post"]');
+  if (form && e.target.name === 'game') readForm(form);
+});
+
+// Hand edits survive a reload.
+for (const k of Object.keys(store.get('pm-marketing-edits', {}))) edited.add(k);
+
+// ---------------------------------------------------------------- boot
+window.addEventListener('hashchange', () => { if (/^#(links|posts)?$/.test(location.hash)) render(); });
+
+function onSession(session) {
+  const before = S.session?.user?.id;
+  S.session = session || null;
+  if (!S.session) { S.data = null; S.denied = false; render(); return; }
+  if (before !== S.session.user.id || !S.data) load();
+}
+
+if (sb) {
+  // Coming back from Google, the URL carries the token (hash) or a code (query).
+  const cameBack = /access_token=|[?&]code=/.test(location.hash + location.search);
+  sb.auth.getSession().then(({ data }) => {
+    if (cameBack) history.replaceState(null, '', location.pathname + '#links');
+    onSession(data.session);
+  });
+  sb.auth.onAuthStateChange((event, session) => {
+    if (event === 'TOKEN_REFRESHED' || (event === 'SIGNED_IN' && S.session?.user?.id === session?.user?.id)) { S.session = session; return; }
+    onSession(session);
+  });
+} else render();
+</script>
+</body>
+</html>
