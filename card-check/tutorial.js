@@ -20,7 +20,7 @@ export function guideSteps(h) {
   const anyone = (g, f) => h.onBoard(g).some(f);
   return [
     { id: 'welcome', title: 'Welcome to Card Check', next: true, spot: '.board',
-      body: 'You are <b>The Senior Engineer</b>, organizing a union at a video game studio. You win with <b>21 of 32 workers Signed</b> when the vote comes at the end of round 8. The board is the studio: a row per department, a column per stance from Hostile to Steward. The guide sets goals; how you reach them is up to you.' },
+      body: 'You are <b>The Senior Engineer</b> at a video game studio, and you\'re organizing a union. You win with <b>21 of 32 workers Signed</b> by the time the vote comes at the end of round 8. The playing board is the studio: a row per department, a column per stance from least supportive (Hostile) to most supportive (Steward).' },
 
     { id: 'first', title: 'Sign your first worker',
       body: '<b>One-on-One</b> moves a worker you can see one step toward Signed. <b>Map</b> turns over a new worker card. Priya and Dev are already Leaning. Get anyone to Signed.',
