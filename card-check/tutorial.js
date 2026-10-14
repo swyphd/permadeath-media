@@ -78,8 +78,6 @@ export function callouts(h) {
       body: 'Each Steward can absorb one management card per game, cancelling its effect in their department. Tick the Stewards allowed to spend it if this card hits them, then resolve. Save it for the cards that hurt.' },
     { id: 'stewardphase', title: 'Steward phase', when: (g) => g.phase === 'steward',
       body: 'At the start of each round, every Steward brings one worker in their department up a step. Click a highlighted worker, or make no move.' },
-    { id: 'holdout', title: 'Holdouts', when: (g) => h.onBoard(g).some((w) => h.locked(g, w)),
-      body: 'A worker with a lock will not sign until the Issue they care about is won (Pay Transparency or End Crunch). One-on-Ones take them to Leaning and stop. Win the Issue and they all move up at once.' },
     { id: 'plant', title: 'A Plant took the empty desk', when: (g) => h.onBoard(g).some((w) => w.reserve),
       body: 'Whenever a worker is removed from the board, management fills the desk with a Plant: Hostile, immovable, and every One-on-One in that department costs +1 while it sits there.' },
     { id: 'fear7', title: 'Fear is 7 or higher', when: (g) => g.fear >= 7,
