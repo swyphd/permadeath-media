@@ -1,6 +1,6 @@
 import { suite, test, ok, eq, deepEq } from '../test/harness.js';
 import { installStorage, fakeFetch } from './fakes.mjs';
-import { createAnalytics, privacySignal, EVENTS_URL } from '../analytics.js';
+import { createAnalytics, privacySignal, refFrom, EVENTS_URL } from '../analytics.js';
 
 const nav = (o = {}) => ({ doNotTrack: null, globalPrivacyControl: undefined, ...o });
 const make = (o = {}) => {
@@ -130,5 +130,41 @@ suite('analytics', () => {
     a.runEnd('win');
     await a.flush();
     eq(fetch.calls.length, 0);
+  });
+  test('a ?ref= tag rides along on run_start, and the first one sticks', async () => {
+    installStorage();
+    const first = make({ location: { search: '?ref=Galaxy-Click' } });
+    eq(first.a.ref, 'galaxy-click');
+    first.a.runStart({ mode: 'normal' });
+    await first.a.flush();
+    deepEq(sent(first.fetch)[0].props, { ref: 'galaxy-click', first_ref: 'galaxy-click', mode: 'normal' });
+
+    const later = make({ location: { search: '?table=abc&ref=bluesky' } });
+    later.a.runStart({}, { resume: 'r1' });
+    await later.a.flush();
+    deepEq(sent(later.fetch)[0].props, { ref: 'bluesky', first_ref: 'galaxy-click' });
+
+    const bookmark = make({ location: { search: '' } });
+    bookmark.a.runStart();
+    bookmark.a.milestone('m');
+    await bookmark.a.flush();
+    const ev = sent(bookmark.fetch);
+    deepEq(ev[0].props, { first_ref: 'galaxy-click' });
+    deepEq(ev[1].props, { milestone: 'm' });
+  });
+  test('no tag, a bad tag, or tracking off records no ref', async () => {
+    installStorage();
+    const plain = make({ location: { search: '?ref=<script>' } });
+    eq(plain.a.ref, null);
+    plain.a.runStart();
+    await plain.a.flush();
+    deepEq(sent(plain.fetch)[0].props, {});
+    const dnt = make({ location: { search: '?ref=itch-io' }, navigator: nav({ doNotTrack: '1' }) });
+    eq(globalThis.localStorage.getItem('pm-ref'), null);
+    eq(refFrom('?ref=itch-io'), 'itch-io');
+    eq(refFrom('?ref='), null);
+    eq(refFrom(undefined), null);
+    eq(refFrom('?ref=' + 'a'.repeat(41)), null);
+    dnt.a.dispose();
   });
 });
