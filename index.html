@@ -508,7 +508,8 @@
         <p class="file-desc mono">
           Founding playtesters get new builds first, vote on what we build
           next, and hear about the Kickstarter or Patreon before anyone else.
-          Only when there's something to play or decide. Leave any time.
+          Only when there's something to play or decide. Unsubscribe anytime,
+          and we never sell or share your address.
         </p>
         <form class="signup-form" id="signup-form" novalidate>
           <label class="sr-only" for="signup-email">Email address</label>
@@ -516,7 +517,7 @@
                  autocomplete="email" placeholder="you@example.com" required>
           <input class="signup-hp" name="website" type="text" tabindex="-1"
                  autocomplete="off" aria-hidden="true">
-          <button class="signup-btn" type="submit">Join</button>
+          <button class="signup-btn" type="submit">Become a playtester</button>
         </form>
         <p class="signup-msg mono" id="signup-msg" role="status" aria-live="polite"></p>
       </div>
@@ -656,7 +657,7 @@
         say('Filing\u2026');
         try {
           await subscribe(email);
-          say('You\'re a founding playtester. Next build goes to ' + email + '.', 'ok');
+          say('You\'re a founding playtester. Check ' + email + ' for a note from us; if it asks you to confirm, one click finishes it.', 'ok');
           form.reset();
         } catch (err) {
           say('Something went wrong. Try again in a minute.', 'err');

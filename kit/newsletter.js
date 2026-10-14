@@ -51,7 +51,7 @@ export function createNewsletter({ source, doneKey = `${source}-newsletter`, url
 //   <form id="signup-form" novalidate>
 //     <input id="signup-email" name="email" type="email">
 //     <input name="website" type="text" tabindex="-1" autocomplete="off" class="hp">  (hidden honeypot)
-//     <button type="submit">Join</button>
+//     <button type="submit">Get early builds</button>
 //     <p id="signup-msg" class="msg" role="status"></p>
 //   </form>
 // The message element gets class "msg ok" or "msg err". Returns a detach function.
@@ -61,8 +61,13 @@ export function mountSignupForm(form, { newsletter, source, tag, message, doneTe
   const btn = form.querySelector('button[type=submit], button');
   const msg = message || form.querySelector('[role=status], .msg');
   const say = (t, c) => { if (msg) { msg.textContent = t; msg.className = 'msg' + (c ? ' ' + c : ''); } };
-  const done = (addr) => {
-    say(doneText ? doneText(addr) : `You're on the list.${addr ? ` Updates go to ${addr}.` : ''}`, 'ok');
+  // `fresh` is a signup just now; otherwise this browser was already on the list. A new
+  // address may get a confirm-your-address email from Buttondown, so say to look for it.
+  const done = (addr, fresh) => {
+    const text = doneText ? doneText(addr, fresh)
+      : fresh ? `You're on the list. Check ${addr} for a note from us; if it asks you to confirm, one click finishes it.`
+      : `You're on the list as ${addr}.`;
+    say(text, 'ok');
     input.disabled = true;
     if (btn) btn.disabled = true;
   };
@@ -74,10 +79,10 @@ export function mountSignupForm(form, { newsletter, source, tag, message, doneTe
     const addr = normalizeEmail(input.value);
     if (!EMAIL_RE.test(addr)) { say('That doesn’t look like an email address.', 'err'); input.focus(); return; }
     if (btn) btn.disabled = true;
-    say('Saving…');
+    say('Signing you up…');
     try {
       await list.subscribe(addr, { tag, website: form.elements?.website?.value });
-      done(addr);
+      done(addr, true);
     } catch (err) {
       say(err.message, 'err');
       if (btn) btn.disabled = false;
