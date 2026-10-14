@@ -88,12 +88,12 @@ export const SYMBOLS = {
   unlock: 'Former holdout: their Issue is won, so they can sign.',
   steward: 'Steward. Free One-on-One here once a round, brings a worker up each round, and can absorb one management card.',
   absorbSpent: 'Steward whose absorb is spent this game.',
-  plant: 'Plant: a management hire. Hostile, immovable, and every One-on-One in this department costs +1.',
+  plant: 'Plant: management fills the desk of any removed worker with one. Hostile, immovable, and every One-on-One in this department costs +1.',
   contract: 'Contract worker: Contract Ends can remove them from the board.',
   reorg: 'Reorganized this round: no Steward or Influence here.',
   decert: 'Decertified: this department’s workers don’t count at the vote unless two are Stewards.',
   deck: 'Face-down workers. Map turns over the top card.',
-  mgmt: 'Management: plays its cards at the start of every round, before you act.',
+  mgmt: 'Management: turns over its cards at the start of every round, before you act, and more as you grow and after each Small Win.',
 };
 
 export function influenceTip(n, credit) {

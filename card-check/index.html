@@ -17,7 +17,7 @@
   --red:#b7312c;--amber:#b7791f;--ok:#2f855a;--accent:#1f3b6e;--accent-ink:#ffffff;
   --hostile:#fff1f0;--undecided:#f7f8fa;--leaning:#eef5fc;--signed:#edf8f0;--steward:#e3f3e8;
   --sel:#f6c34c;--sel-ink:#1c2230;
-  --fear:#c53030;--act:#2b6cb0;--burn:#dd6b20;--win:#b7791f;--sign:#2f855a;--them:#3d1d24;--them-ink:#f7e9ea;
+  --on-rc:#ffffff;--fear:#c53030;--act:#2b6cb0;--burn:#dd6b20;--win:#b7791f;--sign:#2f855a;--them:#3d1d24;--them-ink:#f7e9ea;
   color-scheme:light dark;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
@@ -25,14 +25,14 @@
   --hostile:#3a2422;--undecided:#262c38;--leaning:#1f2d40;--signed:#1f3328;--steward:#20402b;
   --accent:#6f9ae0;--accent-ink:#0f1420;--sel:#e0b23a;--sel-ink:#1c2230;
   --red:#f28b84;--amber:#e8bc5a;--ok:#6fd49a;
-  --fear:#f28b84;--act:#79a8ea;--burn:#f6a65a;--win:#e8bc5a;--sign:#6fd49a;--them:#2b1418;--them-ink:#f1dfe0;
+  --on-rc:#161a22;--fear:#f28b84;--act:#79a8ea;--burn:#f6a65a;--win:#e8bc5a;--sign:#6fd49a;--them:#2b1418;--them-ink:#f1dfe0;
 }}
 :root[data-theme="dark"]{
   --bg:#161a22;--panel:#1f2430;--ink:#e8ebf0;--muted:#9aa5b5;--line:#343b48;--soft:#262c38;
   --hostile:#3a2422;--undecided:#262c38;--leaning:#1f2d40;--signed:#1f3328;--steward:#20402b;
   --accent:#6f9ae0;--accent-ink:#0f1420;--sel:#e0b23a;--sel-ink:#1c2230;
   --red:#f28b84;--amber:#e8bc5a;--ok:#6fd49a;
-  --fear:#f28b84;--act:#79a8ea;--burn:#f6a65a;--win:#e8bc5a;--sign:#6fd49a;--them:#2b1418;--them-ink:#f1dfe0;
+  --on-rc:#161a22;--fear:#f28b84;--act:#79a8ea;--burn:#f6a65a;--win:#e8bc5a;--sign:#6fd49a;--them:#2b1418;--them-ink:#f1dfe0;
 }
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
 *{box-sizing:inherit}
@@ -224,24 +224,34 @@ input{font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:6
 
 /* Small Wins */
 .issues .ihead h2{display:flex;align-items:center;gap:6px}
-.issue{border:1px solid var(--line);border-left:6px solid var(--rc);border-radius:8px;padding:7px 9px;font-size:13px;background:var(--panel)}
-.issue.ready{box-shadow:0 0 0 2px var(--ok) inset}
-.issue.pick{cursor:pointer;box-shadow:0 0 0 2px var(--sel)}
-.issue.done{background:var(--soft)}
+.issue{border:1.5px solid var(--line);border-radius:10px;padding:0;font-size:13px;background:var(--panel);color:var(--muted);overflow:hidden}
+.issue .ih{display:flex;align-items:center;gap:8px;padding:9px 12px 8px;border-bottom:1.5px solid var(--line)}
+.issue .ih b{font-family:"Barlow Condensed";font-size:19px;line-height:1.1;letter-spacing:.01em;color:var(--ink);text-transform:uppercase}
+.issue .ih .big{font-size:22px;color:var(--muted)}
+.issue .badge{margin-left:auto;font-family:"Barlow Condensed";font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:1px 7px;border-radius:4px;border:1.5px solid currentColor}
+.issue .sec{padding:7px 12px;display:flex;align-items:center;gap:4px 8px;flex-wrap:wrap}
+.issue .sec>.row{display:inline-flex;align-items:center;gap:5px;flex-wrap:wrap}
+.issue .sec.eff{display:block}.issue .sec.eff .lab{display:block;margin-bottom:3px}
+.issue .sec+.sec{border-top:1px solid var(--line)}
+.issue .lab{min-width:44px;font-family:"Barlow Condensed";font-size:11.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.issue .need{cursor:help}
+.issue .need .pips{font-size:16px;color:var(--ink)}
+.issue .fx{list-style:none;margin:0;padding:0;display:grid;gap:3px}
+.issue .fx li{display:flex;align-items:center;gap:6px;cursor:help;color:var(--muted)}
+.issue .fx li span:not(.ico){color:var(--ink)}
+.issue .cost{color:var(--muted);cursor:help}
+.issue .cost .ico{color:var(--muted)}
+.issue.ready{border-color:var(--ok);box-shadow:0 0 0 1.5px var(--ok)}
+.issue.ready .badge{color:var(--ok)}
+.issue.pick{cursor:pointer;border-color:var(--sel);box-shadow:0 0 0 2px var(--sel)}
+.issue.done{border-color:var(--rc);box-shadow:0 0 0 1.5px var(--rc)}
+.issue.done .ih{background:var(--rc);border-bottom-color:var(--rc)}
+.issue.done .ih b,.issue.done .ih .big,.issue.done .ih .ico,.issue.done .badge{color:var(--on-rc)}
+.issue.done .fx li.r-fear{color:var(--fear)}.issue.done .fx li.r-signed{color:var(--sign)}.issue.done .fx li.r-burnout{color:var(--burn)}.issue.done .fx li.r-action{color:var(--act)}
+.issue:not(.done) .ico{color:var(--muted)}
+.issue .need .pip.on .ico{color:var(--ink)}
 .issue.gone{opacity:.45}
 .issue.gone b{text-decoration:line-through}
-.issue .ih{display:flex;align-items:center;gap:6px}
-.issue .ih b{font-family:"Barlow Condensed";font-size:18px;line-height:1.1}
-.issue .ih .big{font-size:20px;color:var(--rc)}
-.issue .rres{margin-left:auto;display:inline-flex;gap:3px;font-size:15px}
-.issue .need{display:flex;align-items:center;gap:6px;margin-top:4px;cursor:help}
-.issue .need .pips{font-size:15px}
-.issue .state{margin-top:4px}
-.issue.done .state{color:var(--ok);font-weight:600}
-.fx{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
-.chip{display:inline-flex;align-items:center;gap:3px;font-size:12px;padding:2px 7px;border-radius:999px;border:1px solid currentColor;background:var(--panel);cursor:help;line-height:1.3}
-.chip>span:not(.ico){color:var(--ink)}
-.issue .cost{margin-top:5px;display:flex;align-items:center;gap:3px;flex-wrap:wrap}
 .logp summary{cursor:pointer}
 .log{font-size:12px;max-height:240px;overflow:auto;border-top:1px solid var(--line);padding-top:6px;margin-top:6px}
 .log div{padding:2px 0;border-bottom:1px dotted var(--line)}
@@ -258,19 +268,18 @@ input{font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:6
 .phase{font-family:"Barlow Condensed";font-weight:700;font-size:22px}
 .toast{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:8px 14px;border-radius:8px;font-size:13px;opacity:0;transition:opacity .2s;pointer-events:none}
 .toast.show{opacity:1}
-/* tutorial, callouts, rules */
-.tut,.callout{position:sticky;top:var(--hudh,0px);z-index:5;background:var(--panel);border:1px solid var(--line);border-left:5px solid var(--sel);border-radius:10px;padding:12px 14px;margin-bottom:12px;box-shadow:0 4px 14px rgba(0,0,0,.14)}
-.callout{border-left-color:var(--accent);position:relative;top:auto;z-index:1}
+/* tutorial, rules */
+.tut{position:sticky;top:var(--hudh,0px);z-index:5;background:var(--panel);border:1px solid var(--line);border-left:5px solid var(--sel);border-radius:10px;padding:12px 14px;margin-bottom:12px;box-shadow:0 4px 14px rgba(0,0,0,.14)}
 .tut .th{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
-.tut h2,.callout h2{font-size:20px}
+.tut h2{font-size:20px}
 .tut .step{font-size:12px;color:var(--muted);margin-left:auto;white-space:nowrap}
 .tprog{display:flex;align-items:center;gap:4px;margin-bottom:8px;flex-wrap:wrap}
 .tprog .seg{flex:1 1 36px;max-width:64px;height:6px;border-radius:3px;background:var(--line)}
 .tprog .seg.done{background:var(--ok)}
 .tprog .seg.now{background:var(--sel)}
 .tprog .plab{font-family:"Barlow Condensed";font-weight:700;font-size:14px;letter-spacing:.03em;margin-left:8px;white-space:nowrap}
-.tut p,.callout p{margin:6px 0 0;font-size:14px;max-width:72ch}
-.tut .row,.callout .row{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;align-items:center}
+.tut p{margin:6px 0 0;font-size:14px;max-width:72ch}
+.tut .row{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;align-items:center}
 .tut .row .small{margin-left:auto}
 .tut-target{box-shadow:0 0 0 3px var(--sel),0 0 16px var(--sel)!important;position:relative;z-index:1;animation:tutpulse 1.2s ease-in-out infinite}
 button.tut-target{border-color:var(--sel)}
@@ -320,7 +329,7 @@ button.ghost{background:transparent}
 <div class="toast" id="toast"></div>
 <script type="module">
 /* ============ APP / SYNC ============ */
-/* The rules live in engine.js; the guided game and callouts in tutorial.js; saves,
+/* The rules live in engine.js; the guided game in tutorial.js; saves,
    the signup form and play analytics come from the studio kit (/kit). */
 import {
   DEPTS, DISP, ORGS, ISSUES, MGMT, clone, newGame, setupFlips, onBoard, signedCount,
@@ -643,7 +652,7 @@ function renderUs(el,g,pend){
     eb.onclick=()=>endTurn(); head.appendChild(eb);
   }
   if(g.phase==="steward"&&pend){ const anySeat=g.orgs.some((o,i)=>controls(i));
-    const box=$(`<div class="prompt">${pend.type==="steward"?`Steward phase: ${esc(pend.from)} can bring one worker in ${DEPTS[pend.dept][0]} up a step. Click a highlighted worker on the board.`:`${esc(pend.from)}'s influence: pick ${pend.n} more in ${DEPTS[pend.dept][0]} to move up.`}</div>`);
+    const box=$(`<div class="prompt">${pend.type==="steward"?`Steward phase: ${esc(pend.from)} can bring one worker in ${DEPTS[pend.dept][0]} up a step. Click a highlighted worker on the board.`:`${esc(pend.from)}'s influence: pick ${pend.n} more in ${DEPTS[pend.dept][0]} to move up. Click a highlighted worker on the board.`}</div>`);
     const b=$(`<button style="margin-top:6px">${pend.type==="steward"?"Make no move":"Skip remaining"}</button>`); b.disabled=!anySeat; b.onclick=()=>act(g=>pend.type==="steward"?doStewardSkip(g):doSkipInfluence(g)); box.appendChild(b);
     if(!anySeat)box.appendChild($(`<div class="small">Waiting for a seated player.</div>`));
     el.appendChild(box); }
@@ -661,7 +670,7 @@ function renderUs(el,g,pend){
       ${active&&o.townhall?`<div class="small">Town Hall: next 1-on-1 costs 2</div>`:""}
     </div>`);
     if(active&&mine){
-      if(pend){ d.appendChild($(`<div class="prompt">${pend.type==="influence"?`${pend.from}'s influence: pick ${pend.n} more in ${DEPTS[pend.dept][0]} to move up.`:"Just Cause: choose an icon."}</div>`));
+      if(pend){ d.appendChild($(`<div class="prompt">${pend.type==="influence"?`${pend.from}'s influence: pick ${pend.n} more in ${DEPTS[pend.dept][0]} to move up. Click a highlighted worker on the board.`:"Just Cause: choose an icon."}</div>`));
         if(pend.type==="influence"){const b=$(`<button style="margin-top:6px">Skip remaining</button>`);b.onclick=()=>act(g=>doSkipInfluence(g));d.appendChild(b);}
         if(pend.type==="icon"){const row=$(`<div class="actions"></div>`);["Crunch","Pay","Layoffs","Credit","Harassment"].forEach(icn=>{const ok=onBoard(g).filter(w=>w.disp>=3&&w.issues.includes(icn)).length>=reqN(g)+1; const b=$(`<button ${ok?"":"disabled"}>${ic(icn,"")} ${icn}</button>`);b.onclick=()=>act(g=>{g.pending=[];return doSmallWin(g,g.cur,"wild",icn);});row.appendChild(b);});const c=$(`<button data-act="cancel">Cancel</button>`);c.onclick=()=>act(g=>{g.pending=[];return null;});row.appendChild(c);d.appendChild(row);}
       } else {
@@ -741,7 +750,7 @@ function renderBoard(el,g,pend){
         if(pend&&pend.type==="influence"&&(mine||g.phase==="steward"&&anySeat)&&w.dept===pend.dept&&s<3&&!immovable(w)&&!(s===2&&locked(g,w)))sel=true;
         if(pend&&pend.type==="steward"&&anySeat&&w.dept===pend.dept&&stewardTargets(g,pend.dept).some(x=>x.id===w.id))sel=true;
         const k=infl(g,w);
-        const marks=`${w.leader?ic("leader",SYMBOLS.leader,"m-lead"):""}${w.trait?ic("trait",w.trait,"m-trait"):""}${w.lock?(locked(g,w)?ic("lock",`Holdout: stops at Leaning until ${w.lock==="Pay"?"Pay Transparency":"End Crunch"} is won.`,"m-lock"):ic("unlock",SYMBOLS.unlock,"m-unlock")):""}${w.disp===4?(w.absorbUsed?ic("absorbSpent",SYMBOLS.absorbSpent,"r-steward"):ic("steward",SYMBOLS.steward,"r-steward")):""}${w.reserve?ic("plant",SYMBOLS.plant,"m-plant"):""}${w.contract?ic("contract",SYMBOLS.contract,"m-con"):""}`;
+        const marks=`${w.leader?ic("leader",SYMBOLS.leader,"m-lead"):""}${w.trait?ic("trait",w.trait,"m-trait"):""}${w.lock?(locked(g,w)?ic("lock",`Holdout: One-on-Ones stop at Leaning until ${w.lock==="Pay"?"Pay Transparency":"End Crunch"} is won. Win it and they can sign.`,"m-lock"):ic("unlock",SYMBOLS.unlock,"m-unlock")):""}${w.disp===4?(w.absorbUsed?ic("absorbSpent",SYMBOLS.absorbSpent,"r-steward"):ic("steward",SYMBOLS.steward,"r-steward")):""}${w.reserve?ic("plant",SYMBOLS.plant,"m-plant"):""}${w.contract?ic("contract",SYMBOLS.contract,"m-con"):""}`;
         const issues=w.reserve?`<span class="i bad">Plant · +1 to One-on-Ones here</span>`:w.disp===4?`<span class="i good">free 1-on-1 ${w.freeUsed?"used":"ready"} · absorb ${w.absorbUsed?"spent":"ready"}</span>`:w.issues.length?`<span class="isx">${w.issues.map(x=>ic(x,ISSUE_ICONS[x],"iss-"+x)).join("")}</span>`:`<span class="i bad">no issues · immovable</span>`;
         const e=$(`<div class="wk ${sel?"sel":""} ${fresh.includes(w.id)?"flip":""}" data-wk="${w.id}" ${tipA(workerTip(g,w))}><b><span class="nm">${esc(w.name)}</span><span class="st">${marks}</span><span class="inf" ${tipA(influenceTip(k,k!==w.infl))}>${"●".repeat(k)}${"○".repeat(Math.max(0,2-k))}</span></b><span class="r">${esc(w.role)}</span>${issues}</div>`);
         if(sel)e.onclick=()=>{ if(pend&&pend.type==="steward")act(g=>doStewardPick(g,w.id)); else if(pend)act(g=>doInfluencePick(g,w.id)); else if(armed==="one")act(g=>doOne(g,g.cur,w.id)); else if(armed==="com")act(g=>doCommittee(g,g.cur,w.id)); };
@@ -766,15 +775,16 @@ function renderRight(el,g){
     const hold=(def.icon==="Pay"||def.icon==="Crunch")?onBoard(g).filter(w=>w.lock===def.icon&&locked(g,w)).length:def.id==="wild"?onBoard(g).filter(w=>locked(g,w)).length:0;
     const need=def.icon==="any"?`Needs ${R} Signed or Steward workers sharing any one icon.`:`Needs ${R} Signed or Steward workers who care about ${def.icon}. Have ${n}${who?": "+who:""}.`;
     const f=(def.id==="harass"||harass?2:1)+(cm?1:0);
-    const fx=[`<span class="chip r-fear" ${tipA(`Fear −${f} when it's won.`)}>${ri("fear","")}−${f}</span>`,
-      `<span class="chip r-signed" ${tipA(`Every worker who cares about ${def.icon==="any"?"the chosen icon":def.icon} moves up a step.`)}>${ic(iconName,"")}${ic("up","")}</span>`]
-      .concat(ISSUE_EFFECTS[def.id].map(e=>`<span class="chip r-${e.r}" ${tipA(`${RESOURCES[e.r].n}: ${e.t}. Lasts the rest of the game.`)}>${ri(e.r,"")}${esc(e.t)}</span>`)).join("");
+    const fx=[`<li class="r-fear" ${tipA(`Fear −${f} when it's won.`)}>${ri("fear","")}<span>Fear −${f}</span></li>`,
+      `<li class="r-signed" ${tipA(`Every worker who cares about ${def.icon==="any"?"the chosen icon":def.icon} moves up a step.`)}>${ic(iconName,"")}<span>${def.icon==="any"?"Workers with the chosen icon":def.icon+" workers"} move up a step</span></li>`]
+      .concat(ISSUE_EFFECTS[def.id].map(e=>`<li class="r-${e.r}" ${tipA(`${RESOURCES[e.r].n}: ${e.t}. Lasts the rest of the game.`)}>${ri(e.r,"")}<span>${esc(e.t)}</span></li>`)).join("");
     const pipsReq=Array.from({length:R},(_,k)=>`<span class="pip ${k<Math.min(n,R)?"on":""}">${ic("signed","")}</span>`).join("");
+    const badge=st.state==="done"?"Won":st.state==="gone"?"Lost":ready?"Ready":"";
     const e=$(`<div class="issue ${ready?"ready":""} ${st.state}" style="--rc:var(${RESOURCES[prim].color})" data-issue="${def.id}">
-      <div class="ih">${ic(iconName,def.icon==="any"?"Just Cause: any one icon, shared by four.":ISSUE_ICONS[def.icon],"big")}<b>${def.n}</b><span class="rres">${res.map(r=>ri(r,`${def.n} moves ${RESOURCES[r].n}.`)).join("")}</span></div>
-      ${st.state==="open"?`<div class="need" ${tipA(need+(hold?` Unlocks ${hold} holdout${hold===1?"":"s"} on the board.`:""))}><span class="pips r-signed">${pipsReq}</span><span class="small">${Math.min(n,R)}/${R} Signed with ${def.icon==="any"?"one icon":ic(iconName,"")}</span></div>`:`<div class="small state">${st.state==="done"?"Won. In effect for the rest of the game.":"Lost to Counter-Offer."}</div>`}
-      <div class="fx">${fx}</div>
-      ${st.state==="open"?`<div class="cost small" ${tipA("A Small Win costs 1 action, 2 at Fear 8+, and management draws an extra card next round.")}>Costs ${ri("action","")}${g.fear>=8?2:1} · Management ${ic("draw","")}+1 next round</div>`:""}
+      <div class="ih">${ic(iconName,def.icon==="any"?"Just Cause: any one icon, shared by four.":ISSUE_ICONS[def.icon],"big")}<b>${def.n}</b>${badge?`<span class="badge">${badge}</span>`:""}</div>
+      ${st.state==="open"?`<div class="sec need" ${tipA(need+(hold?` Unlocks ${hold} holdout${hold===1?"":"s"} on the board.`:""))}><span class="lab">Needs</span><span class="row"><span class="pips">${pipsReq}</span><span>${Math.min(n,R)} of ${R} Signed</span></span></div>`:st.state==="gone"?`<div class="sec small state">Lost to Counter-Offer.</div>`:""}
+      <div class="sec eff"><span class="lab">${st.state==="done"?"In effect":"When won"}</span><ul class="fx">${fx}</ul></div>
+      ${st.state==="open"?`<div class="sec cost" ${tipA("A Small Win costs 1 action, 2 at Fear 8+, and management draws an extra card next round.")}><span class="lab">Costs</span><span class="row">${ri("action","")}${g.fear>=8?2:1} action${g.fear>=8?"s":""} · ${ic("draw","")}+1 for management</span></div>`:""}
     </div>`);
     if(mine&&armed==="win"&&ready){e.classList.add("pick");e.onclick=()=>act(g=>doSmallWin(g,g.cur,def.id));}
     ip.appendChild(e); });
@@ -785,12 +795,12 @@ function renderRight(el,g){
   g.log.slice().reverse().forEach(x=>L.appendChild($(`<div class="${x.r?"r":""}">${esc(x.r||x.t)}</div>`)));
   el.appendChild(lg);
 }
-/* ============ TUTORIAL / CALLOUTS / RULES ============ */
-/* The guided game and the first-time callouts live in tutorial.js and run on the
+/* ============ TUTORIAL / RULES ============ */
+/* The guided game lives in tutorial.js and runs on the
    studio kit's tutorial engine (../kit/tutorial.js): goals the player reaches
    their own way, never a locked board. */
 const TUT_HELPERS={onBoard:(g,d)=>onBoard(g,d),won:(g,id)=>won(g,id),locked:(g,w)=>locked(g,w)};
-let guide=null, guideGame=null, callouts=null, lastHint=null;
+let guide=null, guideGame=null, lastHint=null;
 function startTutorial(){
   if(unsub){unsub();unsub=null;} code=null; try{ if(location.hash)history.replaceState(null,"",location.pathname+location.search); }catch(e){}
   const seats=[{k:"senior",playerId:myId}];
@@ -820,18 +830,12 @@ function renderGuide(root,g){
       const done=t.steps.slice(0,t.index).filter(x=>!x.next).length;
       const h=st.next?null:t.hint(g); lastHint=h?h.body:null;
       const card=$(`<div class="tut"><div class="tprog" aria-label="Tutorial progress">${goals.map((x,k)=>`<span class="seg ${k<done?"done":k===gi?"now":""}" title="${esc(x.title)}"></span>`).join("")}<span class="plab">${gi>=0?`Goal ${gi+1} of ${goals.length}`:t.index===0?"Guided game":"Guided game complete"}</span></div><div class="th"><h2>${st.title}</h2></div><p>${st.body}</p>${h?`<p class="hint" role="status"><b>Hint:</b> ${h.body}</p>`:""}
-        <div class="row">${st.next?`<button class="primary" data-always onclick="tutorialNext()">${t.index===t.steps.length-1?"Finish the tutorial":"Let's go"}</button>`:`<span class="small" style="margin-left:0">Any route counts. Stuck? A hint appears after a while.</span>`}<button class="ghost" data-always onclick="tutorialSkip()">Skip tutorial</button></div></div>`);
+        <div class="row">${st.next?`<button class="primary" data-always onclick="tutorialNext()">${t.index===t.steps.length-1?"Finish the tutorial":"Let's go"}</button>`:`<span class="small" style="margin-left:0">Stuck? A hint appears after a while.</span>`}<button class="ghost" data-always onclick="tutorialSkip()">Skip tutorial</button></div></div>`);
       root.insertBefore(card,grid);
       if(st.spot)root.querySelectorAll(st.spot).forEach(e=>e.classList.add("tut-spot"));
       document.body.classList.add("tut-on");
     }
   } else document.body.classList.remove("tut-on");
-  if(!callouts)callouts=TUT.calloutsFor(TUT_HELPERS);
-  const c=callouts.observe(g);
-  if(!c)return;
-  const card=$(`<div class="callout"><h2>${c.title}</h2><p>${c.body}</p><div class="row"><button class="primary" data-always>Got it</button><span class="small">Shown once, the first time it happens.</span></div></div>`);
-  card.querySelector("button").onclick=()=>{ callouts.next(G); render(); };
-  root.insertBefore(card,grid);
 }
 /* rules reference, generated from the same tables the engine plays by */
 function openRules(){
