@@ -49,6 +49,12 @@ suite('api/marketing', () => {
     const { refFrom } = await import('../analytics.js');
     ok(handler.CHANNELS.every((c) => refFrom(`?ref=${c.ref}`) === c.ref));
   });
+  test('every screenshot the thumbnail maker offers is in the repo', async () => {
+    const { existsSync } = await import('node:fs');
+    const root = new URL('../../', import.meta.url);
+    for (const g of handler.GAMES) for (const sh of g.shots || []) ok(existsSync(new URL('.' + sh.src, root)), sh.src);
+    ok(handler.GAMES.every((g) => g.shots.length > 0));
+  });
   test('no token, an expired one, a stranger, or a magic link stays out', async () => {
     eq((await call({ token: null })).res.statusCode, 401);
     eq((await call({ user: null })).res.statusCode, 401);
