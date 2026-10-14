@@ -820,7 +820,7 @@ function renderGuide(root,g){
       const done=t.steps.slice(0,t.index).filter(x=>!x.next).length;
       const h=st.next?null:t.hint(g); lastHint=h?h.body:null;
       const card=$(`<div class="tut"><div class="tprog" aria-label="Tutorial progress">${goals.map((x,k)=>`<span class="seg ${k<done?"done":k===gi?"now":""}" title="${esc(x.title)}"></span>`).join("")}<span class="plab">${gi>=0?`Goal ${gi+1} of ${goals.length}`:t.index===0?"Guided game":"Guided game complete"}</span></div><div class="th"><h2>${st.title}</h2></div><p>${st.body}</p>${h?`<p class="hint" role="status"><b>Hint:</b> ${h.body}</p>`:""}
-        <div class="row">${st.next?`<button class="primary" data-always onclick="tutorialNext()">${t.index===t.steps.length-1?"Finish the tutorial":"Let's go"}</button>`:`<span class="small" style="margin-left:0">Any route counts. Stuck? A hint appears after a while.</span>`}<button class="ghost" data-always onclick="tutorialSkip()">Skip tutorial</button></div></div>`);
+        <div class="row">${st.next?`<button class="primary" data-always onclick="tutorialNext()">${t.index===t.steps.length-1?"Finish the tutorial":"Let's go"}</button>`:`<span class="small" style="margin-left:0">Stuck? A hint appears after a while.</span>`}<button class="ghost" data-always onclick="tutorialSkip()">Skip tutorial</button></div></div>`);
       root.insertBefore(card,grid);
       if(st.spot)root.querySelectorAll(st.spot).forEach(e=>e.classList.add("tut-spot"));
       document.body.classList.add("tut-on");
