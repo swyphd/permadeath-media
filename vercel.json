@@ -2,7 +2,8 @@
   "redirects": [
     { "source": "/guild-rising", "destination": "/guild-rising/", "permanent": true },
     { "source": "/union-up", "destination": "/union-up/", "permanent": true },
-    { "source": "/homies", "destination": "/homies/", "permanent": true }
+    { "source": "/homies", "destination": "/homies/", "permanent": true },
+    { "source": "/stats", "destination": "/stats/", "permanent": true }
   ],
   "rewrites": [
     { "source": "/guild-rising/(.*)", "destination": "https://guild-rising.vercel.app/$1" },

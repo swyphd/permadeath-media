@@ -8,4 +8,5 @@ await import('./tutorial.test.mjs');
 await import('./sim.test.mjs');
 await import('./analytics.test.mjs');
 await import('./events-api.test.mjs');
+await import('./stats-api.test.mjs');
 await report();

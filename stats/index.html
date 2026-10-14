@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stats — Permadeath Media</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Stencil:wght@600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    color-scheme: dark;
+    --soot: #1A1A18; --soot-2: #232320; --soot-3: #2C2C28;
+    --oxide: #C0392B; --yellow: #F1C40F;
+    --paper: #E9E4D8; --paper-dim: #B8B2A2; --muted: #898781;
+    --line: rgba(233, 228, 216, 0.14); --grid: #2c2c2a; --axis: #383835;
+    /* One colour per game, in a fixed order (validated for colour-blind separation on this surface). */
+    --g1: #3987e5; --g2: #d95926; --g3: #199e70; --g4: #c98500; --g5: #d55181; --g6: #9085e9;
+    /* How a run ended. Always shown with its word, never colour alone. */
+    --win: #0ca30c; --loss: #d03b3b; --quit: #ec835a; --abandoned: #6f6d68; --playing: #c3c2b7;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { background: var(--soot); color: var(--paper); font-family: "IBM Plex Sans", system-ui, sans-serif; line-height: 1.5; min-height: 100vh; }
+  button { font: inherit; color: inherit; }
+  a { color: var(--yellow); }
+  .stencil { font-family: "Big Shoulders Stencil", sans-serif; text-transform: uppercase; letter-spacing: 0.01em; }
+  .mono { font-family: "IBM Plex Mono", monospace; }
+  .num { font-variant-numeric: tabular-nums; }
+  .dim { color: var(--paper-dim); }
+  .tiny { font-size: 0.75rem; }
+  .hazard-rule { height: 6px; background: repeating-linear-gradient(135deg, var(--yellow) 0 14px, var(--soot) 14px 28px); }
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 0 1rem 4rem; }
+
+  .top { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1rem 0 0.75rem; border-bottom: 1px solid var(--line); }
+  .brand { font-size: 2rem; font-weight: 800; color: var(--paper); text-decoration: none; line-height: 1; }
+  .brand .hit { color: var(--oxide); }
+  .brand small { display: block; font-family: "IBM Plex Mono", monospace; text-transform: none; letter-spacing: 0.1em; font-size: 0.6rem; color: var(--paper-dim); margin-top: 0.3rem; font-weight: 400; }
+  .who { font-size: 0.75rem; color: var(--paper-dim); text-align: right; }
+  .link { background: none; border: 0; color: var(--yellow); cursor: pointer; padding: 0; text-decoration: underline; font-size: inherit; }
+
+  .gate { padding: 4rem 0; text-align: center; }
+  .gate h1 { font-size: 2.4rem; margin-bottom: 0.5rem; }
+  .gate p { color: var(--paper-dim); margin: 0.5rem auto 1.5rem; max-width: 34rem; }
+  .btn { display: inline-flex; align-items: center; gap: 0.6rem; background: var(--paper); color: var(--soot); border: 0; padding: 0.7rem 1.2rem; font-weight: 600; cursor: pointer; }
+  .btn:hover { background: #fff; }
+
+  /* Filters: one row above everything they change. */
+  .filters { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 1rem; padding: 0.75rem 0; border-bottom: 1px solid var(--line); }
+  .seg { display: flex; flex-wrap: wrap; gap: 0.25rem; }
+  .seg button { font-family: "IBM Plex Mono", monospace; font-size: 0.75rem; letter-spacing: 0.06em; background: none; border: 1px solid var(--line); color: var(--paper-dim); padding: 0.3rem 0.6rem; cursor: pointer; display: inline-flex; align-items: center; gap: 0.4rem; }
+  .seg button:hover { color: var(--paper); border-color: var(--paper-dim); }
+  .seg button.on { background: var(--yellow); color: var(--soot); border-color: var(--yellow); }
+  .swatch { width: 10px; height: 10px; border-radius: 2px; display: inline-block; flex: 0 0 auto; }
+  .filters .spacer { flex: 1; }
+
+  h2 { font-size: 1.4rem; margin: 2rem 0 0.25rem; }
+  h2 + .sub { color: var(--paper-dim); font-size: 0.82rem; margin-bottom: 0.9rem; }
+  .grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 0 2rem; }
+
+  .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 0.75rem; margin-top: 1.25rem; }
+  .tile { background: var(--soot-2); border: 1px solid var(--line); padding: 0.8rem 0.9rem; }
+  .tile .label { font-family: "IBM Plex Mono", monospace; font-size: 0.68rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--paper-dim); }
+  .tile .value { font-size: 1.9rem; font-weight: 600; line-height: 1.15; margin-top: 0.2rem; }
+  .tile .note { font-size: 0.75rem; color: var(--paper-dim); margin-top: 0.15rem; }
+
+  .chart { position: relative; background: var(--soot-2); border: 1px solid var(--line); padding: 0.75rem 0.75rem 0.5rem; }
+  .chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+  .chart .axis-label { fill: var(--muted); font: 11px "IBM Plex Mono", monospace; }
+  .legend { display: flex; flex-wrap: wrap; gap: 0.3rem 1rem; font-size: 0.78rem; color: var(--paper-dim); margin-bottom: 0.5rem; }
+  .legend span { display: inline-flex; align-items: center; gap: 0.35rem; }
+  .tip { position: fixed; pointer-events: none; z-index: 10; background: var(--soot-3); border: 1px solid rgba(255,255,255,0.18); padding: 0.45rem 0.6rem; font-size: 0.78rem; min-width: 9rem; box-shadow: 0 4px 16px rgba(0,0,0,0.4); display: none; }
+  .tip .t-head { font-family: "IBM Plex Mono", monospace; font-size: 0.7rem; color: var(--paper-dim); margin-bottom: 0.2rem; }
+  .tip .t-row { display: flex; align-items: center; gap: 0.4rem; justify-content: space-between; }
+  .tip .t-row span:first-child { display: inline-flex; align-items: center; gap: 0.35rem; }
+
+  .table-wrap { overflow-x: auto; border: 1px solid var(--line); }
+  table { border-collapse: collapse; width: 100%; font-size: 0.82rem; }
+  th, td { padding: 0.45rem 0.6rem; text-align: right; white-space: nowrap; border-bottom: 1px solid var(--line); font-variant-numeric: tabular-nums; }
+  th { font-family: "IBM Plex Mono", monospace; font-weight: 500; font-size: 0.68rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--paper-dim); background: var(--soot-2); }
+  th:first-child, td:first-child { text-align: left; }
+  td.left, th.left { text-align: left; }
+  tr:last-child td { border-bottom: 0; }
+  tr.clickable { cursor: pointer; }
+  tr.clickable:hover td { background: var(--soot-2); }
+
+  /* Outcome bar: stacked shares of runs, 2px gaps between segments. */
+  .obar { display: flex; gap: 2px; height: 10px; min-width: 140px; }
+  .obar i { display: block; height: 100%; }
+  .obar i:first-child { border-radius: 2px 0 0 2px; }
+  .obar i:last-child { border-radius: 0 2px 2px 0; }
+  .okey { display: flex; flex-wrap: wrap; gap: 0.3rem 0.9rem; font-size: 0.75rem; color: var(--paper-dim); margin: 0.5rem 0; }
+  .okey span { display: inline-flex; align-items: center; gap: 0.35rem; }
+
+  /* Horizontal bar lists. */
+  .bars { display: grid; gap: 0.35rem; }
+  .bar-row { display: grid; grid-template-columns: minmax(7rem, 38%) 1fr auto; align-items: center; gap: 0.6rem; font-size: 0.8rem; }
+  .bar-row .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: "IBM Plex Mono", monospace; font-size: 0.75rem; }
+  .bar-row .track { height: 12px; background: transparent; }
+  .bar-row .fill { height: 100%; border-radius: 0 3px 3px 0; min-width: 2px; }
+  .bar-row .val { font-variant-numeric: tabular-nums; color: var(--paper-dim); min-width: 4.5rem; text-align: right; }
+  .group-title { font-family: "IBM Plex Mono", monospace; font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--paper-dim); margin: 0.9rem 0 0.4rem; display: flex; align-items: center; gap: 0.4rem; }
+  .empty { color: var(--muted); font-size: 0.82rem; padding: 0.5rem 0; }
+  details { margin-top: 0.5rem; }
+  summary { cursor: pointer; color: var(--paper-dim); font-size: 0.78rem; }
+  .notes { margin-top: 2.5rem; padding-top: 1rem; border-top: 1px solid var(--line); color: var(--paper-dim); font-size: 0.78rem; }
+  .notes li { margin: 0.25rem 0 0.25rem 1.1rem; }
+  .err { background: rgba(192,57,43,0.15); border: 1px solid var(--oxide); padding: 0.75rem 1rem; margin: 1rem 0; font-size: 0.85rem; }
+  @media (max-width: 560px) {
+    .brand { font-size: 1.6rem; }
+    .tile .value { font-size: 1.5rem; }
+    .bar-row { grid-template-columns: minmax(5rem, 34%) 1fr auto; }
+  }
+</style>
+</head>
+<body>
+<div class="hazard-rule"></div>
+<div id="app" class="wrap"><div class="gate"><p>Loading…</p></div></div>
+<div class="tip" id="tip" role="tooltip"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script type="module">
+import { SUPABASE_URL, SUPABASE_KEY } from '/kit/config.js';
+
+// ---------------------------------------------------------------- setup
+const HOME = location.origin + '/stats/';
+// Fixed order: a game keeps its colour whatever the filter shows.
+const GAMES = [
+  { id: 'hedy-plant', name: 'Hedy Plant', color: 'var(--g1)' },
+  { id: 'card-check', name: 'Card Check', color: 'var(--g2)' },
+  { id: 'union-up', name: 'Union Up', color: 'var(--g3)' },
+  { id: 'guild-rising', name: 'Guild Rising', color: 'var(--g4)' },
+  { id: 'hexagons', name: 'Hexagons', color: 'var(--g5)' },
+];
+const RESULTS = [
+  { id: 'win', name: 'Won', color: 'var(--win)' },
+  { id: 'loss', name: 'Lost', color: 'var(--loss)' },
+  { id: 'quit', name: 'Gave up', color: 'var(--quit)' },
+  { id: 'abandoned', name: 'Left mid-run', color: 'var(--abandoned)' },
+  { id: 'playing', name: 'Still playing', color: 'var(--playing)' },
+];
+const RANGES = [['7', '7 days'], ['30', '30 days'], ['90', '90 days'], ['365', 'Year'], ['all', 'All time']];
+
+const app = document.getElementById('app');
+const tip = document.getElementById('tip');
+const sb = window.supabase?.createClient ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
+
+const S = { session: undefined, stats: null, error: null, denied: false, loading: false, loadedAt: null };
+
+// The view lives in the hash, so a reload or a bookmark keeps it: #days=30&game=hedy-plant
+function view() {
+  const p = new URLSearchParams(location.hash.slice(1));
+  const days = RANGES.some(([d]) => d === p.get('days')) ? p.get('days') : '30';
+  const game = p.get('game') || '';
+  return { days, game };
+}
+function setView(patch) {
+  const v = { ...view(), ...patch };
+  const p = new URLSearchParams();
+  p.set('days', v.days);
+  if (v.game) p.set('game', v.game);
+  location.hash = p.toString();
+}
+
+// ---------------------------------------------------------------- helpers
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const n0 = (x) => Number(x) || 0;
+const fmt = (x) => n0(x).toLocaleString('en-US');
+const pct = (a, b) => (b ? `${Math.round((100 * a) / b)}%` : '–');
+function dur(s) {
+  if (s == null || !Number.isFinite(Number(s))) return '–';
+  s = Number(s);
+  if (s < 60) return `${Math.round(s)}s`;
+  if (s < 3600) return `${Math.round(s / 60)}m`;
+  if (s < 86400 * 2) return `${(s / 3600).toFixed(s < 36000 ? 1 : 0)}h`;
+  return `${Math.round(s / 3600).toLocaleString('en-US')}h`;
+}
+function hours(s) {
+  const h = n0(s) / 3600;
+  return h < 10 ? h.toFixed(1) : Math.round(h).toLocaleString('en-US');
+}
+function ago(ts) {
+  if (!ts) return '–';
+  const m = (Date.now() - Date.parse(ts)) / 60000;
+  if (m < 1) return 'just now';
+  if (m < 60) return `${Math.round(m)}m ago`;
+  if (m < 60 * 48) return `${Math.round(m / 60)}h ago`;
+  return `${Math.round(m / 1440)}d ago`;
+}
+const gameOf = (id) => GAMES.find((g) => g.id === id) || { id, name: String(id), color: 'var(--g6)' };
+const swatch = (color) => `<i class="swatch" style="background:${color}"></i>`;
+const tipAttr = (html) => `data-tip="${esc(html)}"`;
+
+// ---------------------------------------------------------------- data
+async function load() {
+  if (!S.session) return;
+  const { days } = view();
+  S.loading = true; S.error = null; render();
+  try {
+    const res = await fetch(`/api/stats?days=${encodeURIComponent(days)}`, {
+      headers: { Authorization: `Bearer ${S.session.access_token}` },
+    });
+    const body = await res.json().catch(() => ({}));
+    if (res.status === 401) { await sb.auth.signOut(); S.session = null; S.error = body.error || 'Sign in again.'; }
+    else if (res.status === 403) { S.denied = true; }
+    else if (!res.ok || !body.ok) { S.error = body.error || `The server answered ${res.status}.`; }
+    else { S.stats = body.stats; S.loadedAt = new Date(); S.days = days; }
+  } catch (e) {
+    S.error = 'Could not reach the server.';
+  }
+  S.loading = false;
+  render();
+}
+
+// ---------------------------------------------------------------- render
+function render() {
+  tip.style.display = 'none';
+  if (!sb) { app.innerHTML = gate('Could not load sign-in', 'The sign-in library didn\'t load. Check your connection and reload.', ''); return; }
+  if (S.session === undefined) { app.innerHTML = '<div class="gate"><p>Loading…</p></div>'; return; }
+  if (!S.session) {
+    app.innerHTML = gate('Studio stats', 'Private. Sign in with the Google account this dashboard belongs to.',
+      `<button class="btn" data-act="signin">${googleMark()} Sign in with Google</button>${S.error ? `<p class="tiny">${esc(S.error)}</p>` : ''}`);
+    return;
+  }
+  if (S.denied) {
+    app.innerHTML = header() + gate('Private', `${esc(S.session.user.email)} isn't allowed here.`, '<button class="btn" data-act="signout">Sign out</button>');
+    return;
+  }
+  const st = S.stats;
+  const v = view();
+  let body = '';
+  if (S.error) body += `<div class="err">${esc(S.error)} <button class="link" data-act="reload">Try again</button></div>`;
+  if (!st) body += S.loading ? '<div class="gate"><p>Counting…</p></div>' : '';
+  else body += v.game ? gameView(st, v.game) : overview(st);
+  app.innerHTML = header() + filters(st) + body + (st ? notes() : '');
+}
+
+function gate(title, text, action) {
+  return `<div class="gate"><h1 class="stencil">${title}</h1><p>${text}</p>${action}</div>`;
+}
+function googleMark() {
+  return '<svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.9 6.1C12.5 13.7 17.8 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.7 6c4.5-4.2 6.9-10.3 6.9-17.7z"/><path fill="#FBBC05" d="M10.6 28.6c-.5-1.4-.8-3-.8-4.6s.3-3.2.8-4.6l-7.9-6.1C1 16.6 0 20.2 0 24s1 7.4 2.7 10.7l7.9-6.1z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.7-6c-2.2 1.5-5 2.3-8.2 2.3-6.2 0-11.5-4.2-13.4-9.9l-7.9 6.1C6.6 42.6 14.6 48 24 48z"/></svg>';
+}
+function header() {
+  const who = S.session ? `${esc(S.session.user.email)}<br><button class="link" data-act="signout">sign out</button>` : '';
+  return `<div class="top"><a class="brand stencil" href="/">Permadeath <span class="hit">Stats</span><small>what the games' analytics recorded</small></a><div class="who">${who}</div></div>`;
+}
+
+function filters(st) {
+  const v = view();
+  const present = new Set((st?.games || []).map((g) => g.game));
+  const games = [...GAMES.filter((g) => present.has(g.id) || g.id === v.game), ...[...present].filter((id) => !GAMES.some((g) => g.id === id)).map(gameOf)];
+  const updated = S.loading ? 'counting…' : S.loadedAt ? `updated ${S.loadedAt.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}` : '';
+  return `<div class="filters">
+    <div class="seg" role="group" aria-label="Time range">${RANGES.map(([d, label]) => `<button data-act="days" data-days="${d}" class="${v.days === d ? 'on' : ''}">${label}</button>`).join('')}</div>
+    <div class="seg" role="group" aria-label="Game"><button data-act="game" data-game="" class="${!v.game ? 'on' : ''}">All games</button>${games.map((g) => `<button data-act="game" data-game="${esc(g.id)}" class="${v.game === g.id ? 'on' : ''}">${swatch(g.color)}${esc(g.name)}</button>`).join('')}</div>
+    <span class="spacer"></span>
+    <span class="tiny dim">${updated} <button class="link" data-act="reload">refresh</button></span>
+  </div>`;
+}
+
+function tile(label, value, note = '') {
+  return `<div class="tile"><div class="label">${label}</div><div class="value num">${value}</div>${note ? `<div class="note">${note}</div>` : ''}</div>`;
+}
+
+// ---------------------------------------------------------------- overview
+function overview(st) {
+  const t = st.totals || {};
+  const ended = n0(t.wins) + n0(t.losses) + n0(t.quits);
+  const games = st.games || [];
+  if (!n0(t.events)) {
+    return `<div class="gate"><h1 class="stencil">Nothing yet</h1><p>No game sent an event in this range. Try a longer range.</p></div>`;
+  }
+  return `
+  <div class="tiles">
+    ${tile('Unique players', fmt(t.players), `${fmt(t.new_players)} new · ${fmt(t.returning_players)} came back another day`)}
+    ${tile('Runs', fmt(t.runs), `${fmt(t.runs_started)} started in range`)}
+    ${tile('Hours played', hours(t.play_seconds), `${dur(n0(t.play_seconds) / Math.max(1, n0(t.players)))} per player`)}
+    ${tile('Median run', dur(t.median_run_seconds), `median visit ${dur(t.median_session_seconds)}`)}
+    ${tile('Runs finished', pct(ended, t.runs), `${fmt(t.wins)} won · ${fmt(t.losses)} lost · ${fmt(t.quits)} gave up`)}
+    ${tile('Left mid-run', pct(t.abandoned, t.runs), `${fmt(t.abandoned)} runs never ended`)}
+    ${tile('Played 2+ games', fmt(t.multi_game_players), pct(t.multi_game_players, t.players) + ' of players')}
+    ${tile('Visits', fmt(t.sessions), `${fmt(t.events)} events`)}
+  </div>
+
+  <h2 class="stencil">Players per day</h2>
+  <p class="sub">Unique players each day (UTC), by game. Someone who played two games counts in both.</p>
+  ${dailyChart(st, games.map((g) => g.game), 'players')}
+
+  <h2 class="stencil">Games</h2>
+  <p class="sub">Click a game for where its players win, lose and leave.</p>
+  ${outcomeKey()}
+  <div class="table-wrap"><table>
+    <thead><tr><th>Game</th><th>Players</th><th>New</th><th>Came back</th><th>Runs</th><th>Hours</th><th>Median run</th><th>Longest 10%</th><th>Median visit</th><th class="left">How runs end</th><th>Last played</th></tr></thead>
+    <tbody>${games.map((g) => {
+      const meta = gameOf(g.game);
+      return `<tr class="clickable" data-act="game" data-game="${esc(g.game)}">
+        <td>${swatch(meta.color)} ${esc(meta.name)}</td>
+        <td>${fmt(g.players)}</td><td>${fmt(g.new_players)}</td><td>${fmt(g.returning_players)}</td>
+        <td>${fmt(g.runs)}</td><td>${hours(g.play_seconds)}</td>
+        <td>${dur(g.median_run_seconds)}</td><td>${dur(g.p90_run_seconds)}</td><td>${dur(g.median_session_seconds)}</td>
+        <td class="left">${outcomeBar(g)}</td>
+        <td>${ago(g.last_event_at)}</td></tr>`;
+    }).join('')}</tbody>
+  </table></div>
+
+  <h2 class="stencil">Hours played</h2>
+  <p class="sub">Total play time across every run, by game.</p>
+  ${barList(games.map((g) => ({ label: gameOf(g.game).name, value: n0(g.play_seconds), color: gameOf(g.game).color, text: `${hours(g.play_seconds)}h`, tip: `${hours(g.play_seconds)} hours over ${fmt(g.runs)} runs` })))}
+
+  <h2 class="stencil">Runs started per day</h2>
+  <p class="sub">New playthroughs each day (UTC), by game.</p>
+  ${dailyChart(st, games.map((g) => g.game), 'runs_started', 160)}
+  `;
+}
+
+// ---------------------------------------------------------------- one game
+function gameView(st, id) {
+  const g = (st.games || []).find((x) => x.game === id);
+  const meta = gameOf(id);
+  if (!g) return `<div class="gate"><h1 class="stencil">${esc(meta.name)}</h1><p>No events from this game in this range.</p></div>`;
+  const ended = n0(g.wins) + n0(g.losses) + n0(g.quits);
+  const byGame = (list) => (list || []).filter((x) => x.game === id);
+  const endings = byGame(st.endings);
+  const stops = byGame(st.stops);
+  const milestones = byGame(st.milestones);
+  const choices = byGame(st.choices);
+  const versions = byGame(st.versions);
+  const names = byGame(st.event_names);
+
+  return `
+  <div class="tiles">
+    ${tile('Unique players', fmt(g.players), `${fmt(g.new_players)} new · ${fmt(g.returning_players)} came back another day`)}
+    ${tile('Runs', fmt(g.runs), `${(n0(g.runs) / Math.max(1, n0(g.players))).toFixed(1)} per player`)}
+    ${tile('Hours played', hours(g.play_seconds), `${dur(n0(g.play_seconds) / Math.max(1, n0(g.players)))} per player`)}
+    ${tile('Median run', dur(g.median_run_seconds), `longest 10% past ${dur(g.p90_run_seconds)}`)}
+    ${tile('Median visit', dur(g.median_session_seconds), `${fmt(g.sessions)} visits`)}
+    ${tile('Win rate', pct(g.wins, ended), `of ${fmt(ended)} finished runs`)}
+    ${tile('Lost', fmt(g.losses), `${pct(g.losses, g.runs)} of runs`)}
+    ${tile('Left mid-run', fmt(g.abandoned), `${pct(g.abandoned, g.runs)} of runs never ended`)}
+  </div>
+
+  <h2 class="stencil">Players per day</h2>
+  <p class="sub">Unique players each day (UTC).</p>
+  ${dailyChart(st, [id], 'players')}
+
+  <div class="grid2">
+    <div>
+      <h2 class="stencil">How runs end</h2>
+      <p class="sub">Every run with activity in this range, by result and the game's own name for the ending.</p>
+      ${outcomeKey()}
+      <div style="margin-bottom:0.75rem">${outcomeBar(g, true)}</div>
+      ${endingsList(endings)}
+    </div>
+    <div>
+      <h2 class="stencil">Where runs stop</h2>
+      <p class="sub">The last milestone reached in runs that were lost, given up, or left without ending.</p>
+      ${stopsList(stops)}
+    </div>
+  </div>
+
+  <h2 class="stencil">How far runs get</h2>
+  <p class="sub">Of the ${fmt(g.runs_started)} runs started in this range, how many reached each milestone, in the order players usually reach them. Median time into the run on the right.</p>
+  ${milestones.length ? barList(milestones.map((m) => ({
+    label: m.milestone, value: n0(m.runs), max: Math.max(1, n0(m.of)), color: meta.color,
+    text: `${pct(m.runs, m.of)} · ${dur(m.median_t)}`,
+    tip: `${fmt(m.runs)} of ${fmt(m.of)} runs reached ${esc(m.milestone)}, a median ${dur(m.median_t)} in`,
+  }))) : '<p class="empty">No milestones recorded.</p>'}
+
+  <h2 class="stencil">Choices</h2>
+  <p class="sub">What players picked, and how the runs that picked it ended.</p>
+  ${choicesTable(choices)}
+
+  <div class="grid2">
+    <div>
+      <h2 class="stencil">Builds</h2>
+      <p class="sub">Runs by the build they started on, newest first, so a balance change can be compared with the one before.</p>
+      ${versionsTable(versions)}
+    </div>
+    <div>
+      <h2 class="stencil">Days played</h2>
+      <p class="sub">How many different days each player played this game in the range.</p>
+      ${barList(Object.entries(g.active_days || {}).sort((a, b) => ['1', '2-3', '4-7', '8+'].indexOf(a[0]) - ['1', '2-3', '4-7', '8+'].indexOf(b[0])).map(([k, val]) => ({
+        label: k === '1' ? '1 day' : `${k} days`, value: n0(val), color: meta.color, text: `${fmt(val)} · ${pct(val, g.players)}`, tip: `${fmt(val)} players played on ${k === '1' ? 'one day' : k + ' days'}`,
+      })))}
+      <h2 class="stencil">Everything recorded</h2>
+      <p class="sub">Every event name this game sent in the range.</p>
+      ${barList(names.map((x) => ({ label: x.name, value: n0(x.count), color: meta.color, text: fmt(x.count) })))}
+    </div>
+  </div>`;
+}
+
+function resultOf(id) { return RESULTS.find((r) => r.id === id) || { id, name: esc(id), color: 'var(--g6)' }; }
+
+function outcomeKey() {
+  return `<div class="okey">${RESULTS.map((r) => `<span>${swatch(r.color)}${r.name}</span>`).join('')}</div>`;
+}
+function outcomeBar(g, wide = false) {
+  const parts = [['win', g.wins], ['loss', g.losses], ['quit', g.quits], ['abandoned', g.abandoned], ['playing', g.playing]].filter(([, x]) => n0(x) > 0);
+  const total = parts.reduce((a, [, x]) => a + n0(x), 0);
+  if (!total) return '<span class="dim tiny">no runs</span>';
+  return `<div class="obar" style="${wide ? 'height:16px' : ''}">${parts.map(([k, x]) => {
+    const r = resultOf(k);
+    return `<i style="flex:${n0(x)};background:${r.color}" ${tipAttr(`<div class="t-row"><span>${swatch(r.color)}${r.name}</span><b>${fmt(x)} · ${pct(x, total)}</b></div>`)}></i>`;
+  }).join('')}</div>`;
+}
+
+function endingsList(endings) {
+  if (!endings.length) return '<p class="empty">No runs.</p>';
+  const max = Math.max(...endings.map((e) => n0(e.runs)));
+  const total = endings.reduce((a, e) => a + n0(e.runs), 0);
+  return `<div class="bars">${endings.slice().sort((a, b) => RESULTS.findIndex((r) => r.id === a.result) - RESULTS.findIndex((r) => r.id === b.result) || n0(b.runs) - n0(a.runs)).map((e) => {
+    const r = resultOf(e.result);
+    const label = e.ending ? `${r.name}: ${e.ending}` : r.name;
+    return barRow({ label, value: n0(e.runs), max, color: r.color, text: `${fmt(e.runs)} · ${pct(e.runs, total)}`, tip: `${fmt(e.runs)} runs, median length ${dur(e.median_seconds)}` });
+  }).join('')}</div>`;
+}
+
+function stopsList(stops) {
+  if (!stops.length) return '<p class="empty">No lost, abandoned or given-up runs.</p>';
+  const groups = ['abandoned', 'loss', 'quit'].map((k) => [k, stops.filter((s) => s.result === k)]).filter(([, l]) => l.length);
+  return groups.map(([k, list]) => {
+    const r = resultOf(k);
+    const max = Math.max(...list.map((s) => n0(s.runs)));
+    const total = list.reduce((a, s) => a + n0(s.runs), 0);
+    const top = list.slice(0, 12);
+    return `<div class="group-title">${swatch(r.color)}${r.name} · ${fmt(total)} runs</div>
+      <div class="bars">${top.map((s) => barRow({ label: s.milestone, value: n0(s.runs), max, color: r.color, text: `${fmt(s.runs)} · ${pct(s.runs, total)}`, tip: `${fmt(s.runs)} runs stopped after ${esc(s.milestone)}, a median ${dur(s.median_seconds)} in` })).join('')}</div>
+      ${list.length > top.length ? `<p class="tiny dim">and ${list.length - top.length} more milestones</p>` : ''}`;
+  }).join('');
+}
+
+function choicesTable(choices) {
+  if (!choices.length) return '<p class="empty">No choices recorded.</p>';
+  const totals = {};
+  for (const c of choices) totals[c.choice] = (totals[c.choice] || 0) + n0(c.times);
+  return `<div class="table-wrap"><table>
+    <thead><tr><th>Choice</th><th class="left">Option</th><th>Times</th><th>Share</th><th>Runs</th><th>Win rate of those runs</th></tr></thead>
+    <tbody>${choices.map((c, i) => `<tr>
+      <td class="mono">${i === 0 || choices[i - 1].choice !== c.choice ? esc(c.choice) : ''}</td>
+      <td class="left mono">${esc(c.option)}</td>
+      <td>${fmt(c.times)}</td><td>${pct(c.times, totals[c.choice])}</td><td>${fmt(c.runs)}</td>
+      <td>${n0(c.ended) ? `${pct(c.wins, c.ended)} <span class="dim">of ${fmt(c.ended)}</span>` : '–'}</td></tr>`).join('')}</tbody>
+  </table></div>`;
+}
+
+function versionsTable(versions) {
+  if (!versions.length) return '<p class="empty">No runs.</p>';
+  return `<div class="table-wrap"><table>
+    <thead><tr><th>Build</th><th>Runs</th><th>Players</th><th>Won</th><th>Lost</th><th>Left</th><th>Median run</th></tr></thead>
+    <tbody>${versions.map((x) => `<tr><td class="mono">${esc(x.version)}</td><td>${fmt(x.runs)}</td><td>${fmt(x.players)}</td>
+      <td>${pct(x.wins, x.runs)}</td><td>${pct(x.losses, x.runs)}</td><td>${pct(x.abandoned, x.runs)}</td><td>${dur(x.median_seconds)}</td></tr>`).join('')}</tbody>
+  </table></div>`;
+}
+
+function barRow({ label, value, max, color, text, tip: t }) {
+  const w = max ? Math.max(0.5, (100 * value) / max) : 0;
+  return `<div class="bar-row" ${t ? tipAttr(t) : ''}><span class="name" title="${esc(label)}">${esc(label)}</span><span class="track"><span class="fill" style="display:block;width:${w}%;background:${color}"></span></span><span class="val">${text}</span></div>`;
+}
+function barList(rows) {
+  if (!rows.length) return '<p class="empty">Nothing recorded.</p>';
+  const max = Math.max(...rows.map((r) => r.max || r.value), 1);
+  return `<div class="bars">${rows.map((r) => barRow({ ...r, max: r.max || max })).join('')}</div>`;
+}
+
+// ---------------------------------------------------------------- daily chart
+// Stacked columns, one per UTC day, one segment per game.
+function dailyChart(st, gameIds, field, height = 200) {
+  const daily = (st.daily || []).filter((d) => gameIds.includes(d.game));
+  if (!daily.length) return '<p class="empty">Nothing recorded.</p>';
+  const ids = GAMES.map((g) => g.id).filter((id) => gameIds.includes(id)).concat(gameIds.filter((id) => !GAMES.some((g) => g.id === id)));
+  const today = new Date().toISOString().slice(0, 10);
+  const first = st.since ? st.since.slice(0, 10) : daily.map((d) => d.day).sort()[0];
+  const days = [];
+  for (let d = new Date(first + 'T00:00:00Z'); d.toISOString().slice(0, 10) <= today; d.setUTCDate(d.getUTCDate() + 1)) days.push(d.toISOString().slice(0, 10));
+  const cell = {};
+  for (const d of daily) cell[d.day + '|' + d.game] = n0(d[field]);
+  const totals = days.map((day) => ids.reduce((a, id) => a + (cell[day + '|' + id] || 0), 0));
+  const max = niceMax(Math.max(1, ...totals));
+
+  const W = Math.max(300, Math.round((app.clientWidth || 1000) - 26)), H = height, padL = 34, padB = 22, padT = 6;
+  const plotW = W - padL, plotH = H - padB - padT;
+  const step = plotW / days.length;
+  const bw = Math.max(1, Math.min(28, step - (days.length > 120 ? 0.5 : 2)));
+  const y = (v) => padT + plotH - (v / max) * plotH;
+  const ticks = [0, max / 2, max];
+  let svg = ticks.map((tv) => `<line x1="${padL}" x2="${W}" y1="${y(tv)}" y2="${y(tv)}" stroke="${tv ? 'var(--grid)' : 'var(--axis)'}" stroke-width="1"/><text class="axis-label" x="${padL - 6}" y="${y(tv) + 4}" text-anchor="end">${fmt(tv)}</text>`).join('');
+  const labelEvery = Math.ceil(days.length / Math.max(2, Math.min(8, Math.floor(plotW / 70))));
+  days.forEach((day, i) => {
+    const x = padL + i * step + (step - bw) / 2;
+    let base = 0;
+    const segs = ids.map((id) => [id, cell[day + '|' + id] || 0]).filter(([, v]) => v > 0);
+    segs.forEach(([id, v], j) => {
+      const top = j === segs.length - 1;
+      const h = Math.max(0, y(base) - y(base + v) - (top ? 0 : 2));
+      const yy = y(base + v);
+      svg += top && h > 4
+        ? `<path d="${roundTop(x, yy, bw, h, Math.min(3, bw / 2))}" fill="${gameOf(id).color}"/>`
+        : `<rect x="${x}" y="${yy}" width="${bw}" height="${h}" fill="${gameOf(id).color}"/>`;
+      base += v;
+    });
+    const tipHtml = `<div class="t-head">${fmtDay(day)}</div>${ids.map((id) => `<div class="t-row"><span>${swatch(gameOf(id).color)}${esc(gameOf(id).name)}</span><b>${fmt(cell[day + '|' + id] || 0)}</b></div>`).join('')}${ids.length > 1 ? `<div class="t-row"><span>Total</span><b>${fmt(totals[i])}</b></div>` : ''}`;
+    svg += `<rect x="${padL + i * step}" y="${padT}" width="${step}" height="${plotH}" fill="transparent" ${tipAttr(tipHtml)}/>`;
+    if (i % labelEvery === 0) svg += `<text class="axis-label" x="${padL + i * step + step / 2}" y="${H - 6}" text-anchor="middle">${fmtDay(day, true)}</text>`;
+  });
+  const legend = ids.length > 1 ? `<div class="legend">${ids.map((id) => `<span>${swatch(gameOf(id).color)}${esc(gameOf(id).name)}</span>`).join('')}</div>` : '';
+  const table = `<details><summary>Show as a table</summary><div class="table-wrap" style="margin-top:0.5rem;max-height:280px;overflow:auto"><table><thead><tr><th>Day</th>${ids.map((id) => `<th>${esc(gameOf(id).name)}</th>`).join('')}</tr></thead><tbody>${days.slice().reverse().map((day) => `<tr><td>${day}</td>${ids.map((id) => `<td>${fmt(cell[day + '|' + id] || 0)}</td>`).join('')}</tr>`).join('')}</tbody></table></div></details>`;
+  return `<div class="chart">${legend}<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="${field === 'players' ? 'Players' : 'Runs started'} per day">${svg}</svg>${table}</div>`;
+}
+function roundTop(x, y, w, h, r) {
+  return `M${x},${y + h}V${y + r}Q${x},${y} ${x + r},${y}H${x + w - r}Q${x + w},${y} ${x + w},${y + r}V${y + h}Z`;
+}
+function niceMax(v) {
+  const p = 10 ** Math.floor(Math.log10(v));
+  for (const m of [1, 2, 2.5, 5, 10]) if (m * p >= v) return Math.max(2, m * p);
+  return v;
+}
+function fmtDay(day, short = false) {
+  const d = new Date(day + 'T00:00:00Z');
+  return d.toLocaleDateString('en-US', short ? { month: 'short', day: 'numeric', timeZone: 'UTC' } : { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
+}
+
+function notes() {
+  return `<ul class="notes">
+    <li><b>Players</b> are browsers, not people: each keeps a random id, so one person on a phone and a laptop counts twice, and clearing site data makes a new one. Browsers with Do Not Track or Global Privacy Control send nothing.</li>
+    <li><b>A run</b> is one playthrough. It counts here if anything happened in it during the range, with all of its events. <b>Left mid-run</b> means it never sent an end and has been quiet for 30 minutes; <b>still playing</b> means it was active in the last 30. A Hexagons run is one daily puzzle, so an unsolved puzzle is "left".</li>
+    <li><b>Run length</b> is the game's own clock of play time (Hedy Plant and Guild Rising stop it while paused). <b>A visit</b> is one page load, timed from its first event to its last.</li>
+    <li><b>New players</b> were first seen in the range; <b>came back</b> played on two or more different days in it. Days are UTC.</li>
+  </ul>`;
+}
+
+// ---------------------------------------------------------------- tooltips
+function showTip(e) {
+  const el = e.target.closest('[data-tip]');
+  if (!el) { tip.style.display = 'none'; return; }
+  tip.innerHTML = el.getAttribute('data-tip');
+  tip.style.display = 'block';
+  const r = tip.getBoundingClientRect();
+  let x = e.clientX + 14, y = e.clientY + 14;
+  if (x + r.width > innerWidth - 8) x = e.clientX - r.width - 14;
+  if (y + r.height > innerHeight - 8) y = e.clientY - r.height - 14;
+  tip.style.left = Math.max(8, x) + 'px';
+  tip.style.top = Math.max(8, y) + 'px';
+}
+app.addEventListener('pointermove', showTip);
+app.addEventListener('pointerdown', showTip);
+app.addEventListener('pointerleave', () => { tip.style.display = 'none'; });
+
+// ---------------------------------------------------------------- actions
+app.addEventListener('click', async (e) => {
+  const el = e.target.closest('[data-act]');
+  if (!el) return;
+  const d = el.dataset;
+  switch (d.act) {
+    case 'signin': {
+      const { error } = await sb.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: HOME } });
+      if (error) { S.error = error.message; render(); }
+      break;
+    }
+    case 'signout': await sb.auth.signOut(); S.stats = null; S.denied = false; break;
+    case 'reload': load(); break;
+    case 'days': setView({ days: d.days }); break;
+    case 'game': setView({ game: d.game }); scrollTo(0, 0); break;
+  }
+});
+
+// ---------------------------------------------------------------- boot
+let lastDays = view().days;
+let resizeTimer = null;
+let lastWidth = innerWidth;
+window.addEventListener('resize', () => {
+  if (innerWidth === lastWidth) return;
+  lastWidth = innerWidth;
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(render, 150);
+});
+window.addEventListener('hashchange', () => {
+  const { days } = view();
+  if (days !== lastDays) { lastDays = days; load(); } else render();
+});
+
+function onSession(session) {
+  const before = S.session?.user?.id;
+  S.session = session || null;
+  if (!S.session) { S.stats = null; S.denied = false; render(); return; }
+  if (before !== S.session.user.id || !S.stats) load();
+}
+
+if (sb) {
+  // Coming back from Google, the URL carries the token (hash) or a code (query).
+  const cameBack = /access_token=|[?&]code=/.test(location.hash + location.search);
+  sb.auth.getSession().then(({ data }) => {
+    if (cameBack) history.replaceState(null, '', location.pathname + '#days=30');
+    onSession(data.session);
+  });
+  sb.auth.onAuthStateChange((event, session) => {
+    if (event === 'TOKEN_REFRESHED' || (event === 'SIGNED_IN' && S.session?.user?.id === session?.user?.id)) { S.session = session; return; }
+    onSession(session);
+  });
+} else render();
+</script>
+</body>
+</html>
