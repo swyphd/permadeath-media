@@ -1,7 +1,7 @@
 // node card-check/tests/tutorial.test.mjs
 // The guided game keeps the studio's tutorial rule, and its goals fire on outcomes.
 import { suite, test, ok, eq, deepEq, report } from '../../kit/test/harness.js';
-import { guideSteps, callouts, guideFor, calloutsFor, checkSteps } from '../tutorial.js';
+import { guideSteps, guideFor, checkSteps } from '../tutorial.js';
 
 // Stand-ins for the page's engine helpers, over a tiny hand-made game state.
 const h = {
@@ -16,16 +16,12 @@ const game = (o = {}) => ({
   workers: { 1: worker(1), 2: worker(2, { lock: 'Pay', disp: 1 }), 3: worker(3) },
   ...o,
 });
-const store = () => { const m = new Map(); return { getItem: (k) => m.get(k) ?? null, setItem: (k, v) => m.set(k, String(v)), removeItem: (k) => m.delete(k) }; };
 
 suite('card check: guided game', () => {
   test('keeps the rule: goals, no locked controls, short reads', () => {
     // Each goal here spans a round or more of real play, so five in a row is fine.
     deepEq(checkSteps(guideSteps(h), { maxInARow: 5 }), []);
     ok(guideSteps(h).every((s) => !s.allow));
-  });
-  test('callouts are short read notes', () => {
-    deepEq(checkSteps(callouts(h)), []);
   });
   test('every goal has hints for a player who stalls', () => {
     ok(guideSteps(h).filter((s) => s.goal).every((s) => s.hints && s.hints.length >= 1));
@@ -67,19 +63,6 @@ suite('card check: guided game', () => {
     const t = guideFor({ tutorial: { step: 17, done: false } }, h);
     eq(t.observe(game()).id, 'first');
     eq(guideFor({ tutorial: { step: 40, done: true } }, h).status, 'done');
-  });
-});
-
-suite('card check: callouts', () => {
-  test('adopt the old per-device seen keys', () => {
-    const s = store();
-    s.setItem('cc_seen_mgmt', '1');
-    globalThis.localStorage = s;
-    const c = calloutsFor(h, s);
-    ok(c.seen.includes('mgmt'));
-    const g = game({ fear: 8, phase: 'org', round: 2 });
-    g.workers[2].lock = null;
-    eq(c.observe(g).id, 'fear7');
   });
 });
 

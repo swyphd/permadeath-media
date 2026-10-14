@@ -1,4 +1,4 @@
-// Card Check's guided game and first-time callouts, run by the studio kit's
+// Card Check's guided game, run by the studio kit's
 // tutorial engine (kit/tutorial.js).
 //
 // The guided game gives goals, not clicks: each one teaches the move it needs,
@@ -67,28 +67,6 @@ export function guideSteps(h) {
   ];
 }
 
-// Notes for real games, shown once per device the first time each thing happens.
-export function callouts(h) {
-  return [
-    { id: 'mgmt', title: 'Management moves first', when: (g) => g.round === 1 && g.phase === 'org',
-      body: 'Management sits across the table. Every round starts with them turning over a card (more as you grow, and after each Small Win), shown at the top with what it did. Then your committee acts: 3 actions each, fewer with Burnout.' },
-    { id: 'influence', title: 'Influence: choose who they bring along', when: (g) => g.pending && g.pending.some((p) => p.type === 'influence'),
-      body: 'A worker who signs pulls colleagues in their department up one step, as many as their influence dots. Click the highlighted workers on the board, or skip the rest.' },
-    { id: 'absorb', title: 'A Steward can absorb this card', when: (g) => g.phase === 'absorb',
-      body: 'Each Steward can absorb one management card per game, cancelling its effect in their department. Tick the Stewards allowed to spend it if this card hits them, then resolve. Save it for the cards that hurt.' },
-    { id: 'stewardphase', title: 'Steward phase', when: (g) => g.phase === 'steward',
-      body: 'At the start of each round, every Steward brings one worker in their department up a step. Click a highlighted worker, or make no move.' },
-    { id: 'plant', title: 'A Plant took the empty desk', when: (g) => h.onBoard(g).some((w) => w.reserve),
-      body: 'Whenever a worker is removed from the board, management fills the desk with a Plant: Hostile, immovable, and every One-on-One in that department costs +1 while it sits there.' },
-    { id: 'fear7', title: 'Fear is 7 or higher', when: (g) => g.fear >= 7,
-      body: 'One-on-Ones now cost 2, and every organizer takes +1 Burnout at the end of the round. Reassure (Fear −1, once per round) or win a Small Win to bring it down. At 10 the drive collapses.' },
-    { id: 'burnout', title: 'Burnout', when: (g) => g.orgs.some((o) => o.burnout > 0),
-      body: 'Burnout 1 and 2 still give 3 and 2 actions; at 3 an organizer has 1 action and loses their ability. Reset costs an action and removes one Burnout. If every organizer burns out, the drive is over.' },
-    { id: 'smallwin', title: 'Small Win: now management reacts', when: (g) => g.issues.some((i) => i.state === 'done'),
-      body: 'Each Issue you win changes a rule for the rest of the game, moves every worker with its icon up, and lowers Fear. It also adds a card to management’s next draw. Three Small Wins per game.' },
-  ];
-}
-
 // The guided game's progress lives in the game's own save (g.tutorial), so a
 // resumed tutorial picks up where it was. A save from the old click-by-click
 // tutorial ({ step, done }) restarts at the first goal; goals the player has
@@ -99,22 +77,4 @@ export function guideFor(g, h, opts = {}) {
     ? t
     : { status: t.done ? 'done' : 'active', index: t.done ? 0 : 1, seen: [] };
   return createTutorial({ steps: guideSteps(h), mode: 'scripted', persist: false, initial, ...opts });
-}
-
-// Callouts remember what this device has seen. The first time, they adopt the
-// old per-callout keys (cc_seen_<id>) so nobody sees a note twice.
-export function calloutsFor(h, storage = globalThis.localStorage) {
-  const steps = callouts(h);
-  const key = 'cc-callouts';
-  let fresh = false;
-  try { fresh = !storage.getItem(key); } catch {}
-  const tut = createTutorial({ key, steps, autoStart: true });
-  if (fresh) {
-    for (const s of steps) {
-      let old = null;
-      try { old = storage.getItem(`cc_seen_${s.id}`); } catch {}
-      if (old) tut.markSeen(s.id);
-    }
-  }
-  return tut;
 }

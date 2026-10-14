@@ -53,9 +53,7 @@ sync is live, and falls back to device-only play if the SDK fails to load.
   nothing on the board is locked. Hints appear in stages if the player
   stalls, by time or by game state. The game stays on the device and resumes
   after a reload.
-- **First-time callouts** (also in `tutorial.js`) appear once per device the
-  first time a mechanic shows up, in the guided game and in real games.
-- Both run on the studio kit's tutorial engine (`../kit/tutorial.js`).
+- It runs on the studio kit's tutorial engine (`../kit/tutorial.js`).
 - **Rules** in the header is generated from the engine's own data tables.
 
 ## Analytics

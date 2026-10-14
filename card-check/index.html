@@ -258,19 +258,18 @@ input{font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:6
 .phase{font-family:"Barlow Condensed";font-weight:700;font-size:22px}
 .toast{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:8px 14px;border-radius:8px;font-size:13px;opacity:0;transition:opacity .2s;pointer-events:none}
 .toast.show{opacity:1}
-/* tutorial, callouts, rules */
-.tut,.callout{position:sticky;top:var(--hudh,0px);z-index:5;background:var(--panel);border:1px solid var(--line);border-left:5px solid var(--sel);border-radius:10px;padding:12px 14px;margin-bottom:12px;box-shadow:0 4px 14px rgba(0,0,0,.14)}
-.callout{border-left-color:var(--accent);position:relative;top:auto;z-index:1}
+/* tutorial, rules */
+.tut{position:sticky;top:var(--hudh,0px);z-index:5;background:var(--panel);border:1px solid var(--line);border-left:5px solid var(--sel);border-radius:10px;padding:12px 14px;margin-bottom:12px;box-shadow:0 4px 14px rgba(0,0,0,.14)}
 .tut .th{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
-.tut h2,.callout h2{font-size:20px}
+.tut h2{font-size:20px}
 .tut .step{font-size:12px;color:var(--muted);margin-left:auto;white-space:nowrap}
 .tprog{display:flex;align-items:center;gap:4px;margin-bottom:8px;flex-wrap:wrap}
 .tprog .seg{flex:1 1 36px;max-width:64px;height:6px;border-radius:3px;background:var(--line)}
 .tprog .seg.done{background:var(--ok)}
 .tprog .seg.now{background:var(--sel)}
 .tprog .plab{font-family:"Barlow Condensed";font-weight:700;font-size:14px;letter-spacing:.03em;margin-left:8px;white-space:nowrap}
-.tut p,.callout p{margin:6px 0 0;font-size:14px;max-width:72ch}
-.tut .row,.callout .row{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;align-items:center}
+.tut p{margin:6px 0 0;font-size:14px;max-width:72ch}
+.tut .row{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;align-items:center}
 .tut .row .small{margin-left:auto}
 .tut-target{box-shadow:0 0 0 3px var(--sel),0 0 16px var(--sel)!important;position:relative;z-index:1;animation:tutpulse 1.2s ease-in-out infinite}
 button.tut-target{border-color:var(--sel)}
@@ -320,7 +319,7 @@ button.ghost{background:transparent}
 <div class="toast" id="toast"></div>
 <script type="module">
 /* ============ APP / SYNC ============ */
-/* The rules live in engine.js; the guided game and callouts in tutorial.js; saves,
+/* The rules live in engine.js; the guided game in tutorial.js; saves,
    the signup form and play analytics come from the studio kit (/kit). */
 import {
   DEPTS, DISP, ORGS, ISSUES, MGMT, clone, newGame, setupFlips, onBoard, signedCount,
@@ -643,7 +642,7 @@ function renderUs(el,g,pend){
     eb.onclick=()=>endTurn(); head.appendChild(eb);
   }
   if(g.phase==="steward"&&pend){ const anySeat=g.orgs.some((o,i)=>controls(i));
-    const box=$(`<div class="prompt">${pend.type==="steward"?`Steward phase: ${esc(pend.from)} can bring one worker in ${DEPTS[pend.dept][0]} up a step. Click a highlighted worker on the board.`:`${esc(pend.from)}'s influence: pick ${pend.n} more in ${DEPTS[pend.dept][0]} to move up.`}</div>`);
+    const box=$(`<div class="prompt">${pend.type==="steward"?`Steward phase: ${esc(pend.from)} can bring one worker in ${DEPTS[pend.dept][0]} up a step. Click a highlighted worker on the board.`:`${esc(pend.from)}'s influence: pick ${pend.n} more in ${DEPTS[pend.dept][0]} to move up. Click a highlighted worker on the board.`}</div>`);
     const b=$(`<button style="margin-top:6px">${pend.type==="steward"?"Make no move":"Skip remaining"}</button>`); b.disabled=!anySeat; b.onclick=()=>act(g=>pend.type==="steward"?doStewardSkip(g):doSkipInfluence(g)); box.appendChild(b);
     if(!anySeat)box.appendChild($(`<div class="small">Waiting for a seated player.</div>`));
     el.appendChild(box); }
@@ -661,7 +660,7 @@ function renderUs(el,g,pend){
       ${active&&o.townhall?`<div class="small">Town Hall: next 1-on-1 costs 2</div>`:""}
     </div>`);
     if(active&&mine){
-      if(pend){ d.appendChild($(`<div class="prompt">${pend.type==="influence"?`${pend.from}'s influence: pick ${pend.n} more in ${DEPTS[pend.dept][0]} to move up.`:"Just Cause: choose an icon."}</div>`));
+      if(pend){ d.appendChild($(`<div class="prompt">${pend.type==="influence"?`${pend.from}'s influence: pick ${pend.n} more in ${DEPTS[pend.dept][0]} to move up. Click a highlighted worker on the board.`:"Just Cause: choose an icon."}</div>`));
         if(pend.type==="influence"){const b=$(`<button style="margin-top:6px">Skip remaining</button>`);b.onclick=()=>act(g=>doSkipInfluence(g));d.appendChild(b);}
         if(pend.type==="icon"){const row=$(`<div class="actions"></div>`);["Crunch","Pay","Layoffs","Credit","Harassment"].forEach(icn=>{const ok=onBoard(g).filter(w=>w.disp>=3&&w.issues.includes(icn)).length>=reqN(g)+1; const b=$(`<button ${ok?"":"disabled"}>${ic(icn,"")} ${icn}</button>`);b.onclick=()=>act(g=>{g.pending=[];return doSmallWin(g,g.cur,"wild",icn);});row.appendChild(b);});const c=$(`<button data-act="cancel">Cancel</button>`);c.onclick=()=>act(g=>{g.pending=[];return null;});row.appendChild(c);d.appendChild(row);}
       } else {
@@ -785,12 +784,12 @@ function renderRight(el,g){
   g.log.slice().reverse().forEach(x=>L.appendChild($(`<div class="${x.r?"r":""}">${esc(x.r||x.t)}</div>`)));
   el.appendChild(lg);
 }
-/* ============ TUTORIAL / CALLOUTS / RULES ============ */
-/* The guided game and the first-time callouts live in tutorial.js and run on the
+/* ============ TUTORIAL / RULES ============ */
+/* The guided game lives in tutorial.js and runs on the
    studio kit's tutorial engine (../kit/tutorial.js): goals the player reaches
    their own way, never a locked board. */
 const TUT_HELPERS={onBoard:(g,d)=>onBoard(g,d),won:(g,id)=>won(g,id),locked:(g,w)=>locked(g,w)};
-let guide=null, guideGame=null, callouts=null, lastHint=null;
+let guide=null, guideGame=null, lastHint=null;
 function startTutorial(){
   if(unsub){unsub();unsub=null;} code=null; try{ if(location.hash)history.replaceState(null,"",location.pathname+location.search); }catch(e){}
   const seats=[{k:"senior",playerId:myId}];
@@ -826,12 +825,6 @@ function renderGuide(root,g){
       document.body.classList.add("tut-on");
     }
   } else document.body.classList.remove("tut-on");
-  if(!callouts)callouts=TUT.calloutsFor(TUT_HELPERS);
-  const c=callouts.observe(g);
-  if(!c)return;
-  const card=$(`<div class="callout"><h2>${c.title}</h2><p>${c.body}</p><div class="row"><button class="primary" data-always>Got it</button><span class="small">Shown once, the first time it happens.</span></div></div>`);
-  card.querySelector("button").onclick=()=>{ callouts.next(G); render(); };
-  root.insertBefore(card,grid);
 }
 /* rules reference, generated from the same tables the engine plays by */
 function openRules(){
