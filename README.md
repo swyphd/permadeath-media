@@ -45,6 +45,37 @@ or Global Privacy Control send nothing. A game must be listed in `GAMES` in
   file has the read-outs: how runs end, where people quit, which choices people
   make, and win rate by choice.
 
+## Stats dashboard
+
+`/stats/` is the studio's private dashboard of everything the play analytics
+record: unique, new and returning players, players and runs per day, hours
+played, run and visit length, how runs end (won, lost, gave up, left mid-run)
+and the game's own ending, the last milestone before a run stopped, how far runs
+get, choices with the win rate of the runs that made them, results by build, and
+every event name a game sends. Filters for the time range and the game.
+
+Sign-in is Google through the studio's Supabase project, and the check happens on
+the server: `api/stats.js` asks Supabase whose token it is, requires a Google
+sign-in with a confirmed address in `STATS_ADMIN_EMAILS`, and only then calls
+`game_stats()` (`game-stats.sql`) with the service-role key. The public key still
+can't read `game_events`, and only the service role can call `game_stats()`.
+
+### Setup
+
+1. **Supabase**: run `game-stats.sql` once in the SQL Editor (after
+   `game-events.sql`). Run it again after any change to it.
+2. **Supabase**: Authentication > URL Configuration > Redirect URLs: add
+   `https://permadeathmedia.com/stats/`. Google sign-in is the same provider
+   Homies uses (see `homies/README.md` if it isn't on yet).
+3. **Vercel**: Project > Settings > Environment Variables, for Production (and
+   Preview to try a preview deploy):
+   - `STATS_ADMIN_EMAILS`: the Google address(es) allowed in, comma-separated
+   - `SUPABASE_SERVICE_ROLE_KEY`: Supabase > Project Settings > API Keys, the
+     secret (service role) key. Never put it in page code.
+   Redeploy after adding them. Without both, the dashboard lets nobody in.
+
+Tests: `node kit/tests/run.mjs` covers the access rules in `api/stats.js`.
+
 ## Homies
 
 `/homies/` is the private page for the people building the next game: a
