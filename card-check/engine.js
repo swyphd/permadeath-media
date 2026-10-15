@@ -309,7 +309,7 @@ function doMap(g,oi,d){ const o=g.orgs[oi]; if(g.flags.noMap)return "Pizza Frida
   for(let i=0;i<k;i++){const w=mapTop(g,d); if(w)logit(g,`${o.n} maps ${w.name}: ${DISP[w.disp]}.`);} return null; }
 function doOne(g,oi,wid){ const o=g.orgs[oi]; const w=g.workers[wid]; if(!w.onBoard||w.disp>=3)return "Pick a revealed worker below Signed."; if(immovable(w))return `${w.name} has no issues to organize around. Immovable.`; if(w.disp===2&&locked(g,w))return `${w.name} won't sign until ${w.lock==="Pay"?"Pay Transparency":"End Crunch"} is won.`;
   const c=oneCost(g,o,w); if(o.actions<c)return `That One-on-One costs ${c}.`;
-  if(c===0){ const st=onBoard(g,w.dept).find(x=>x.disp===4&&!x.freeUsed); if(st&&!(o.k==="animator"&&w.issues.includes("Crunch")))st.freeUsed=true; }
+  if(c===0){ const st=onBoard(g,w.dept).find(x=>x.disp===4&&!x.freeUsed); if(st&&!(o.k==="animator"&&hasAbility(g,o)&&w.issues.includes("Crunch")))st.freeUsed=true; }
   spend(g,o,c); if(o.townhall&&c>0)o.townhall=false;
   moveUp(g,w); logit(g,`${o.n} talks with ${w.name}: now ${DISP[w.disp]}.`); return null; }
 function doSmallWin(g,oi,iid,icon){ const o=g.orgs[oi]; const is=g.issues.find(i=>i.id===iid); if(is.state!=="open")return "That Issue is no longer available.";
@@ -336,7 +336,7 @@ function doReassure(g,oi){ const o=g.orgs[oi]; const free=o.k==="ap"&&hasAbility
   if(free)o.apFree=true; else {spend(g,o,REASSURE.cost); o.reassured=(o.reassured||0)+1; g.reassuredRound=true;} addFear(g,-1); logit(g,`${o.n} steadies the room. Fear ${g.fear}.`); return null; }
 function doReset(g,oi){ const o=g.orgs[oi]; if(o.actions<1)return "No actions left."; if(o.burnout===0)return "No Burnout to remove."; spend(g,o,1); o.burnout--; logit(g,`${o.n} rests. Burnout ${o.burnout}.`); return null; }
 function doOverwork(g,oi){ const o=g.orgs[oi]; if(o.overworked)return "Once per round."; if(o.burnout>=3)return "Already burned out."; o.overworked=true; if(!won(g,"crunch"))addBurnout(g,o,1,false); o.actions++; o.turnTotal=(o.turnTotal||0)+1; logit(g,`${o.n} overworks. Burnout ${o.burnout}.`); return null; }
-function doEnd(g,oi){ const o=g.orgs[oi]; o.done=true; logit(g,`${o.n} ends their turn.`); g.cur=(g.cur+1)%g.orgs.length; return null; }
+function doEnd(g,oi){ if(g.pending&&g.pending.length)return "Finish the choice first."; const o=g.orgs[oi]; o.done=true; logit(g,`${o.n} ends their turn.`); g.cur=(g.cur+1)%g.orgs.length; return null; }
 function doInfluencePick(g,wid){ const p=g.pending&&g.pending[0]; if(!p||p.type!=="influence")return "Nothing to choose."; const w=g.workers[wid];
   if(!w.onBoard||w.dept!==p.dept||w.disp>=3||immovable(w)||(w.disp===2&&locked(g,w)))return "Pick a movable worker in that department below Signed (holdouts stop at Leaning).";
   moveUp(g,w); logit(g,`${p.from}'s influence moves ${w.name} to ${DISP[w.disp]}.`); p.n--; if(p.n<=0||!onBoard(g,p.dept).some(x=>x.disp<3&&!immovable(x)&&!(x.disp===2&&locked(g,x))))g.pending.shift();

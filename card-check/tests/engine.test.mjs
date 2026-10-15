@@ -28,6 +28,24 @@ suite('card check: engine', () => {
     eq(apply(g, ['win pay', (x) => E.doSmallWin(x, 0, 'pay')]), g);
     eq(JSON.stringify(g), before);
   });
+  test("a Steward's free One-on-One is spent by a burned-out Animator too", () => {
+    const g = deal(4, ['animator']);
+    const o = g.orgs[0]; o.burnout = 3; o.actions = 1;
+    const st = Object.values(g.workers).find((w) => w.dept === 'Art' && w.leader);
+    const crunch = Object.values(g.workers).filter((w) => w.dept === 'Art' && w.issues.includes('Crunch') && !w.leader);
+    st.onBoard = true; st.disp = 4;
+    crunch.forEach((w) => { w.onBoard = true; w.disp = 0; });
+    eq(E.oneCost(g, o, crunch[0]), 0);
+    eq(E.doOne(g, 0, crunch[0].id), null);
+    ok(st.freeUsed);
+    eq(E.oneCost(g, o, crunch[1]), 1);
+  });
+  test('no turn ends while a choice is waiting', () => {
+    const g = deal(5);
+    g.pending = [{ type: 'icon', issue: 'wild' }];
+    ok(E.doEnd(g, 0));
+    eq(g.orgs[0].done, false);
+  });
   test('a whole game replays move for move', () => {
     const play = () => playOut(deal(9, ['senior', 'animator']), randomBot, createRng(5));
     deepEq(play(), play());
