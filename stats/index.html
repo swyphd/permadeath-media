@@ -350,7 +350,12 @@ function sourceMeta(st) {
 }
 
 function sourcesSection(st) {
-  const sources = (st.sources || []).slice().sort((a, b) => (a.source === '(none)') - (b.source === '(none)'));
+  // Signups by tag, once the list records it (api/stats.js leaves refs out until then).
+  const suRefs = st.signups && !st.signups.error ? st.signups.refs : null;
+  const signupsBy = new Map((suRefs || []).map((x) => [x.ref, x]));
+  const blank = { players: 0, new_players: 0, runs: 0, wins: 0, ended: 0, play_seconds: 0, link_plays: 0, link_players: 0 };
+  const sources = [...(st.sources || []), ...(suRefs || []).filter((x) => n0(x.in_range) && !(st.sources || []).some((y) => y.source === x.ref)).map((x) => ({ ...blank, source: x.ref }))]
+    .sort((a, b) => (a.source === '(none)') - (b.source === '(none)'));
   const head = '<h2 class="stencil">Where players come from</h2>';
   if (!sources.length) return '';
   const m = sourceMeta(st);
@@ -373,12 +378,12 @@ function sourcesSection(st) {
   <p class="sub">Players by the first <span class="mono">?ref=</span> tag their browser ever arrived with, so someone who found a game on itch.io and came back from a bookmark still counts for itch.io. ${fmt(taggedPlayers)} of ${fmt(players)} players (${pct(taggedPlayers, players)}) came in through a tagged link.</p>
   ${dailyChart({ since: st.since, daily: [...daily.values()] }, m.ids, 'players', 180, m.of)}
   <div class="table-wrap" style="margin-top:0.75rem"><table>
-    <thead><tr><th>Source</th><th>Players</th><th>New</th><th>Runs</th><th>Hours</th><th>Win rate</th><th ${tipAttr('Runs started or resumed from a link carrying this tag in the range, whoever the player first came from.')}>Link plays</th><th>Via link</th></tr></thead>
+    <thead><tr><th>Source</th><th>Players</th><th>New</th><th>Runs</th><th>Hours</th><th>Win rate</th><th ${tipAttr('Runs started or resumed from a link carrying this tag in the range, whoever the player first came from.')}>Link plays</th><th>Via link</th>${suRefs ? `<th ${tipAttr('Email signups in the range from browsers that first arrived with this tag.')}>Signups</th>` : ''}</tr></thead>
     <tbody>${sources.map((x) => `<tr>
       <td>${name(x.source)}</td>
       <td>${fmt(x.players)}</td><td>${fmt(x.new_players)}</td><td>${fmt(x.runs)}</td><td>${hours(x.play_seconds)}</td>
       <td>${n0(x.ended) ? `${pct(x.wins, x.ended)} <span class="dim">of ${fmt(x.ended)}</span>` : '–'}</td>
-      <td>${x.source === '(none)' ? '–' : fmt(x.link_plays)}</td><td>${x.source === '(none)' ? '–' : fmt(x.link_players)}</td></tr>`).join('')}</tbody>
+      <td>${x.source === '(none)' ? '–' : fmt(x.link_plays)}</td><td>${x.source === '(none)' ? '–' : fmt(x.link_players)}</td>${suRefs ? `<td>${fmt(signupsBy.get(x.source)?.in_range)}</td>` : ''}</tr>`).join('')}</tbody>
   </table></div>
   ${gameIds.length > 1 ? `<details><summary>Players by source and game</summary><div class="table-wrap" style="margin-top:0.5rem"><table>
     <thead><tr><th>Source</th>${gameIds.map((id) => `<th>${esc(gameOf(id).name)}</th>`).join('')}</tr></thead>
@@ -640,7 +645,7 @@ function notes() {
     <li><b>A run</b> is one playthrough. It counts here if anything happened in it during the range, with all of its events. <b>Left mid-run</b> means it never sent an end and has been quiet for 30 minutes; <b>still playing</b> means it was active in the last 30. A Hexagons run is one daily puzzle, so an unsolved puzzle is "left".</li>
     <li><b>Run length</b> is the game's own clock of play time (Hedy Plant and Guild Rising stop it while paused). <b>A visit</b> is one page load, timed from its first event to its last.</li>
     <li><b>New players</b> were first seen in the range; <b>came back</b> played on two or more different days in it. Days are UTC.</li>
-    <li><b>Sources</b> come from <span class="mono">?ref=</span> tags (the /marketing/ links, the itch.io build, the win-screen share link). A player counts for the first tag their browser ever arrived with; <b>link plays</b> count every run started or resumed from a tagged link, so one player can add link plays to several tags. <b>No tag</b> covers typed-in visits, bookmarks, the site's own links, players from before tags were recorded (Oct 14), and Union Up and Guild Rising, whose live builds don't record tags yet.</li>
+    <li><b>Sources</b> come from <span class="mono">?ref=</span> tags (the /marketing/ links, the itch.io build, the win-screen share link). A player counts for the first tag their browser ever arrived with; <b>link plays</b> count every run started or resumed from a tagged link, so one player can add link plays to several tags. <b>Signups</b> by tag count from Oct 15, when the forms started sending the tag; earlier addresses count as no tag. <b>No tag</b> covers typed-in visits, bookmarks, the site's own links, players from before tags were recorded (Oct 14), and Union Up and Guild Rising, whose live builds don't record tags yet.</li>
     <li><b>Email signups</b> come from the backup copy of the list kept in Supabase: one per address, credited to where it first signed up. Unsubscribes and unconfirmed addresses live in Buttondown and aren't reflected here.</li>
   </ul>`;
 }

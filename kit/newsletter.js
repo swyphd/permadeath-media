@@ -5,8 +5,12 @@
 // SOURCES there and `tag` one of its TAGS, or the endpoint files it as 'unknown'
 // / drops the tag, so add a new game's names to api/subscribe.js first.
 //
+// The ?ref= tag this browser first arrived with goes along as `ref` (see
+// signupRef in analytics.js), so /stats/ can count signups by where people came from.
+//
 // Brand rules: no pre-ticked boxes, no pop-ups on load, never block play on it.
 import { SIGNUP_URL } from './config.js';
+import { signupRef } from './analytics.js';
 
 export const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 export const normalizeEmail = (email) => String(email || '').trim().toLowerCase();
@@ -17,7 +21,7 @@ const storage = () => { try { return globalThis.localStorage || null; } catch { 
 // Remembers that this browser is on the list, so a game stops asking.
 // `doneKey` defaults to `${source}-newsletter`; pass the game's existing key
 // (Card Check's 'cc-newsletter', Hedy's 'hp-newsletter') when adopting the kit.
-export function createNewsletter({ source, doneKey = `${source}-newsletter`, url = SIGNUP_URL, fetch: fetchImpl } = {}) {
+export function createNewsletter({ source, doneKey = `${source}-newsletter`, url = SIGNUP_URL, fetch: fetchImpl, ref = () => signupRef() } = {}) {
   if (!source) throw new Error('createNewsletter needs a source');
   const doFetch = fetchImpl || ((...a) => globalThis.fetch(...a));
 
@@ -34,7 +38,7 @@ export function createNewsletter({ source, doneKey = `${source}-newsletter`, url
       res = await doFetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(tag ? { email: addr, source, tag } : { email: addr, source }),
+        body: JSON.stringify({ email: addr, source, ...(tag ? { tag } : {}), ...(ref() ? { ref: ref() } : {}) }),
       });
     } catch {
       throw new Error('Something went wrong. Try again in a minute.');

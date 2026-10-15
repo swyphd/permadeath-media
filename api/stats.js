@@ -45,16 +45,20 @@ async function readStats(from, key) {
 // The mailing list, counted from the newsletter_signups backup table that
 // api/subscribe.js writes next to Buttondown: one row per address (a second
 // signup with the same address keeps the first row and its source). Only the
-// source and date are read, a page at a time, and only totals go back:
-//   { total, in_range, sources: [{ source, total, in_range }], daily: [{ day, source, signups }] }
+// source, ref tag and date are read, a page at a time, and only totals go back:
+//   { total, in_range, sources: [{ source, total, in_range }], daily: [{ day, source, signups }],
+//     refs: [{ ref, total, in_range }] }   ref '(none)' = no tag; refs is
+//     left out until newsletter-signups.sql has added the ref column.
 const SIGNUP_PAGE = 1000;
 
-async function fetchSignupRows(key) {
+async function fetchSignupRows(key, columns = 'source,ref,created_at') {
   const rows = [];
   for (let from = 0; ; from += SIGNUP_PAGE) {
-    const res = await fetchWithTimeout(`${SUPABASE}/rest/v1/newsletter_signups?select=source,created_at&order=created_at.asc,id.asc`, {
+    const res = await fetchWithTimeout(`${SUPABASE}/rest/v1/newsletter_signups?select=${columns}&order=created_at.asc,id.asc`, {
       headers: { apikey: key, Authorization: `Bearer ${key}`, Range: `${from}-${from + SIGNUP_PAGE - 1}`, 'Range-Unit': 'items' },
     });
+    // No ref column yet (newsletter-signups.sql not re-run): count without it.
+    if (res.status === 400 && columns.includes('ref')) return fetchSignupRows(key, 'source,created_at');
     if (!res.ok) throw new Error(`newsletter_signups ${res.status}: ${await res.text()}`);
     const page = await res.json();
     rows.push(...page);
@@ -66,8 +70,17 @@ function countSignups(rows, from) {
   const start = from ? Date.parse(from) : -Infinity;
   const sources = new Map();
   const daily = new Map();
+  const refs = new Map();
+  const hasRef = rows.some((r) => 'ref' in r);
   let inRange = 0;
   for (const r of rows) {
+    if (hasRef) {
+      const ref = r.ref || '(none)';
+      const x = refs.get(ref) || { ref, total: 0, in_range: 0 };
+      x.total += 1;
+      if (Date.parse(r.created_at) >= start) x.in_range += 1;
+      refs.set(ref, x);
+    }
     const source = r.source || 'unknown';
     const s = sources.get(source) || { source, total: 0, in_range: 0 };
     s.total += 1;
@@ -87,6 +100,7 @@ function countSignups(rows, from) {
     in_range: inRange,
     sources: [...sources.values()].sort((a, b) => b.total - a.total || a.source.localeCompare(b.source)),
     daily: [...daily.values()].sort((a, b) => a.day.localeCompare(b.day) || a.source.localeCompare(b.source)),
+    ...(hasRef || !rows.length ? { refs: [...refs.values()].sort((a, b) => b.total - a.total || a.ref.localeCompare(b.ref)) } : {}),
   };
 }
 
