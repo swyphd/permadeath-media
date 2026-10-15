@@ -12,7 +12,8 @@ const jeff = {
 const ENV = { STATS_ADMIN_EMAILS: 'someone@else.com, owner@example.com', SUPABASE_SERVICE_ROLE_KEY: 'service-key' };
 
 // user: what /auth/v1/user answers (null = 401); env: process.env overrides.
-async function call({ method = 'GET', token = 'tok', user = jeff, env = ENV, query = { days: '30' }, statsStatus = 200 } = {}) {
+// signups: the newsletter_signups rows Supabase holds; signupsStatus: its answer.
+async function call({ method = 'GET', token = 'tok', user = jeff, env = ENV, query = { days: '30' }, statsStatus = 200, signups = [], signupsStatus = 200 } = {}) {
   const calls = [];
   const realFetch = globalThis.fetch;
   const realEnv = { ...process.env };
@@ -22,6 +23,10 @@ async function call({ method = 'GET', token = 'tok', user = jeff, env = ENV, que
     calls.push({ url, init });
     if (url.endsWith('/auth/v1/user')) {
       return user ? { ok: true, status: 200, json: async () => user } : { ok: false, status: 401, json: async () => ({}) };
+    }
+    if (url.includes('/rest/v1/newsletter_signups')) {
+      const [from, to] = init.headers.Range.split('-').map(Number);
+      return { ok: signupsStatus < 300, status: signupsStatus, json: async () => signups.slice(from, to + 1), text: async () => 'err' };
     }
     return { ok: statsStatus < 300, status: statsStatus, json: async () => ({ totals: { players: 3 } }), text: async () => 'err' };
   };
@@ -34,24 +39,24 @@ async function call({ method = 'GET', token = 'tok', user = jeff, env = ENV, que
     for (const k of Object.keys(process.env)) if (!(k in realEnv)) delete process.env[k];
     Object.assign(process.env, realEnv);
   }
-  return { res, calls };
+  return { res, calls, rpc: calls.find((c) => c.url.endsWith('/rest/v1/rpc/game_stats')) };
 }
+const daysAgo = (d) => new Date(Date.now() - d * 86400000).toISOString();
 
 suite('api/stats', () => {
   test('an allowed Google sign-in gets the numbers', async () => {
-    const { res, calls } = await call();
+    const { res, calls, rpc } = await call();
     eq(res.statusCode, 200);
     eq(res.body.stats.totals.players, 3);
     eq(res.headers['Cache-Control'], 'no-store');
     eq(calls[0].init.headers.Authorization, 'Bearer tok');
-    ok(calls[1].url.endsWith('/rest/v1/rpc/game_stats'));
-    eq(calls[1].init.headers.apikey, 'service-key');
-    const since = JSON.parse(calls[1].init.body).since;
+    eq(rpc.init.headers.apikey, 'service-key');
+    const since = JSON.parse(rpc.init.body).since;
     ok(Math.abs(Date.now() - 30 * 86400000 - Date.parse(since)) < 60000);
   });
   test('days=all reads everything', async () => {
-    const { calls } = await call({ query: { days: 'all' } });
-    eq(JSON.parse(calls[1].init.body).since, null);
+    const { rpc } = await call({ query: { days: 'all' } });
+    eq(JSON.parse(rpc.init.body).since, null);
   });
   test('no token is a 401 and never reads stats', async () => {
     const { res, calls } = await call({ token: null });
@@ -82,6 +87,37 @@ suite('api/stats', () => {
   });
   test('a failed read is a 502', async () => {
     eq((await call({ statsStatus: 404 })).res.statusCode, 502);
+  });
+  test('the mailing list comes back as counts, never addresses', async () => {
+    const signups = [
+      { source: 'site', created_at: daysAgo(60) },
+      { source: 'hedy-plant', created_at: daysAgo(3) },
+      { source: 'hedy-plant', created_at: daysAgo(3) },
+      { source: null, created_at: daysAgo(1) },
+    ];
+    const { res, calls } = await call({ signups });
+    const read = calls.find((c) => c.url.includes('/rest/v1/newsletter_signups'));
+    ok(!read.url.includes('email'));
+    eq(read.init.headers.apikey, 'service-key');
+    const s = res.body.stats.signups;
+    eq(s.total, 4);
+    eq(s.in_range, 3);
+    eq(JSON.stringify(s.sources.map((x) => [x.source, x.total, x.in_range])), JSON.stringify([['hedy-plant', 2, 2], ['site', 1, 0], ['unknown', 1, 1]]));
+    eq(JSON.stringify(s.daily.map((d) => [d.source, d.signups])), JSON.stringify([['hedy-plant', 2], ['unknown', 1]]));
+    ok(!JSON.stringify(s).includes('@'));
+  });
+  test('a long list is read a page at a time', async () => {
+    const signups = Array.from({ length: 2500 }, (_, i) => ({ source: 'site', created_at: daysAgo(i % 90) }));
+    const { res, calls } = await call({ signups, query: { days: 'all' } });
+    eq(calls.filter((c) => c.url.includes('newsletter_signups')).length, 3);
+    eq(res.body.stats.signups.total, 2500);
+    eq(res.body.stats.signups.in_range, 2500);
+  });
+  test('if the list can\'t be read, the games still show', async () => {
+    const { res } = await call({ signupsStatus: 401 });
+    eq(res.statusCode, 200);
+    eq(res.body.stats.totals.players, 3);
+    ok(res.body.stats.signups.error);
   });
   test('GET only', async () => {
     eq((await call({ method: 'POST' })).res.statusCode, 405);
