@@ -77,9 +77,9 @@ input{font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:6
 .seat{border:1px solid var(--line);border-radius:8px;padding:10px;background:var(--soft);cursor:pointer}
 .seat.mine{border-color:var(--accent);box-shadow:inset 0 0 0 2px var(--accent)}
 .seat.taken{opacity:.6;cursor:default}
-.seat b{display:block;font-family:"Barlow Condensed";font-size:18px}
+.seat b{display:block;font-family:"Barlow Condensed","IBM Plex Sans",sans-serif;font-size:18px}
 .seat small{color:var(--muted);display:block}
-.code{font-family:"Barlow Condensed";font-size:28px;letter-spacing:.12em}
+.code{font-family:"Barlow Condensed","IBM Plex Sans",sans-serif;font-size:28px;letter-spacing:.12em}
 
 /* icons and resource colours: one icon and one colour per resource, everywhere */
 .ico{display:inline-flex;align-items:center;justify-content:center;vertical-align:-.15em;line-height:1}
@@ -171,15 +171,15 @@ input{font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:6
 /* the studio floor */
 .bhead h2{margin-right:auto}
 .board{display:grid;grid-template-columns:28px 72px repeat(5,minmax(0,1fr));gap:4px}
-.board .hdr{text-align:center;font-family:"Barlow Condensed";font-weight:700;font-size:15px;padding:4px 0;color:var(--muted);cursor:help}
+.board .hdr{text-align:center;font-family:"Barlow Condensed","IBM Plex Sans",sans-serif;font-weight:700;font-size:15px;padding:4px 0;color:var(--muted);cursor:help}
 .board .hdr.hostile{color:var(--red)}
 .cell{min-height:76px;border-radius:6px;padding:4px;display:flex;flex-wrap:wrap;gap:4px;align-content:flex-start}
 .cell.c0{background:var(--hostile)}.cell.c1{background:var(--undecided)}.cell.c2{background:var(--leaning)}.cell.c3{background:var(--signed)}.cell.c4{background:var(--steward)}
-.deptlab{writing-mode:vertical-rl;transform:rotate(180deg);color:#fff;font-family:"Barlow Condensed";font-weight:700;font-size:13px;border-radius:5px;display:flex;align-items:center;justify-content:center;gap:4px;letter-spacing:.06em;cursor:help}
+.deptlab{writing-mode:vertical-rl;transform:rotate(180deg);color:#fff;font-family:"Barlow Condensed","IBM Plex Sans",sans-serif;font-weight:700;font-size:13px;border-radius:5px;display:flex;align-items:center;justify-content:center;gap:4px;letter-spacing:.06em;cursor:help}
 .pile{border-radius:7px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:12px;color:#fff;cursor:help;padding:4px;gap:2px;background:repeating-linear-gradient(45deg,#33415c 0 5px,#2a364d 5px 10px);border:2px solid #1f2a3d;box-shadow:2px 2px 0 #1f2a3d,4px 4px 0 #161e2c;margin:0 4px 4px 0}
 .pile.empty{background:none;border:1.5px dashed var(--line);box-shadow:none;color:var(--muted)}
 .pile.ok{cursor:pointer;border-color:var(--sel);box-shadow:0 0 0 2px var(--sel),2px 2px 0 #1f2a3d,4px 4px 0 #161e2c}
-.pile .n{font-family:"Barlow Condensed";font-size:24px;font-weight:700;line-height:1}
+.pile .n{font-family:"Barlow Condensed","IBM Plex Sans",sans-serif;font-size:24px;font-weight:700;line-height:1}
 .pile .mc{display:inline-flex;align-items:center;gap:2px;background:#fff;color:var(--act);border-radius:4px;padding:0 4px;font-weight:700}
 .wk{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:4px 6px;font-size:12px;line-height:1.2;width:100%;height:56px;cursor:default;position:relative;display:flex;flex-direction:column;justify-content:space-between;overflow:hidden;box-shadow:0 1px 2px rgba(0,0,0,.12)}
 .wk b{display:flex;align-items:center;gap:3px;font-size:13px;white-space:nowrap;overflow:hidden}
@@ -204,7 +204,7 @@ input{font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:6
 .orgs{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:10px}
 .org{border:1px solid var(--line);border-radius:10px;padding:8px 10px;background:var(--soft)}
 .org.active{border-color:var(--act);box-shadow:inset 0 0 0 2px var(--act)}
-.org .nm{font-family:"Barlow Condensed";font-weight:700;font-size:19px;display:flex;justify-content:space-between;align-items:baseline;gap:6px}
+.org .nm{font-family:"Barlow Condensed","IBM Plex Sans",sans-serif;font-weight:700;font-size:19px;display:flex;justify-content:space-between;align-items:baseline;gap:6px}
 .org .nm small{font-family:"IBM Plex Sans";font-weight:500;font-size:12px;color:var(--muted)}
 .org .ab{font-size:12px;color:var(--muted)}
 .org .ab.lost{text-decoration:line-through}
@@ -226,14 +226,14 @@ input{font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:6
 .issues .ihead h2{display:flex;align-items:center;gap:6px}
 .issue{border:1.5px solid var(--line);border-radius:10px;padding:0;font-size:13px;background:var(--panel);color:var(--muted);overflow:hidden}
 .issue .ih{display:flex;align-items:center;gap:8px;padding:9px 12px 8px;border-bottom:1.5px solid var(--line)}
-.issue .ih b{font-family:"Barlow Condensed";font-size:19px;line-height:1.1;letter-spacing:.01em;color:var(--ink);text-transform:uppercase}
+.issue .ih b{font-family:"Barlow Condensed","IBM Plex Sans",sans-serif;font-size:19px;line-height:1.1;letter-spacing:.01em;color:var(--ink);text-transform:uppercase}
 .issue .ih .big{font-size:22px;color:var(--muted)}
-.issue .badge{margin-left:auto;font-family:"Barlow Condensed";font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:1px 7px;border-radius:4px;border:1.5px solid currentColor}
+.issue .badge{margin-left:auto;font-family:"Barlow Condensed","IBM Plex Sans",sans-serif;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:1px 7px;border-radius:4px;border:1.5px solid currentColor}
 .issue .sec{padding:7px 12px;display:flex;align-items:center;gap:4px 8px;flex-wrap:wrap}
 .issue .sec>.row{display:inline-flex;align-items:center;gap:5px;flex-wrap:wrap}
 .issue .sec.eff{display:block}.issue .sec.eff .lab{display:block;margin-bottom:3px}
 .issue .sec+.sec{border-top:1px solid var(--line)}
-.issue .lab{min-width:44px;font-family:"Barlow Condensed";font-size:11.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.issue .lab{min-width:44px;font-family:"Barlow Condensed","IBM Plex Sans",sans-serif;font-size:11.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
 .issue .need{cursor:help}
 .issue .need .pips{font-size:16px;color:var(--ink)}
 .issue .fx{list-style:none;margin:0;padding:0;display:grid;gap:3px}
@@ -261,11 +261,11 @@ input{font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:6
 .modal p{font-size:14px;margin:8px 0 0}
 .modal .row{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}
 .symbols td.k{font-size:15px}
-.banner{padding:14px;border-radius:8px;font-family:"Barlow Condensed";font-size:26px;text-align:center}
+.banner{padding:14px;border-radius:8px;font-family:"Barlow Condensed","IBM Plex Sans",sans-serif;font-size:26px;text-align:center}
 .banner.win{background:var(--signed);color:var(--ok)}
 .banner.loss{background:var(--hostile);color:var(--red)}
 .small{font-size:12px;color:var(--muted)}
-.phase{font-family:"Barlow Condensed";font-weight:700;font-size:22px}
+.phase{font-family:"Barlow Condensed","IBM Plex Sans",sans-serif;font-weight:700;font-size:22px}
 .toast{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:8px 14px;border-radius:8px;font-size:13px;opacity:0;transition:opacity .2s;pointer-events:none}
 .toast.show{opacity:1}
 /* tutorial, rules */
@@ -277,7 +277,7 @@ input{font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:6
 .tprog .seg{flex:1 1 36px;max-width:64px;height:6px;border-radius:3px;background:var(--line)}
 .tprog .seg.done{background:var(--ok)}
 .tprog .seg.now{background:var(--sel)}
-.tprog .plab{font-family:"Barlow Condensed";font-weight:700;font-size:14px;letter-spacing:.03em;margin-left:8px;white-space:nowrap}
+.tprog .plab{font-family:"Barlow Condensed","IBM Plex Sans",sans-serif;font-weight:700;font-size:14px;letter-spacing:.03em;margin-left:8px;white-space:nowrap}
 .tut p{margin:6px 0 0;font-size:14px;max-width:72ch}
 .tut .row{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;align-items:center}
 .tut .row .small{margin-left:auto}
@@ -303,7 +303,7 @@ button.ghost{background:transparent}
 .rules ul{padding-left:20px;margin:6px 0}
 .rules table{width:100%;border-collapse:collapse;font-size:13px;margin-top:6px}
 .rules td,.rules th{text-align:left;padding:5px 6px;border-bottom:1px solid var(--line);vertical-align:top}
-.rules th{font-family:"Barlow Condensed";font-size:14px;color:var(--muted)}
+.rules th{font-family:"Barlow Condensed","IBM Plex Sans",sans-serif;font-size:14px;color:var(--muted)}
 .rules td.k{white-space:nowrap;font-weight:600}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}.tut-target{animation:none}}
 </style>
@@ -335,7 +335,7 @@ import {
   DEPTS, DISP, ORGS, ISSUES, MGMT, clone, newGame, setupFlips, onBoard, signedCount,
   immovable, locked, plantsIn, stewardsAvail, won, infl, actionsFor, hasAbility, reqN,
   winsLeft, readyCount, startRound, stewardTargets, doStewardPick, doStewardSkip,
-  doAbsorbDecision, tierFor, deckLeft, voteCount, mapCost, doMap, doOne,
+  doAbsorbDecision, tierFor, deckLeft, voteCount, mapCost, oneCost, doMap, doOne,
   doSmallWin, doCommittee, doReassure, doReset, doOverwork, doEnd, doInfluencePick,
   doSkipInfluence, afterAction
 } from "/card-check/engine.js";
@@ -372,7 +372,7 @@ function localId(){let id=ls("cc_local_id");if(!id){id="local_"+Math.random().to
 function genCode(){const a="ABCDEFGHJKLMNPQRSTUVWXYZ23456789";let s="";for(let i=0;i<5;i++)s+=a[Math.floor(Math.random()*a.length)];return s;}
 function docRef(){return db.doc("games/"+code);}
 function expiresAt(){ return (window.firebase&&firebase.firestore)?firebase.firestore.Timestamp.fromMillis(Date.now()+GAME_TTL_DAYS*864e5):null; }
-async function write(g){ G=g; if(g&&g.local){ localSave.write(g); render(); return; } if(db&&!offline){ try{ const doc=clone(g); const x=expiresAt(); if(x)doc.expires=x; await docRef().set(doc); }catch(e){ toast("Could not sync: "+(e.code||e.message)); } } render(); }
+async function write(g){ G=g; if(g&&g.local){ if(g.phase!=="lobby")localSave.write(g); render(); return; } if(db&&!offline){ try{ const doc=clone(g); const x=expiresAt(); if(x)doc.expires=x; await docRef().set(doc); }catch(e){ toast("Could not sync: "+(e.code||e.message)); } } render(); }
 /* Apply a change to the latest state. Online, the change is re-run inside a transaction on the server's copy,
    so two devices acting at once cannot overwrite each other. fn(g) mutates g and returns an error string or null. */
 async function mutate(fn,after){
@@ -401,7 +401,7 @@ async function init(){
 // The device-only game (the guided game) lives in the kit's local save. A save from
 // before the kit is the bare game under the same key: adopt it as version 0.
 const localSave=createLocalSave({key:"cc_local",version:1,migrate:(d,from)=>from===0&&d&&d.local?d:null});
-function savedLocal(){ const g=localSave.load(); return g&&g.local&&g.phase!=="over"?g:null; }
+function savedLocal(){ const g=localSave.load(); return g&&g.local&&Array.isArray(g.orgs)&&g.workers&&g.flags&&Array.isArray(g.issues)&&Array.isArray(g.row)&&g.phase!=="over"&&g.phase!=="lobby"?g:null; }
 
 /* ---- play analytics (kit/analytics.js -> /api/events) ----
    One run per game, with its id kept on the game (g.run) so a reload or a second
@@ -459,7 +459,7 @@ function renderLobby(){
     ${offline?"":`<div class="panel stack"><h2>Join a game</h2><div class="row"><input id="jc" placeholder="Game code" maxlength="5" style="text-transform:uppercase;width:140px"><button id="joinb">Join</button></div>
     ${recent.length?`<div class="small">Recent: ${recent.map(c=>`<a href="#${c}" data-c="${c}">${c}</a>`).join(" · ")}</div>`:""}</div>`}
   </div>`));
-  document.getElementById("newg").onclick=async()=>{ const hb=document.getElementById("hot"); const hot=offline||!!(hb&&hb.checked); code=genCode(); G={phase:"lobby",seats:[],players:[myId],hotseat:hot,host:myId,seed:Math.floor(Math.random()*1e9),created:Date.now()}; location.hash=code; remember(code); if(!offline){await write(G);subscribe();} else render(); };
+  document.getElementById("newg").onclick=async()=>{ const hb=document.getElementById("hot"); const hot=offline||!!(hb&&hb.checked); code=genCode(); G={phase:"lobby",seats:[],players:[myId],hotseat:hot,host:myId,seed:Math.floor(Math.random()*1e9),created:Date.now()}; if(offline)G.local=true; /* a device-only game keeps the local save, so a reload can resume it */ location.hash=code; remember(code); if(!offline){await write(G);subscribe();} else render(); };
   document.getElementById("tut").onclick=()=>startTutorial();
   const rb=document.getElementById("resume"); if(rb)rb.onclick=()=>{ if(unsub){unsub();unsub=null;} code=null; G=savedLocal(); if(G&&!G.run){G.run=newId();} if(G&&stats.run!==G.run)stats.runStart({mode:modeOf(G),round:G.round},{resume:G.run}); render(); };
   const jb=document.getElementById("joinb"); if(jb)jb.onclick=()=>{const c=document.getElementById("jc").value.trim().toUpperCase(); if(c.length===5){location.hash=c;join(c);}};
@@ -487,7 +487,7 @@ function renderSeats(){
     d.onclick=()=>{ if(s&&!isMine)return; if(!isMine&&!G.hotseat&&mine>=1&&!offline){toast("One seat per person in this game.");return;}
       mutate(g=>{ if(g.phase!=="lobby")return "The game already started."; const cur=g.seats.find(x=>x.k===o.k); if(isMine){ g.seats=g.seats.filter(x=>x.k!==o.k); } else { if(cur)return "Someone just claimed that seat."; if(!g.hotseat&&g.seats.some(x=>x.playerId===myId))return "One seat per person in this game."; if(g.players&&!g.players.includes(myId))g.players.push(myId); g.seats.push({k:o.k,playerId:myId}); } return null; }); };
     sc.appendChild(d); });
-  el.querySelector("#start").onclick=()=>{ mutate(g=>{ if(g.phase!=="lobby")return "The game already started."; if(!g.seats.length)return "Claim a seat first."; const ng=newGame(g.seats,g.seed); ng.hotseat=g.hotseat; ng.seats=g.seats; ng.host=g.host; ng.players=g.players; ng.run=newId(); setupFlips(ng); startRound(ng); Object.keys(g).forEach(k=>delete g[k]); Object.assign(g,ng); return null; }); };
+  el.querySelector("#start").onclick=()=>{ mutate(g=>{ if(g.phase!=="lobby")return "The game already started."; if(!g.seats.length)return "Claim a seat first."; const ng=newGame(g.seats,g.seed); if(g.local)ng.local=true; ng.hotseat=g.hotseat; ng.seats=g.seats; ng.host=g.host; ng.players=g.players; ng.run=newId(); setupFlips(ng); startRound(ng); Object.keys(g).forEach(k=>delete g[k]); Object.assign(g,ng); return null; }); };
 }
 
 /* ---- game render ----
@@ -614,7 +614,7 @@ function renderThem(el,g){
       played.appendChild($(`<div class="mcard t${m[1]} ${rev?"flip":""}" style="--d:${(0.35+k*0.65).toFixed(2)}s"><div class="tier">MANAGEMENT · TIER ${m[1]}</div><b>${esc(m[2])}</b><div class="how">${esc(m[3])}</div>${lines.length?`<ul class="did">${lines.map(l=>`<li>${esc(l)}</li>`).join("")}</ul>`:""}</div>`)); });
   } else played.appendChild($(`<div class="small">No cards yet this round.</div>`));
   if(g.phase==="absorb"){ const m=MGMT.find(x=>x[0]===g.mgmt.card); const sts=stewardsAvail(g); const anySeat=g.orgs.some((o,i)=>controls(i));
-    const box=$(`<div class="prompt mcard-next"><div style="font-family:'Barlow Condensed';font-size:18px">Management is about to play: ${esc(m[2])}</div><div style="font-weight:400">${esc(m[3])}</div>
+    const box=$(`<div class="prompt mcard-next"><div style="font-family:'Barlow Condensed','IBM Plex Sans',sans-serif;font-size:18px">Management is about to play: ${esc(m[2])}</div><div style="font-weight:400">${esc(m[3])}</div>
       <div style="font-weight:400;margin-top:6px">Each Steward has one absorb per game. Tick the ones allowed to spend it if this card hits their department, then resolve.</div><div id="abs" style="margin-top:6px"></div></div>`);
     const list=box.querySelector("#abs");
     sts.forEach(st=>list.appendChild($(`<label style="display:block;font-weight:500"><input type="checkbox" data-id="${st.id}"> ${esc(st.name)} may absorb in ${DEPTS[st.dept][0]}</label>`)));
@@ -647,7 +647,7 @@ function renderUs(el,g,pend){
   const cur=g.orgs[g.cur]; const myTurn=g.phase==="org"&&controls(g.cur);
   const head=$(`<div class="uhead"><h2>${ic("orgs","Your side: the organizing committee. You all win or lose together.")} The committee</h2><span class="small">your side of the table</span><span class="spacer"></span></div>`);
   el.appendChild(head);
-  if(g.phase==="org"&&!(pend&&pend.type!=="icon")){
+  if(g.phase==="org"&&!pend){
     const eb=$(`<button class="endturn primary" data-act="end" ${myTurn?"":"disabled"} ${tipA(`End ${cur.n}'s turn. Unspent actions are lost.`)}>End turn ${ic("up","")}</button>`);
     eb.onclick=()=>endTurn(); head.appendChild(eb);
   }
@@ -680,7 +680,9 @@ function renderUs(el,g,pend){
         const cost=(n,fx)=>`<span class="cost">${n===null?"":`${ri("action","")}${n} <span class="arrow">→</span> `}${fx}</span>`;
         const mk=(id,label,c,tip,fn,dis)=>{const b=$(`<button data-act="${id}" class="${armed===id?"armed":""}" ${dis?"disabled":""} ${tipA(tip)}><span class="an">${label}</span>${c}</button>`);b.onclick=fn;a.appendChild(b);return b;};
         mk("map","Map",cost(mapCost(g,o,o.d),`${ic("deck","")}flip`),"Map: turn over the top worker card of a department pile. 1 action in your home department; 2 elsewhere, or 1 once someone there is Signed.",()=>arm("map"),o.actions<1||g.flags.noMap);
-        mk("one","One-on-One",cost(one,`${ic("up","")}1`),`One-on-One: move a revealed worker one step toward Signed. Costs ${one} right now${Object.keys(DEPTS).some(d=>plantsIn(g,d))?", +1 where a Plant sits":""}; free once a round in a department with a Steward.`,()=>arm("one"),o.actions<1);
+        // A Steward's free talk (or the Animator's with Crunch workers) costs nothing, so it stays open at 0 actions.
+        const freeOne=onBoard(g).some(w=>w.disp<3&&!immovable(w)&&!(w.disp===2&&locked(g,w))&&oneCost(g,o,w)===0);
+        mk("one","One-on-One",cost(one,`${ic("up","")}1`),`One-on-One: move a revealed worker one step toward Signed. Costs ${one} right now${Object.keys(DEPTS).some(d=>plantsIn(g,d))?", +1 where a Plant sits":""}; free once a round in a department with a Steward.`,()=>arm("one"),o.actions<1&&!freeOne);
         mk("win","Small Win",cost(winC,ri("win","")),`Small Win: win an Issue whose requirement is met. Costs ${winC}. ${RESOURCES.win.tip}`,()=>arm("win"),o.actions<1);
         mk("com","Build Committee",cost(2,ri("steward","")),"Build Committee: make a Signed Leader a Steward. Costs 2 actions.",()=>arm("com"),o.actions<2||!onBoard(g).some(w=>w.leader&&w.disp===3));
         mk("re","Reassure",cost(apFree?0:1,`${ri("fear","")}−1`),`Reassure: Fear −1. Once a round for the whole committee${o.k==="ap"&&hasAbility(g,o)?", plus your own free one":""}.`,()=>act(g=>doReassure(g,g.cur)),(g.reassuredRound&&!apFree)||(o.actions<1&&!apFree)||g.fear<=0);
@@ -695,7 +697,7 @@ function renderUs(el,g,pend){
     list.appendChild(d);
   });
   if(g.phase==="over"){const b=$(`<div style="margin-top:10px"><button class="primary" id="again">Back to lobby (same seats)</button></div>`); el.appendChild(b);
-    b.querySelector("#again").onclick=()=>{ if(g.local){ localSave.clear(); G=null; renderLobby(); return; } mutate(x=>{ const ng={phase:"lobby",seats:x.seats,players:x.players,hotseat:x.hotseat,host:x.host,seed:Math.floor(Math.random()*1e9)}; Object.keys(x).forEach(k=>delete x[k]); Object.assign(x,ng); return null; }); };}
+    b.querySelector("#again").onclick=()=>{ if(g.tutorial){ localSave.clear(); G=null; renderLobby(); return; } mutate(x=>{ const ng={phase:"lobby",seats:x.seats,players:x.players,hotseat:x.hotseat,host:x.host,seed:Math.floor(Math.random()*1e9)}; if(x.local){ng.local=true;ng.created=Date.now();} Object.keys(x).forEach(k=>delete x[k]); Object.assign(x,ng); return null; }); };}
 }
 // Ending a turn with actions left asks first.
 function endTurn(){
@@ -768,7 +770,7 @@ function renderRight(el,g){
   const used=3-winsLeft(g);
   const ip=$(`<div class="panel stack issues"><div class="ihead"><h2>${ri("win","")} Small Wins</h2><span class="small">${used} of 3 taken</span></div></div>`);
   const harass=won(g,"harass"); const cm=g.orgs.some(x=>x.k==="cm"&&hasAbility(g,x));
-  ISSUES.forEach(def=>{ const st=g.issues.find(i=>i.id===def.id); const n=readyCount(g,def.id); const R=def.id==="wild"?reqN(g)+1:reqN(g); const ready=st.state==="open"&&n>=R&&winsLeft(g)>0;
+  ISSUES.forEach(def=>{ const st=g.issues.find(i=>i.id===def.id); const n=readyCount(g,def.id); const R=def.id==="wild"?reqN(g)+1:reqN(g); const ready=g.phase!=="over"&&st.state==="open"&&n>=R&&winsLeft(g)>0;
     const res=issueResources(def.id); const prim=res[0];
     const iconName=def.icon==="any"?"any":def.icon;
     const who=def.icon==="any"?"":onBoard(g).filter(w=>w.disp>=3&&w.issues.includes(def.icon)).map(w=>w.name).join(", ");
