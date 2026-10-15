@@ -621,11 +621,21 @@
       const SOURCE = 'site';
       const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 
+      // The ?ref= tag this browser first came in with (kept by the games'
+      // analytics as pm-ref), else this visit's; skipped under Do Not Track.
+      function ref() {
+        try {
+          if (navigator.globalPrivacyControl === true || navigator.doNotTrack === '1' || localStorage.getItem('pm-analytics-off')) return undefined;
+          const tag = (localStorage.getItem('pm-ref') || new URLSearchParams(location.search).get('ref') || '').trim().toLowerCase();
+          return /^[a-z0-9][a-z0-9_-]{0,39}$/.test(tag) ? tag : undefined;
+        } catch (e) { return undefined; }
+      }
+
       async function subscribe(email) {
         const res = await fetch(SIGNUP_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, source: SOURCE, tag: 'founding' }),
+          body: JSON.stringify({ email, source: SOURCE, tag: 'founding', ref: ref() }),
         });
         if (res.ok) return;
         throw new Error('HTTP ' + res.status);

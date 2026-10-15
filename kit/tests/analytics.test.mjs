@@ -1,6 +1,6 @@
 import { suite, test, ok, eq, deepEq } from '../test/harness.js';
 import { installStorage, fakeFetch } from './fakes.mjs';
-import { createAnalytics, privacySignal, refFrom, EVENTS_URL } from '../analytics.js';
+import { createAnalytics, privacySignal, refFrom, signupRef, EVENTS_URL } from '../analytics.js';
 
 const nav = (o = {}) => ({ doNotTrack: null, globalPrivacyControl: undefined, ...o });
 const make = (o = {}) => {
@@ -166,5 +166,16 @@ suite('analytics', () => {
     eq(refFrom(undefined), null);
     eq(refFrom('?ref=' + 'a'.repeat(41)), null);
     dnt.a.dispose();
+  });
+  test('signupRef: the first tag, else this visit\'s, never under Do Not Track', () => {
+    const store = installStorage();
+    const nav = {};
+    eq(signupRef({ location: { search: '?ref=reddit' }, navigator: nav }), 'reddit');
+    eq(signupRef({ location: { search: '' }, navigator: nav }), null);
+    store.setItem('pm-ref', 'itch-io');
+    eq(signupRef({ location: { search: '?ref=reddit' }, navigator: nav }), 'itch-io');
+    eq(signupRef({ location: { search: '' }, navigator: { doNotTrack: '1' } }), null);
+    store.setItem('pm-analytics-off', '1');
+    eq(signupRef({ location: { search: '' }, navigator: nav }), null);
   });
 });

@@ -9,5 +9,6 @@ await import('./sim.test.mjs');
 await import('./analytics.test.mjs');
 await import('./events-api.test.mjs');
 await import('./stats-api.test.mjs');
+await import('./subscribe-api.test.mjs');
 await import('./marketing-api.test.mjs');
 await report();

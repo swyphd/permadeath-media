@@ -319,8 +319,88 @@ function overview(st) {
   <h2 class="stencil">Runs started per day</h2>
   <p class="sub">New playthroughs each day (UTC), by game.</p>
   ${dailyChart(st, games.map((g) => g.game), 'runs_started', 160)}
+  ${sourcesSection(st)}
   ${signupsSection(st)}
   `;
+}
+
+// ---------------------------------------------------------------- sources
+// The ?ref= tags from /marketing/ links, the itch.io build and the win-screen
+// share link. Up to six tags get their own colour, ranked by players; the rest
+// share "Other tags" in the chart. No tag is always grey and always last.
+const SOURCE_NAMES = {
+  'itch-io': 'itch.io', 'galaxy-click': 'Galaxy.click', 'win-share': 'Win-screen share',
+  bluesky: 'Bluesky', x: 'X', reddit: 'Reddit', instagram: 'Instagram', '(none)': 'No tag', '(other)': 'Other tags',
+};
+const SOURCE_COLORS = ['var(--g1)', 'var(--g2)', 'var(--g3)', 'var(--g4)', 'var(--g5)', 'var(--g6)'];
+function sourceMeta(st) {
+  const tagged = (st.sources || []).filter((x) => x.source !== '(none)' && n0(x.players) > 0);
+  const color = new Map(tagged.slice(0, SOURCE_COLORS.length).map((x, i) => [x.source, SOURCE_COLORS[i]]));
+  const of = (id) => ({
+    id,
+    name: SOURCE_NAMES[id] || id,
+    color: id === '(none)' ? 'var(--abandoned)' : color.get(id) || 'var(--playing)',
+  });
+  // The chart's series: the coloured tags, then everything else, then no tag.
+  const key = (id) => (id === '(none)' || color.has(id) ? id : '(other)');
+  const ids = [...color.keys()];
+  if (tagged.length > ids.length) ids.push('(other)');
+  if ((st.sources || []).some((x) => x.source === '(none)')) ids.push('(none)');
+  return { of, key, ids };
+}
+
+function sourcesSection(st) {
+  // Signups by tag, once the list records it (api/stats.js leaves refs out until then).
+  const suRefs = st.signups && !st.signups.error ? st.signups.refs : null;
+  const signupsBy = new Map((suRefs || []).map((x) => [x.ref, x]));
+  const blank = { players: 0, new_players: 0, runs: 0, wins: 0, ended: 0, play_seconds: 0, link_plays: 0, link_players: 0 };
+  const sources = [...(st.sources || []), ...(suRefs || []).filter((x) => n0(x.in_range) && !(st.sources || []).some((y) => y.source === x.ref)).map((x) => ({ ...blank, source: x.ref }))]
+    .sort((a, b) => (a.source === '(none)') - (b.source === '(none)'));
+  const head = '<h2 class="stencil">Where players come from</h2>';
+  if (!sources.length) return '';
+  const m = sourceMeta(st);
+  const players = sources.reduce((a, x) => a + n0(x.players), 0);
+  const tagged = sources.filter((x) => x.source !== '(none)');
+  const taggedPlayers = tagged.reduce((a, x) => a + n0(x.players), 0);
+  const daily = new Map();
+  for (const d of st.source_daily || []) {
+    const k = `${d.day}|${m.key(d.source)}`;
+    const row = daily.get(k) || { day: d.day, game: m.key(d.source), players: 0 };
+    row.players += n0(d.players);
+    daily.set(k, row);
+  }
+  const games = [...new Set((st.source_games || []).map((x) => x.game))];
+  const gameIds = GAMES.map((g) => g.id).filter((id) => games.includes(id)).concat(games.filter((id) => !GAMES.some((g) => g.id === id)));
+  const cell = {};
+  for (const x of st.source_games || []) cell[`${x.source}|${x.game}`] = n0(x.players);
+  const name = (id) => `${swatch(m.of(id).color)} ${m.of(id).name === id ? `<span class="mono">${esc(id)}</span>` : esc(m.of(id).name)}`;
+  return `${head}
+  <p class="sub">Players by the first <span class="mono">?ref=</span> tag their browser ever arrived with, so someone who found a game on itch.io and came back from a bookmark still counts for itch.io. ${fmt(taggedPlayers)} of ${fmt(players)} players (${pct(taggedPlayers, players)}) came in through a tagged link.</p>
+  ${dailyChart({ since: st.since, daily: [...daily.values()] }, m.ids, 'players', 180, m.of)}
+  <div class="table-wrap" style="margin-top:0.75rem"><table>
+    <thead><tr><th>Source</th><th>Players</th><th>New</th><th>Runs</th><th>Hours</th><th>Win rate</th><th ${tipAttr('Runs started or resumed from a link carrying this tag in the range, whoever the player first came from.')}>Link plays</th><th>Via link</th>${suRefs ? `<th ${tipAttr('Email signups in the range from browsers that first arrived with this tag.')}>Signups</th>` : ''}</tr></thead>
+    <tbody>${sources.map((x) => `<tr>
+      <td>${name(x.source)}</td>
+      <td>${fmt(x.players)}</td><td>${fmt(x.new_players)}</td><td>${fmt(x.runs)}</td><td>${hours(x.play_seconds)}</td>
+      <td>${n0(x.ended) ? `${pct(x.wins, x.ended)} <span class="dim">of ${fmt(x.ended)}</span>` : '–'}</td>
+      <td>${x.source === '(none)' ? '–' : fmt(x.link_plays)}</td><td>${x.source === '(none)' ? '–' : fmt(x.link_players)}</td>${suRefs ? `<td>${fmt(signupsBy.get(x.source)?.in_range)}</td>` : ''}</tr>`).join('')}</tbody>
+  </table></div>
+  ${gameIds.length > 1 ? `<details><summary>Players by source and game</summary><div class="table-wrap" style="margin-top:0.5rem"><table>
+    <thead><tr><th>Source</th>${gameIds.map((id) => `<th>${esc(gameOf(id).name)}</th>`).join('')}</tr></thead>
+    <tbody>${sources.map((x) => `<tr><td>${name(x.source)}</td>${gameIds.map((g) => `<td>${cell[`${x.source}|${g}`] ? fmt(cell[`${x.source}|${g}`]) : '<span class="dim">–</span>'}</td>`).join('')}</tr>`).join('')}</tbody>
+  </table></div></details>` : ''}`;
+}
+
+function gameSourcesList(st, id) {
+  const m = sourceMeta(st);
+  const rows = (st.source_games || []).filter((x) => x.game === id).sort((a, b) => (a.source === '(none)') - (b.source === '(none)') || n0(b.players) - n0(a.players));
+  const total = rows.reduce((a, x) => a + n0(x.players), 0);
+  if (!rows.length) return '<p class="empty">No players in this range.</p>';
+  return barList(rows.map((x) => ({
+    label: m.of(x.source).name, value: n0(x.players), color: m.of(x.source).color,
+    text: `${fmt(x.players)} · ${pct(x.players, total)}`,
+    tip: `${fmt(x.players)} players, ${fmt(x.runs)} runs`,
+  })));
 }
 
 // ---------------------------------------------------------------- mailing list
@@ -371,6 +451,10 @@ function gameView(st, id) {
   <h2 class="stencil">Players per day</h2>
   <p class="sub">Unique players each day (UTC).</p>
   ${dailyChart(st, [id], 'players')}
+
+  <h2 class="stencil">Where players come from</h2>
+  <p class="sub">This game's players in the range, by the first <span class="mono">?ref=</span> tag their browser arrived with.</p>
+  ${gameSourcesList(st, id)}
 
   <div class="grid2">
     <div>
@@ -499,8 +583,8 @@ function barList(rows) {
 }
 
 // ---------------------------------------------------------------- daily chart
-// Stacked columns, one per UTC day, one segment per game.
-function dailyChart(st, gameIds, field, height = 200) {
+// Stacked columns, one per UTC day, one segment per game (or per source, with metaOf).
+function dailyChart(st, gameIds, field, height = 200, metaOf = gameOf) {
   const daily = (st.daily || []).filter((d) => gameIds.includes(d.game));
   if (!daily.length) return '<p class="empty">Nothing recorded.</p>';
   const ids = GAMES.map((g) => g.id).filter((id) => gameIds.includes(id)).concat(gameIds.filter((id) => !GAMES.some((g) => g.id === id)));
@@ -530,16 +614,16 @@ function dailyChart(st, gameIds, field, height = 200) {
       const h = Math.max(0, y(base) - y(base + v) - (top ? 0 : 2));
       const yy = y(base + v);
       svg += top && h > 4
-        ? `<path d="${roundTop(x, yy, bw, h, Math.min(3, bw / 2))}" fill="${gameOf(id).color}"/>`
-        : `<rect x="${x}" y="${yy}" width="${bw}" height="${h}" fill="${gameOf(id).color}"/>`;
+        ? `<path d="${roundTop(x, yy, bw, h, Math.min(3, bw / 2))}" fill="${metaOf(id).color}"/>`
+        : `<rect x="${x}" y="${yy}" width="${bw}" height="${h}" fill="${metaOf(id).color}"/>`;
       base += v;
     });
-    const tipHtml = `<div class="t-head">${fmtDay(day)}</div>${ids.map((id) => `<div class="t-row"><span>${swatch(gameOf(id).color)}${esc(gameOf(id).name)}</span><b>${fmt(cell[day + '|' + id] || 0)}</b></div>`).join('')}${ids.length > 1 ? `<div class="t-row"><span>Total</span><b>${fmt(totals[i])}</b></div>` : ''}`;
+    const tipHtml = `<div class="t-head">${fmtDay(day)}</div>${ids.map((id) => `<div class="t-row"><span>${swatch(metaOf(id).color)}${esc(metaOf(id).name)}</span><b>${fmt(cell[day + '|' + id] || 0)}</b></div>`).join('')}${ids.length > 1 ? `<div class="t-row"><span>Total</span><b>${fmt(totals[i])}</b></div>` : ''}`;
     svg += `<rect x="${padL + i * step}" y="${padT}" width="${step}" height="${plotH}" fill="transparent" ${tipAttr(tipHtml)}/>`;
     if (i % labelEvery === 0) svg += `<text class="axis-label" x="${padL + i * step + step / 2}" y="${H - 6}" text-anchor="middle">${fmtDay(day, true)}</text>`;
   });
-  const legend = ids.length > 1 ? `<div class="legend">${ids.map((id) => `<span>${swatch(gameOf(id).color)}${esc(gameOf(id).name)}</span>`).join('')}</div>` : '';
-  const table = `<details><summary>Show as a table</summary><div class="table-wrap" style="margin-top:0.5rem;max-height:280px;overflow:auto"><table><thead><tr><th>Day</th>${ids.map((id) => `<th>${esc(gameOf(id).name)}</th>`).join('')}</tr></thead><tbody>${days.slice().reverse().map((day) => `<tr><td>${day}</td>${ids.map((id) => `<td>${fmt(cell[day + '|' + id] || 0)}</td>`).join('')}</tr>`).join('')}</tbody></table></div></details>`;
+  const legend = ids.length > 1 ? `<div class="legend">${ids.map((id) => `<span>${swatch(metaOf(id).color)}${esc(metaOf(id).name)}</span>`).join('')}</div>` : '';
+  const table = `<details><summary>Show as a table</summary><div class="table-wrap" style="margin-top:0.5rem;max-height:280px;overflow:auto"><table><thead><tr><th>Day</th>${ids.map((id) => `<th>${esc(metaOf(id).name)}</th>`).join('')}</tr></thead><tbody>${days.slice().reverse().map((day) => `<tr><td>${day}</td>${ids.map((id) => `<td>${fmt(cell[day + '|' + id] || 0)}</td>`).join('')}</tr>`).join('')}</tbody></table></div></details>`;
   return `<div class="chart">${legend}<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="${{ players: 'Players', runs_started: 'Runs started', signups: 'Email signups' }[field] || field} per day">${svg}</svg>${table}</div>`;
 }
 function roundTop(x, y, w, h, r) {
@@ -561,6 +645,7 @@ function notes() {
     <li><b>A run</b> is one playthrough. It counts here if anything happened in it during the range, with all of its events. <b>Left mid-run</b> means it never sent an end and has been quiet for 30 minutes; <b>still playing</b> means it was active in the last 30. A Hexagons run is one daily puzzle, so an unsolved puzzle is "left".</li>
     <li><b>Run length</b> is the game's own clock of play time (Hedy Plant and Guild Rising stop it while paused). <b>A visit</b> is one page load, timed from its first event to its last.</li>
     <li><b>New players</b> were first seen in the range; <b>came back</b> played on two or more different days in it. Days are UTC.</li>
+    <li><b>Sources</b> come from <span class="mono">?ref=</span> tags (the /marketing/ links, the itch.io build, the win-screen share link). A player counts for the first tag their browser ever arrived with; <b>link plays</b> count every run started or resumed from a tagged link, so one player can add link plays to several tags. <b>Signups</b> by tag count from Oct 15, when the forms started sending the tag; earlier addresses count as no tag. <b>No tag</b> covers typed-in visits, bookmarks, the site's own links, players from before tags were recorded (Oct 14), and Union Up and Guild Rising, whose live builds don't record tags yet.</li>
     <li><b>Email signups</b> come from the backup copy of the list kept in Supabase: one per address, credited to where it first signed up. Unsubscribes and unconfirmed addresses live in Buttondown and aren't reflected here.</li>
   </ul>`;
 }

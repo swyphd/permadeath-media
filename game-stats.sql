@@ -114,6 +114,51 @@ returning_players as (
     count(*) filter (where days between 4 and 7) as four_seven_days,
     count(*) filter (where days >= 8) as eight_plus_days
   from player_days group by game
+),
+-- Where players came from, from the ?ref= tags the kit records on run_start
+-- and run_resume (kit/analytics.js). A player's source is the first tag their
+-- browser ever arrived with (props.first_ref), or this visit's tag on builds
+-- from before first_ref; '(none)' is no tag at all: typed in, a bookmark, the
+-- site's own links, or a game whose build doesn't record tags.
+player_source as (
+  select p.player, coalesce((
+    select coalesce(e.props->>'first_ref', e.props->>'ref')
+    from game_events e
+    where e.player = p.player and e.name in ('run_start', 'run_resume')
+      and (e.props ? 'first_ref' or e.props ? 'ref')
+    order by e.created_at, e.id limit 1
+  ), '(none)') as source
+  from (select distinct player from ev) p
+),
+-- Plays that arrived through a tagged link in the window: each run_start or
+-- run_resume carrying ?ref= on that visit.
+link_plays as (
+  select props->>'ref' as ref, game, player, run from ev
+  where name in ('run_start', 'run_resume') and props ? 'ref'
+),
+first_seen_any as (
+  select player, min(first_at) as first_at from first_seen group by player
+),
+source_totals as (
+  select ps.source,
+    count(*) as players,
+    count(*) filter (where f.first_at >= coalesce(since, '-infinity'::timestamptz)) as new_players
+  from player_source ps join first_seen_any f using (player)
+  group by ps.source
+),
+source_runs as (
+  select ps.source,
+    count(*) as runs,
+    count(*) filter (where r.started_in_window) as runs_started,
+    count(*) filter (where r.result = 'win') as wins,
+    count(*) filter (where r.result in ('win', 'loss', 'quit')) as ended,
+    coalesce(sum(r.seconds), 0) as play_seconds
+  from runs r join player_source ps using (player)
+  group by ps.source
+),
+source_links as (
+  select ref as source, count(*) as link_plays, count(distinct player) as link_players
+  from link_plays group by ref
 )
 select jsonb_build_object(
   'generated_at', now(),
@@ -271,6 +316,56 @@ select jsonb_build_object(
       select jsonb_build_object('game', game, 'name', name, 'count', count(*)) as x
       from ev group by game, name
     ) y
+  ), '[]'::jsonb),
+
+  -- Where players came from (see player_source), with the plays that came
+  -- straight through each tagged link in the window.
+  'sources', coalesce((
+    select jsonb_agg(x order by (x->>'players')::int desc, (x->>'link_plays')::int desc, x->>'source') from (
+      select jsonb_build_object(
+        'source', s.source,
+        'players', coalesce(t.players, 0),
+        'new_players', coalesce(t.new_players, 0),
+        'runs', coalesce(r.runs, 0),
+        'runs_started', coalesce(r.runs_started, 0),
+        'wins', coalesce(r.wins, 0),
+        'ended', coalesce(r.ended, 0),
+        'play_seconds', coalesce(r.play_seconds, 0),
+        'link_plays', coalesce(l.link_plays, 0),
+        'link_players', coalesce(l.link_players, 0)
+      ) as x
+      from (select source from source_totals union select source from source_links) s
+      left join source_totals t using (source)
+      left join source_runs r using (source)
+      left join source_links l using (source)
+    ) y
+  ), '[]'::jsonb),
+
+  -- Players and runs by source and game.
+  'source_games', coalesce((
+    select jsonb_agg(x order by x->>'source', x->>'game') from (
+      select jsonb_build_object(
+        'source', ps.source, 'game', e.game,
+        'players', count(distinct e.player),
+        'runs', count(distinct e.run)
+      ) as x
+      from ev e join player_source ps using (player)
+      group by ps.source, e.game
+    ) y
+  ), '[]'::jsonb),
+
+  -- One row per UTC day per source.
+  'source_daily', coalesce((
+    select jsonb_agg(d order by d->>'day', d->>'source') from (
+      select jsonb_build_object(
+        'day', (e.created_at at time zone 'utc')::date,
+        'source', ps.source,
+        'players', count(distinct e.player),
+        'runs_started', count(*) filter (where e.name = 'run_start')
+      ) as d
+      from ev e join player_source ps using (player)
+      group by (e.created_at at time zone 'utc')::date, ps.source
+    ) x
   ), '[]'::jsonb)
 );
 $$;

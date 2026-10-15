@@ -58,6 +58,15 @@ export function refFrom(search) {
   } catch { return null; }
 }
 
+// The tag to credit this browser's signups to: the first one it ever arrived
+// with, else this visit's. Null when the browser asked not to be tracked or
+// opted out, the same as the events themselves.
+export function signupRef({ location: loc = globalThis.location, navigator: nav = globalThis.navigator } = {}) {
+  if (get(OPTOUT_KEY) || privacySignal(nav)) return null;
+  const first = get(REF_KEY);
+  return first && REF_RE.test(first) ? first : refFrom(loc?.search);
+}
+
 export function createAnalytics({
   game, version = null, url = EVENTS_URL, flushEvery = 10000, batchSize = 20,
   fetch: fetchImpl = null, beacon = null, navigator: nav = globalThis.navigator,

@@ -28,6 +28,16 @@ suite('newsletter', () => {
     await createNewsletter({ source: 'site', fetch }).subscribe('a@b.co');
     eq('tag' in fetch.calls[0].body, false);
   });
+  test('sends the tag the browser first arrived with', async () => {
+    const store = installStorage();
+    store.setItem('pm-ref', 'itch-io');
+    const fetch = fakeFetch(200);
+    await createNewsletter({ source: 'hedy-plant', fetch }).subscribe('a@b.co');
+    eq(fetch.calls[0].body.ref, 'itch-io');
+    store.setItem('pm-analytics-off', '1');
+    await createNewsletter({ source: 'hedy-plant', fetch }).subscribe('a@b.co');
+    eq('ref' in fetch.calls[1].body, false);
+  });
   test('keeps a game\'s existing done key', async () => {
     const store = installStorage();
     await createNewsletter({ source: 'card-check', doneKey: 'cc-newsletter', fetch: fakeFetch() }).subscribe('a@b.co');

@@ -12,8 +12,9 @@ const jeff = {
 const ENV = { STATS_ADMIN_EMAILS: 'someone@else.com, owner@example.com', SUPABASE_SERVICE_ROLE_KEY: 'service-key' };
 
 // user: what /auth/v1/user answers (null = 401); env: process.env overrides.
-// signups: the newsletter_signups rows Supabase holds; signupsStatus: its answer.
-async function call({ method = 'GET', token = 'tok', user = jeff, env = ENV, query = { days: '30' }, statsStatus = 200, signups = [], signupsStatus = 200 } = {}) {
+// signups: the newsletter_signups rows Supabase holds; signupsStatus: its answer;
+// noRefColumn: the table predates the ref column, so selecting it is a 400.
+async function call({ method = 'GET', token = 'tok', user = jeff, env = ENV, query = { days: '30' }, statsStatus = 200, signups = [], signupsStatus = 200, noRefColumn = false } = {}) {
   const calls = [];
   const realFetch = globalThis.fetch;
   const realEnv = { ...process.env };
@@ -25,6 +26,7 @@ async function call({ method = 'GET', token = 'tok', user = jeff, env = ENV, que
       return user ? { ok: true, status: 200, json: async () => user } : { ok: false, status: 401, json: async () => ({}) };
     }
     if (url.includes('/rest/v1/newsletter_signups')) {
+      if (noRefColumn && url.includes('ref')) return { ok: false, status: 400, json: async () => ({}), text: async () => 'column newsletter_signups.ref does not exist' };
       const [from, to] = init.headers.Range.split('-').map(Number);
       return { ok: signupsStatus < 300, status: signupsStatus, json: async () => signups.slice(from, to + 1), text: async () => 'err' };
     }
@@ -105,6 +107,27 @@ suite('api/stats', () => {
     eq(JSON.stringify(s.sources.map((x) => [x.source, x.total, x.in_range])), JSON.stringify([['hedy-plant', 2, 2], ['site', 1, 0], ['unknown', 1, 1]]));
     eq(JSON.stringify(s.daily.map((d) => [d.source, d.signups])), JSON.stringify([['hedy-plant', 2], ['unknown', 1]]));
     ok(!JSON.stringify(s).includes('@'));
+  });
+  test('signups are counted by ref tag once the column exists', async () => {
+    const signups = [
+      { source: 'site', ref: null, created_at: daysAgo(60) },
+      { source: 'hedy-plant', ref: 'itch-io', created_at: daysAgo(3) },
+      { source: 'card-check', ref: 'itch-io', created_at: daysAgo(40) },
+      { source: 'hedy-plant', ref: 'galaxy-click', created_at: daysAgo(1) },
+    ];
+    const { res, calls } = await call({ signups });
+    ok(calls.find((c) => c.url.includes('newsletter_signups')).url.includes('select=source,ref,created_at'));
+    eq(JSON.stringify(res.body.stats.signups.refs.map((x) => [x.ref, x.total, x.in_range])),
+      JSON.stringify([['itch-io', 2, 1], ['(none)', 1, 0], ['galaxy-click', 1, 1]]));
+  });
+  test('without the ref column, signups still count and refs is left out', async () => {
+    const signups = [{ source: 'site', created_at: daysAgo(1) }];
+    const { res, calls } = await call({ signups, noRefColumn: true });
+    const reads = calls.filter((c) => c.url.includes('newsletter_signups'));
+    eq(reads.length, 2);
+    ok(reads[1].url.includes('select=source,created_at'));
+    eq(res.body.stats.signups.total, 1);
+    eq('refs' in res.body.stats.signups, false);
   });
   test('a long list is read a page at a time', async () => {
     const signups = Array.from({ length: 2500 }, (_, i) => ({ source: 'site', created_at: daysAgo(i % 90) }));
