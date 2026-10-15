@@ -8,7 +8,9 @@ to anyone who isn't on the crew list.
 
 `index.html` is the whole page (no bundler; it imports `/kit/config.js` for the
 Supabase project). `quiz.js` is the question bank and scoring, with no page code,
-so `node homies/tests/quiz.test.mjs` can check it. `../homies.sql` is the schema.
+so `node homies/tests/quiz.test.mjs` can check it. `proposal.js` is the proposal
+the Proposal tab shows (what the quiz says we should build), plain data to
+rewrite when the crew decides otherwise. `../homies.sql` is the schema.
 
 ## What it does
 
