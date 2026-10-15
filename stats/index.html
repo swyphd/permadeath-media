@@ -188,7 +188,12 @@ function ago(ts) {
   if (m < 60 * 48) return `${Math.round(m / 60)}h ago`;
   return `${Math.round(m / 1440)}d ago`;
 }
-const gameOf = (id) => GAMES.find((g) => g.id === id) || { id, name: String(id), color: 'var(--g6)' };
+// Mailing-list sources that aren't games: the site's own footer form, and anything the signup endpoint didn't recognise.
+const OTHER_SOURCES = [
+  { id: 'site', name: 'Website', color: 'var(--g6)' },
+  { id: 'unknown', name: 'Unknown', color: 'var(--abandoned)' },
+];
+const gameOf = (id) => GAMES.find((g) => g.id === id) || OTHER_SOURCES.find((g) => g.id === id) || { id, name: String(id), color: 'var(--g6)' };
 const swatch = (color) => `<i class="swatch" style="background:${color}"></i>`;
 const tipAttr = (html) => `data-tip="${esc(html)}"`;
 
@@ -270,10 +275,12 @@ function overview(st) {
   const ended = n0(t.wins) + n0(t.losses) + n0(t.quits);
   const games = st.games || [];
   if (!n0(t.events)) {
-    return `<div class="gate"><h1 class="stencil">Nothing yet</h1><p>No game sent an event in this range. Try a longer range.</p></div>`;
+    return `<div class="gate"><h1 class="stencil">Nothing yet</h1><p>No game sent an event in this range. Try a longer range.</p></div>${signupsSection(st)}`;
   }
+  const su = st.signups;
   return `
   <div class="tiles">
+    ${su && !su.error ? tile('Email signups', fmt(su.in_range), `${fmt(su.total)} on the list in all`) : ''}
     ${tile('Unique players', fmt(t.players), `${fmt(t.new_players)} new · ${fmt(t.returning_players)} came back another day`)}
     ${tile('Runs', fmt(t.runs), `${fmt(t.runs_started)} started in range`)}
     ${tile('Hours played', hours(t.play_seconds), `${dur(n0(t.play_seconds) / Math.max(1, n0(t.players)))} per player`)}
@@ -312,7 +319,26 @@ function overview(st) {
   <h2 class="stencil">Runs started per day</h2>
   <p class="sub">New playthroughs each day (UTC), by game.</p>
   ${dailyChart(st, games.map((g) => g.game), 'runs_started', 160)}
+  ${signupsSection(st)}
   `;
+}
+
+// ---------------------------------------------------------------- mailing list
+// Counts only: api/stats.js never sends an address to the page.
+function signupsSection(st) {
+  const su = st.signups;
+  const head = '<h2 class="stencil">Mailing list</h2>';
+  if (!su) return '';
+  if (su.error) return `${head}<p class="empty">${esc(su.error)}</p>`;
+  const sources = su.sources || [];
+  const ranged = S.days !== 'all';
+  return `${head}
+  <p class="sub">Email addresses that signed up, by the page or game they signed up from. ${fmt(su.total)} on the list in all${ranged ? `, ${fmt(su.in_range)} of them in this range` : ''}.</p>
+  ${dailyChart({ since: st.since, daily: (su.daily || []).map((d) => ({ day: d.day, game: d.source, signups: d.signups })) }, sources.map((x) => x.source), 'signups', 160)}
+  ${sources.length ? `<div class="table-wrap" style="margin-top:0.75rem"><table>
+    <thead><tr><th>Signed up from</th>${ranged ? '<th>In range</th>' : ''}<th>All time</th><th>Share of list</th></tr></thead>
+    <tbody>${sources.map((x) => `<tr><td>${swatch(gameOf(x.source).color)} ${esc(gameOf(x.source).name)}</td>${ranged ? `<td>${fmt(x.in_range)}</td>` : ''}<td>${fmt(x.total)}</td><td>${pct(x.total, su.total)}</td></tr>`).join('')}</tbody>
+  </table></div>` : ''}`;
 }
 
 // ---------------------------------------------------------------- one game
@@ -339,6 +365,7 @@ function gameView(st, id) {
     ${tile('Win rate', pct(g.wins, ended), `of ${fmt(ended)} finished runs`)}
     ${tile('Lost', fmt(g.losses), `${pct(g.losses, g.runs)} of runs`)}
     ${tile('Left mid-run', fmt(g.abandoned), `${pct(g.abandoned, g.runs)} of runs never ended`)}
+    ${signupTile(st, id)}
   </div>
 
   <h2 class="stencil">Players per day</h2>
@@ -389,6 +416,13 @@ function gameView(st, id) {
       ${barList(names.map((x) => ({ label: x.name, value: n0(x.count), color: meta.color, text: fmt(x.count) })))}
     </div>
   </div>`;
+}
+
+function signupTile(st, id) {
+  const su = st.signups;
+  if (!su || su.error) return '';
+  const x = (su.sources || []).find((s) => s.source === id) || { total: 0, in_range: 0 };
+  return tile('Email signups', fmt(x.in_range), `${fmt(x.total)} from this game in all`);
 }
 
 function resultOf(id) { return RESULTS.find((r) => r.id === id) || { id, name: esc(id), color: 'var(--g6)' }; }
@@ -506,7 +540,7 @@ function dailyChart(st, gameIds, field, height = 200) {
   });
   const legend = ids.length > 1 ? `<div class="legend">${ids.map((id) => `<span>${swatch(gameOf(id).color)}${esc(gameOf(id).name)}</span>`).join('')}</div>` : '';
   const table = `<details><summary>Show as a table</summary><div class="table-wrap" style="margin-top:0.5rem;max-height:280px;overflow:auto"><table><thead><tr><th>Day</th>${ids.map((id) => `<th>${esc(gameOf(id).name)}</th>`).join('')}</tr></thead><tbody>${days.slice().reverse().map((day) => `<tr><td>${day}</td>${ids.map((id) => `<td>${fmt(cell[day + '|' + id] || 0)}</td>`).join('')}</tr>`).join('')}</tbody></table></div></details>`;
-  return `<div class="chart">${legend}<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="${field === 'players' ? 'Players' : 'Runs started'} per day">${svg}</svg>${table}</div>`;
+  return `<div class="chart">${legend}<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="${{ players: 'Players', runs_started: 'Runs started', signups: 'Email signups' }[field] || field} per day">${svg}</svg>${table}</div>`;
 }
 function roundTop(x, y, w, h, r) {
   return `M${x},${y + h}V${y + r}Q${x},${y} ${x + r},${y}H${x + w - r}Q${x + w},${y} ${x + w},${y + r}V${y + h}Z`;
@@ -527,6 +561,7 @@ function notes() {
     <li><b>A run</b> is one playthrough. It counts here if anything happened in it during the range, with all of its events. <b>Left mid-run</b> means it never sent an end and has been quiet for 30 minutes; <b>still playing</b> means it was active in the last 30. A Hexagons run is one daily puzzle, so an unsolved puzzle is "left".</li>
     <li><b>Run length</b> is the game's own clock of play time (Hedy Plant and Guild Rising stop it while paused). <b>A visit</b> is one page load, timed from its first event to its last.</li>
     <li><b>New players</b> were first seen in the range; <b>came back</b> played on two or more different days in it. Days are UTC.</li>
+    <li><b>Email signups</b> come from the backup copy of the list kept in Supabase: one per address, credited to where it first signed up. Unsubscribes and unconfirmed addresses live in Buttondown and aren't reflected here.</li>
   </ul>`;
 }
 

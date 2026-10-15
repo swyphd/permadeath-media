@@ -52,7 +52,10 @@ record: unique, new and returning players, players and runs per day, hours
 played, run and visit length, how runs end (won, lost, gave up, left mid-run)
 and the game's own ending, the last milestone before a run stopped, how far runs
 get, choices with the win rate of the runs that made them, results by build, and
-every event name a game sends. Filters for the time range and the game.
+every event name a game sends, and the mailing list: email signups over time
+and by the page or game they came from, counted from the `newsletter_signups`
+backup table (only counts reach the page, never an address). Filters for the
+time range and the game.
 
 Sign-in is Google through the studio's Supabase project, and the check happens on
 the server: `api/stats.js` asks Supabase whose token it is, requires a Google
