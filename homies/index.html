@@ -186,6 +186,19 @@
   .kv { display: grid; grid-template-columns: auto 1fr; gap: 0.3rem 1rem; font-size: 0.88rem; }
   .kv dt { color: var(--paper-dim); font-family: "IBM Plex Mono", monospace; font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; padding-top: 0.15rem; }
   .hr { border: 0; border-top: 1px solid var(--line); margin: 0.9rem 0; }
+  /* Proposal */
+  .prose p + p, .prose ul + p, .prose p + ul { margin-top: 0.6rem; }
+  .prose ul { padding-left: 1.2rem; }
+  .prose li + li { margin-top: 0.3rem; }
+  .prose blockquote { border-left: 3px solid var(--yellow); padding: 0.5rem 0.9rem; margin: 0.5rem 0 0.8rem; font-size: 1.05rem; color: var(--paper); }
+  .tbl-wrap { overflow-x: auto; margin: 0.6rem 0; }
+  .tbl { border-collapse: collapse; width: 100%; font-size: 0.8rem; }
+  .tbl th, .tbl td { text-align: left; padding: 0.35rem 0.5rem; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  .tbl th { font-family: "IBM Plex Mono", monospace; font-size: 0.66rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--paper-dim); font-weight: 500; }
+  .tbl td:nth-child(n+3) { font-family: "IBM Plex Mono", monospace; text-align: right; }
+  .tbl th:nth-child(n+3) { text-align: right; }
+  .tbl td.ok { color: var(--teal-bright); } .tbl td.bad { color: var(--oxide); }
+  .prop-meta { font-family: "IBM Plex Mono", monospace; font-size: 0.72rem; letter-spacing: 0.08em; color: var(--paper-dim); margin: 0.2rem 0 1rem; }
 </style>
 </head>
 <body>
@@ -196,6 +209,7 @@
 <script type="module">
 import { SUPABASE_URL, SUPABASE_KEY } from '/kit/config.js';
 import { AXES, QUESTIONS, byId, complete, nextUnanswered, profile, crewResults, summary } from '/homies/quiz.js';
+import { PROPOSAL } from '/homies/proposal.js';
 
 // ---------------------------------------------------------------- setup
 const ROLES = ['Code', 'Art', 'Design', 'Audio', 'Writing', 'Production', 'Marketing'];
@@ -361,7 +375,7 @@ function render() {
   else if (!S.me) body = gateNotOnCrew();
   else if (!S.loaded) body = gate('<p>Loading the crew…</p>');
   else {
-    const views = { home, quiz, results: resultsView, meetings, meeting, tasks, crew };
+    const views = { home, quiz, results: resultsView, proposal, meetings, meeting, tasks, crew };
     body = topbar(view) + (views[view] ? views[view](id) : home()) + footer();
   }
   app.innerHTML = body + (S.toast ? `<div class="toast ${S.toast.ok ? 'ok' : ''}">${esc(S.toast.msg)}</div>` : '');
@@ -391,7 +405,7 @@ function topbar(view) {
   const late = mine.filter(isLate).length;
   const tabs = [
     ['home', 'Home'], ['quiz', 'Quiz', myProgress(S.me.email) < QUESTIONS.length ? `${QUESTIONS.length - myProgress(S.me.email)}` : ''],
-    ['results', 'Results'], ['meetings', 'Meetings', planned().length ? `${planned().length}` : ''],
+    ['results', 'Results'], ['proposal', 'Proposal'], ['meetings', 'Meetings', planned().length ? `${planned().length}` : ''],
     ['tasks', 'Tasks', late ? `${late} late` : mine.length ? `${mine.length}` : ''], ['crew', 'Crew'],
   ];
   const on = view === 'meeting' ? 'meetings' : view;
@@ -431,7 +445,7 @@ function home() {
   } else if (ph === 'launch') {
     lead = `<div class="card gold"><div class="card-top"><h2 class="stencil">Launch meeting</h2><span class="badge warn">step 2</span></div>
       <p class="small">${esc(summary(r)) || 'The results are in.'}</p>
-      <div class="row" style="margin-top:0.75rem"><a class="btn ghost sm" href="#/results">Read the results</a></div>
+      <div class="row" style="margin-top:0.75rem"><a class="btn ghost sm" href="#/results">Read the results</a><a class="btn ghost sm" href="#/proposal">Read the proposal</a></div>
       <div class="hr"></div>
       ${l ? `<div class="row between"><div><b>${esc(fmtWhen(l.scheduled_at))}</b><div class="tiny dim">the agenda is built from the quiz</div></div><a class="btn" href="#/meeting/${l.id}">Open the agenda →</a></div>`
           : `<form class="inline" data-form="schedule" data-kind="launch"><div><label class="field">When are we meeting?</label><input type="datetime-local" name="when" required></div><button class="btn" type="submit">Schedule it</button></form>`}
@@ -566,7 +580,17 @@ function resultsView() {
     ${ln ? `<div class="card quiet"><div class="card-top"><h2 class="stencil">Leaning</h2></div><ul class="verdicts">${ln}</ul></div>` : ''}
     <div class="card quiet"><div class="card-top"><h2 class="stencil">The shelf</h2><span class="tiny dim">examples of what we picked, most often first</span></div><div class="chips">${shelf}</div></div>
     <div class="card quiet"><div class="card-top"><h2 class="stencil">Each of us</h2></div>${people}</div>
-    ${phase() !== 'build' ? `<a class="btn wide" href="#/meetings">Take this into the launch meeting →</a>` : ''}`;
+    ${phase() !== 'build' ? `<a class="btn wide" href="#/proposal">Read the proposal →</a>` : ''}`;
+}
+
+// ---------- proposal
+function proposal() {
+  const d = PROPOSAL;
+  return `<h1 class="stencil">${esc(d.title)}</h1>
+    <div class="prop-meta">proposal · ${esc(fmtDay(d.asOf))}</div>
+    <p class="small dim" style="margin-bottom:1rem">${esc(d.lead)}</p>
+    ${d.sections.map((sec, i) => `<section class="card ${sec.tone || ''}"><div class="card-top"><h2 class="stencil"><span class="num" style="font-family:'IBM Plex Mono',monospace;font-size:0.7rem;color:var(--oxide);letter-spacing:0.1em;margin-right:0.4rem">${String(i + 1).padStart(2, '0')}</span>${esc(sec.heading)}</h2></div><div class="prose">${sec.html}</div></section>`).join('')}
+    <div class="row" style="margin-top:0.5rem"><a class="btn" href="#/meetings">Take it to the launch meeting →</a><a class="btn ghost sm" href="#/results">The results</a></div>`;
 }
 
 // ---------- meetings
