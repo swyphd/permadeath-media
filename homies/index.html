@@ -198,6 +198,36 @@
   .tbl td:nth-child(n+3) { font-family: "IBM Plex Mono", monospace; text-align: right; }
   .tbl th:nth-child(n+3) { text-align: right; }
   .tbl td.ok { color: var(--teal-bright); } .tbl td.bad { color: var(--oxide); }
+  /* How we work */
+  .sec-tag { font-family: "IBM Plex Mono", monospace; font-size: 0.7rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--yellow); }
+  .opts { display: grid; gap: 0.5rem; }
+  .opt { text-align: left; background: var(--soot-2); border: 1px solid var(--line); border-left: 4px solid var(--teal); padding: 0.8rem 1rem; cursor: pointer; font-size: 0.98rem; }
+  .opt:hover { border-color: var(--paper); }
+  .opt.picked { outline: 2px solid var(--yellow); border-left-color: var(--yellow); }
+  .opts.many { grid-template-columns: 1fr 1fr; }
+  .opts.many .opt { border-left-width: 1px; font-size: 0.9rem; }
+  .opts.many .opt.picked { background: var(--teal); border-color: var(--teal); outline: 0; }
+  .grid-q .gr { padding: 0.6rem 0; border-bottom: 1px solid var(--line); }
+  .grid-q .gr .gl { font-size: 0.92rem; margin-bottom: 0.4rem; }
+  .grid-q .gr .gb { display: grid; grid-template-columns: repeat(var(--n), 1fr); border: 1px solid var(--line); }
+  .grid-q .gr .gb button { background: transparent; border: 0; border-right: 1px solid var(--line); color: var(--paper-dim); padding: 0.5rem 0.2rem; font-family: "IBM Plex Mono", monospace; font-size: 0.7rem; cursor: pointer; }
+  .grid-q .gr .gb button:last-child { border-right: 0; }
+  .grid-q .gr .gb button.on { background: var(--yellow); color: var(--soot); font-weight: 600; }
+  .grid-q .gr.todo .gl::after { content: " ·"; color: var(--oxide); }
+  textarea { min-height: 6rem; resize: vertical; }
+  .mx { border-collapse: collapse; width: 100%; font-size: 0.82rem; }
+  .mx th, .mx td { padding: 0.4rem 0.3rem; border-bottom: 1px solid var(--line); text-align: center; }
+  .mx th:first-child, .mx td:first-child { text-align: left; padding-left: 0; }
+  .mx th { font-weight: 500; }
+  .mx .lv { display: inline-block; min-width: 2.6rem; font-family: "IBM Plex Mono", monospace; font-size: 0.62rem; letter-spacing: 0.04em; padding: 0.15rem 0.25rem; border: 1px solid var(--line); color: var(--paper-dim); }
+  .lv.lead, .lv.free { background: var(--yellow); border-color: var(--yellow); color: var(--soot); font-weight: 600; }
+  .lv.help, .lv.draft { background: var(--teal); border-color: var(--teal); color: var(--paper); }
+  .lv.learn, .lv.ideas { color: var(--paper); border-color: var(--paper-dim); }
+  .lv.pass { opacity: 0.5; }
+  .lv.none { background: var(--oxide); border-color: var(--oxide); color: var(--paper); }
+  .mx td .badge { font-size: 0.56rem; padding: 0.1rem 0.35rem; }
+  .quote { border-left: 3px solid var(--line); padding: 0.3rem 0.7rem; margin: 0.5rem 0; font-size: 0.9rem; }
+  .quote b { display: block; font-family: "IBM Plex Mono", monospace; font-size: 0.68rem; color: var(--paper-dim); font-weight: 500; letter-spacing: 0.06em; }
   .prop-meta { font-family: "IBM Plex Mono", monospace; font-size: 0.72rem; letter-spacing: 0.08em; color: var(--paper-dim); margin: 0.2rem 0 1rem; }
 </style>
 </head>
@@ -210,6 +240,7 @@
 import { SUPABASE_URL, SUPABASE_KEY } from '/kit/config.js';
 import { AXES, QUESTIONS, byId, complete, nextUnanswered, profile, crewResults, summary } from '/homies/quiz.js';
 import { PROPOSAL } from '/homies/proposal.js';
+import * as C from '/homies/crew.js';
 
 // ---------------------------------------------------------------- setup
 const ROLES = ['Code', 'Art', 'Design', 'Audio', 'Writing', 'Production', 'Marketing'];
@@ -227,6 +258,10 @@ const S = {
   members: [], answers: {}, meetings: [], tasks: [], state: {},
   loaded: false, busy: false,
   quizAt: null,        // which question is on screen
+  crew: {},            // "How we work" answers: { [email]: { [question]: value } }
+  crewMissing: false,  // homies_crew_answers isn't there yet (homies-crew.sql not run)
+  crewAt: null,        // which "How we work" question is on screen
+  drafts: {},          // text typed into a "How we work" answer, not saved yet
   toast: null,
 };
 
@@ -282,6 +317,13 @@ async function loadAll() {
   S.meetings = g.data;
   S.tasks = t.data;
   S.state = Object.fromEntries(st.data.map((r) => [r.key, r.value]));
+  // Loaded on its own so the rest of the page works before homies-crew.sql has run.
+  const c = await sb.from('homies_crew_answers').select('email, question, value');
+  S.crewMissing = !!c.error;
+  if (!c.error) {
+    S.crew = {};
+    for (const row of c.data) (S.crew[row.email] ||= {})[row.question] = row.value;
+  }
   S.loaded = true;
 }
 
@@ -325,6 +367,16 @@ const answer = (question, pick) => write(
   async () => { (S.answers[S.me.email] ||= {})[question] = pick; },
 );
 
+// Optimistic: the answer shows at once, then saves. A grid saves the whole row map.
+const answerCrew = (question, value) => {
+  (S.crew[S.me.email] ||= {})[question] = value;
+  render();
+  return write(
+    sb.from('homies_crew_answers').upsert({ email: S.me.email, question, value, answered_at: new Date().toISOString() }, { onConflict: 'email,question' }),
+    'Could not save your answer', null,
+  );
+};
+
 const setNote = (meetingId, path, value) => {
   // Optimistic local update, then the atomic server-side set.
   const m = S.meetings.find((x) => x.id === meetingId);
@@ -355,6 +407,9 @@ function phase() {
   const r = results();
   return revealed(r) ? 'launch' : 'quiz';
 }
+function howData() { return C.crewResults(S.members, S.crew); }
+function crewRevealed(r) { return S.members.length > 0 && (r.waiting.length === 0 || !!S.state['reveal-crew']?.on); }
+function crewProgress2(email) { return C.progress(S.crew[email]); }
 function myProgress(email) { return Object.keys(S.answers[email] || {}).filter((q) => byId[q]).length; }
 function cadenceDays() { return CADENCE.find((c) => c.id === (S.state.cadence?.id || launch()?.notes?.cadence))?.days || 14; }
 
@@ -375,7 +430,7 @@ function render() {
   else if (!S.me) body = gateNotOnCrew();
   else if (!S.loaded) body = gate('<p>Loading the crew…</p>');
   else {
-    const views = { home, quiz, results: resultsView, proposal, meetings, meeting, tasks, crew };
+    const views = { home, quiz, results: resultsView, how, proposal, meetings, meeting, tasks, crew };
     body = topbar(view) + (views[view] ? views[view](id) : home()) + footer();
   }
   app.innerHTML = body + (S.toast ? `<div class="toast ${S.toast.ok ? 'ok' : ''}">${esc(S.toast.msg)}</div>` : '');
@@ -405,7 +460,7 @@ function topbar(view) {
   const late = mine.filter(isLate).length;
   const tabs = [
     ['home', 'Home'], ['quiz', 'Quiz', myProgress(S.me.email) < QUESTIONS.length ? `${QUESTIONS.length - myProgress(S.me.email)}` : ''],
-    ['results', 'Results'], ['proposal', 'Proposal'], ['meetings', 'Meetings', planned().length ? `${planned().length}` : ''],
+    ['results', 'Results'], ['how', 'How we work', !S.crewMissing && crewProgress2(S.me.email) < C.QUESTIONS.length ? `${C.QUESTIONS.length - crewProgress2(S.me.email)}` : ''], ['proposal', 'Proposal'], ['meetings', 'Meetings', planned().length ? `${planned().length}` : ''],
     ['tasks', 'Tasks', late ? `${late} late` : mine.length ? `${mine.length}` : ''], ['crew', 'Crew'],
   ];
   const on = view === 'meeting' ? 'meetings' : view;
@@ -467,7 +522,22 @@ function home() {
     <form class="inline" data-form="task" style="margin-top:0.75rem"><input type="text" name="title" placeholder="Add a task" maxlength="200" required><input type="date" name="due" value="${attr(defaultDue())}"><input type="hidden" name="owner" value="${attr(S.me.email)}"><button class="btn sm" type="submit">Add</button></form>
   </div>`;
 
-  return `<h1 class="stencil">Hey ${esc(S.me.name)}</h1>${steps}${lead}${myCard}${ph === 'build' ? board() : ''}`;
+  return `<h1 class="stencil">Hey ${esc(S.me.name)}</h1>${steps}${lead}${howCard()}${myCard}${ph === 'build' ? board() : ''}`;
+}
+
+// The "How we work" quiz on the home page: a nudge until you've done it, then
+// a link to the read-out.
+function howCard() {
+  if (S.crewMissing) return '';
+  const n = crewProgress2(S.me.email);
+  const total = C.QUESTIONS.length;
+  const r = howData();
+  if (n >= total) {
+    return `<div class="card quiet"><div class="row between"><div><h3>How we work</h3><div class="small">${crewRevealed(r) ? 'Everyone’s in.' : `You’re done. Waiting on ${esc(list(r.waiting))}.`}</div></div><a class="btn ghost sm" href="#/how/results">${crewRevealed(r) ? 'Read it →' : 'Who’s done'}</a></div></div>`;
+  }
+  return `<div class="card"><div class="card-top"><h2 class="stencil">How we work</h2><span class="badge warn">${n ? `${n} / ${total}` : 'new'}</span></div>
+    <p class="small dim">Quiz two. How much time you can give, what you’d want to do, and where you stand on AI. About five minutes.</p>
+    <div class="row" style="margin-top:0.75rem"><a class="btn" href="#/how">${n ? 'Keep going' : 'Start it'} →</a></div></div>`;
 }
 
 function crewProgress(r) {
@@ -691,15 +761,30 @@ function launchAgenda(m, notes) {
   const roles = notes.roles || {};
   items.push({ title: 'Who does what', ok: S.members.every((mm) => (roles[mm.email] || []).length),
     body: `<p class="small dim">Everyone owns at least one hat. Two people can share one.</p>
-      ${S.members.map((mm) => `<div class="person"><div class="pn">${esc(mm.name)}</div><div class="chips">${ROLES.map((role) => `<button class="chip ${(roles[mm.email] || []).includes(role) ? 'on' : ''}" data-act="role-toggle" data-id="${attr(m.id)}" data-email="${attr(mm.email)}" data-role="${attr(role)}" ${dis}>${role}</button>`).join('')}</div></div>`).join('')}` });
+      ${S.members.map((mm) => `<div class="person"><div class="pn">${esc(mm.name)}${roleHint(mm.email)}</div><div class="chips">${ROLES.map((role) => `<button class="chip ${(roles[mm.email] || []).includes(role) ? 'on' : ''}" data-act="role-toggle" data-id="${attr(m.id)}" data-email="${attr(mm.email)}" data-role="${attr(role)}" ${dis}>${role}</button>`).join('')}</div></div>`).join('')}` });
 
   items.push({ title: 'Cadence and the next check-in', ok: !!notes.next && !!notes.cadence,
-    body: `<div class="chips" style="margin-bottom:0.75rem">${CADENCE.map((c) => `<button class="chip ${notes.cadence === c.id ? 'on' : ''}" data-act="note" data-id="${attr(m.id)}" data-path="cadence" data-value="${c.id}" ${dis}>${c.label}</button>`).join('')}</div>
+    body: `${meetHint()}<div class="chips" style="margin-bottom:0.75rem">${CADENCE.map((c) => `<button class="chip ${notes.cadence === c.id ? 'on' : ''}" data-act="note" data-id="${attr(m.id)}" data-path="cadence" data-value="${c.id}" ${dis}>${c.label}</button>`).join('')}</div>
       ${nextMeetingField(m, notes, addDays(m.scheduled_at || new Date(), CADENCE.find((c) => c.id === notes.cadence)?.days || 14))}` });
 
   const t = meetingTasks(m, notes, true);
   items.push({ title: 'First tasks', ok: t.ok, body: `<p class="small dim">One each, due by the next check-in. Small and finishable beats grand.</p>${t.body}` });
   return items;
+}
+
+// What "How we work" says, under the launch meeting's role and cadence items.
+function roleHint(email) {
+  const a = S.crew[email];
+  if (!a || !C.complete(a) || !crewRevealed(howData())) return '';
+  const lead = [...new Set(C.AREAS.filter((ar) => a.areas[ar.id] === 'lead').map((ar) => ar.role))];
+  const help = [...new Set(C.AREAS.filter((ar) => a.areas[ar.id] === 'help').map((ar) => ar.role))].filter((r) => !lead.includes(r));
+  const parts = [lead.length && `wants to lead ${list(lead)}`, help.length && `would help on ${list(help)}`].filter(Boolean);
+  return parts.length ? ` <span class="tiny dim" style="font-weight:400">· ${esc(parts.join('; '))}</span>` : '';
+}
+function meetHint() {
+  const r = howData();
+  if (!r.done.length || !crewRevealed(r)) return '';
+  return `<p class="small dim" style="margin-bottom:0.6rem">From How we work: ${r.time.meet === 'async' ? 'not everyone can make regular calls' : `everyone can make a call ${esc(r.time.meetLabel.toLowerCase())}`}${r.time.shared.length ? `, and everyone is free on ${esc(list(r.time.shared.map((w) => w.label.toLowerCase())))}` : ''}.</p>`;
 }
 
 function checkinAgenda(m, notes) {
@@ -744,6 +829,127 @@ function checkinAgenda(m, notes) {
   return items;
 }
 
+// ---------- how we work
+function how(id) {
+  if (S.crewMissing) {
+    return `<h1 class="stencil">How we work</h1><div class="card hot"><p>This quiz needs one more table in Supabase. Whoever set up the page: run <span class="mono">homies-crew.sql</span> (in the site repo) in the SQL Editor, then reload.</p></div>`;
+  }
+  return id === 'results' ? howResults() : howQuiz();
+}
+
+function howQuiz() {
+  const mine = S.crew[S.me.email] || {};
+  const total = C.QUESTIONS.length;
+  if (S.crewAt === null) S.crewAt = C.nextUnanswered(mine);
+  if (S.crewAt === -1 || S.crewAt >= total) return howDone(mine);
+  const x = C.QUESTIONS[S.crewAt];
+  const v = mine[x.id];
+  const sec = C.SECTIONS.find((s) => s.id === x.section);
+  const inSec = C.QUESTIONS.filter((q) => q.section === x.section);
+  const k = inSec.indexOf(x);
+  const first = k === 0;
+  const ok = C.answered(x, v) || x.optional;
+  let body = '';
+  if (x.kind === 'one') {
+    body = `<div class="opts">${x.options.map((o) => `<button class="opt ${v === o.id ? 'picked' : ''}" data-act="crew-one" data-q="${attr(x.id)}" data-v="${attr(o.id)}">${esc(o.label)}</button>`).join('')}</div>`;
+  } else if (x.kind === 'many') {
+    const on = Array.isArray(v) ? v : [];
+    body = `<div class="opts many">${x.options.map((o) => `<button class="opt ${on.includes(o.id) ? 'picked' : ''}" data-act="crew-many" data-q="${attr(x.id)}" data-v="${attr(o.id)}">${esc(o.label)}</button>`).join('')}</div>`;
+  } else if (x.kind === 'grid') {
+    const scale = C.SCALES[x.scale];
+    const cur = v && typeof v === 'object' ? v : {};
+    body = `<div class="grid-q">${x.rows.map((row) => `<div class="gr ${cur[row.id] ? '' : 'todo'}"><div class="gl">${esc(row.label)}</div><div class="gb" style="--n:${scale.length}">${scale.map((s) => `<button class="${cur[row.id] === s.id ? 'on' : ''}" data-act="crew-grid" data-q="${attr(x.id)}" data-row="${attr(row.id)}" data-v="${attr(s.id)}">${esc(s.label)}</button>`).join('')}</div></div>`).join('')}</div>`;
+  } else {
+    const val = S.drafts[x.id] ?? (typeof v === 'string' ? v : '');
+    body = `<textarea data-draft="${attr(x.id)}" maxlength="${x.max}" placeholder="Optional. A few words is plenty.">${esc(val)}</textarea>`;
+  }
+  return `<div class="row between"><span class="sec-tag">${esc(sec.label)} · ${k + 1} of ${inSec.length}</span><button class="link small" data-act="crew-review">review all</button></div>
+    <div class="progress"><i style="width:${(C.progress(mine) / total) * 100}%"></i></div>
+    ${first ? `<p class="small dim" style="margin:-0.5rem 0 1rem">${esc(sec.blurb)}</p>` : ''}
+    <h2 style="margin-bottom:0.4rem">${esc(x.ask)}</h2>
+    ${x.hint ? `<p class="tiny dim" style="margin-bottom:0.75rem">${esc(x.hint)}</p>` : '<div style="height:0.5rem"></div>'}
+    ${body}
+    <div class="quiz-nav">
+      <button class="btn ghost sm" data-act="crew-go" data-to="${S.crewAt - 1}" ${S.crewAt === 0 ? 'disabled' : ''}>← Back</button>
+      <span class="tiny dim">${S.crewAt + 1} / ${total}</span>
+      ${x.kind === 'text'
+        ? `<button class="btn sm" data-act="crew-text" data-q="${attr(x.id)}">${(S.drafts[x.id] ?? v ?? '').trim() ? 'Save' : 'Skip'} →</button>`
+        : `<button class="btn ${ok ? '' : 'ghost'} sm" data-act="crew-go" data-to="${S.crewAt + 1}" ${ok ? '' : 'disabled'}>Next →</button>`}
+    </div>`;
+}
+
+function howDone(mine) {
+  const r = howData();
+  const done = C.complete(mine);
+  const shortVal = (x) => {
+    const v = mine[x.id];
+    if (!C.answered(x, v)) return '<span style="color:var(--oxide)">not answered</span>';
+    if (x.kind === 'one') return esc(x.options.find((o) => o.id === v).label);
+    if (x.kind === 'many') return esc(v.map((id) => x.options.find((o) => o.id === id)?.label).filter(Boolean).join(', '));
+    if (x.kind === 'grid') return `${x.rows.length} rows answered`;
+    return v.trim() ? esc(v) : '<span class="dim">skipped</span>';
+  };
+  return `<h1 class="stencil">${done ? 'Done.' : 'Your answers'}</h1>
+    ${done ? `<div class="card done"><p>${r.waiting.length ? `Waiting on ${esc(list(r.waiting))}. The read-out opens the moment everyone’s in.` : 'Everyone has answered.'}</p>
+      <div class="row" style="margin-top:0.75rem">${crewRevealed(r) ? '<a class="btn" href="#/how/results">Read it →</a>' : `<button class="btn ghost sm" data-act="crew-reveal">Reveal without ${esc(list(r.waiting))}</button>`}</div></div>`
+          : `<div class="card hot"><p>A few are still open. Tap one to finish it.</p></div>`}
+    <h3 style="margin:1rem 0 0.25rem">Change any answer</h3>
+    <ul class="verdicts">${C.QUESTIONS.map((x, i) => `<li><button class="link" style="text-align:left;color:var(--paper);text-decoration:none" data-act="crew-go" data-to="${i}"><span class="sec-tag" style="margin-right:0.4rem">${esc(x.section)}</span>${esc(x.ask)}</button><div class="names" style="margin-top:0.15rem">${shortVal(x)}</div></li>`).join('')}</ul>`;
+}
+
+function howResults() {
+  const r = howData();
+  if (!crewRevealed(r)) {
+    return `<h1 class="stencil">Not yet</h1><div class="card"><p>Answers stay hidden until everyone has finished, so nobody’s lines on AI sway anyone else’s.</p><div class="hr"></div>
+      <ul class="plain stack">${S.members.map((m) => { const n = crewProgress2(m.email); const d = n >= C.QUESTIONS.length;
+        return `<li class="row between"><span>${esc(m.name)}</span><span class="badge ${d ? 'ok' : n ? 'warn' : ''}">${d ? 'done' : `${n} / ${C.QUESTIONS.length}`}</span></li>`; }).join('')}</ul>
+      <div class="row" style="margin-top:0.9rem">${crewProgress2(S.me.email) < C.QUESTIONS.length ? '<a class="btn" href="#/how">Finish yours →</a>' : ''}
+      ${r.done.length ? `<button class="btn ghost sm" data-act="crew-reveal">Reveal without ${esc(list(r.waiting))}</button>` : ''}</div></div>`;
+  }
+  const people = S.members.filter((m) => r.done.includes(m.email));
+  const head = `<tr><th></th>${people.map((m) => `<th title="${attr(m.name)}"><span class="dot ${colorOf(m.email)}" style="position:static;transform:none;display:inline-flex;width:20px;height:20px;font-size:0.6rem;border:0">${initial(m.name)}</span></th>`).join('')}<th></th></tr>`;
+  const short = { lead: 'LEAD', help: 'HELP', learn: 'LEARN', pass: '—', none: 'NO', ideas: 'IDEAS', draft: 'DRAFT', free: 'FREE' };
+  const cell = (lv) => `<td><span class="lv ${lv}">${short[lv] || '?'}</span></td>`;
+  const matrix = (rows, q, flagOf) => `<div class="tbl-wrap"><table class="mx">${head}${rows.map((row) => `<tr><td>${esc(row.label)}</td>${people.map((m) => cell(S.crew[m.email][q][row.id])).join('')}<td>${flagOf(row)}</td></tr>`).join('')}</table></div>`;
+  const workFlag = (a) => ({ gap: '<span class="badge bad">nobody</span>', unled: '<span class="badge warn">no lead</span>', crowded: '<span class="badge warn">2+ leads</span>', owned: '<span class="badge ok">owned</span>' }[a.flag] || '');
+  const aiFlag = (a) => ({ agreed: '<span class="badge ok">agreed</span>', close: '<span class="badge">close</span>', split: '<span class="badge bad">split</span>' }[a.spread] || '');
+
+  const t = r.time;
+  const timeRows = t.people.map((p) => `<div class="person"><div class="pn"><span class="dot ${colorOf(p.email)}" style="position:static;transform:none;display:inline-flex;width:18px;height:18px;font-size:0.6rem;margin-right:0.4rem;border:0;vertical-align:middle">${initial(p.name)}</span>${esc(p.name)} <span class="badge fill" style="margin-left:0.3rem">${esc(p.hours)} h</span></div>
+      <div class="small">${esc(list(p.windows.map((w) => w.toLowerCase())))}. ${esc(p.rhythm)}.</div>
+      <div class="tiny dim">Calls: ${esc(p.meetLabel.toLowerCase())} · signed up for: ${esc(p.horizon.toLowerCase())} · wants: ${esc(p.goal.toLowerCase())}</div>
+      ${p.busy ? `<div class="tiny" style="color:var(--yellow);margin-top:0.2rem">Coming up: ${esc(p.busy)}</div>` : ''}</div>`).join('');
+  const windows = t.windows.filter((w) => w.names.length).map((w) => `<span class="chip static ${w.names.length === people.length ? 'on' : ''}">${esc(w.label)}<span class="ct">${w.names.length}</span></span>`).join('');
+
+  const mains = people.map((m) => `${esc(m.name)}: <b>${esc(C.AREAS.find((a) => a.id === S.crew[m.email].main)?.label || '?')}</b>`).join(' · ');
+  const views = r.ai.views.map((v) => `<li><div>${esc(v.label)} ${{ agreed: '<span class="badge ok">all agree</span>', rejected: '<span class="badge ok">all disagree</span>', split: '<span class="badge bad">split</span>', mixed: '<span class="badge">mixed</span>' }[v.verdict] || ''}</div>
+      <div class="names">${[['agree', 'agree'], ['unsure', 'not sure'], ['disagree', 'disagree']].filter(([k]) => v[k].length).map(([k, l]) => `${l}: ${esc(v[k].join(', '))}`).join(' · ')}</div></li>`).join('');
+  const rule = C.houseRule(r).map((x) => `<li class="row between"><span>${esc(x.label)}</span><span class="lv ${x.level}" style="display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:0.66rem;padding:0.15rem 0.4rem;border:1px solid var(--line)">${esc(x.levelLabel)}</span></li>`).join('');
+  const quotes = (xs) => xs.map((l) => `<div class="quote"><b>${esc(l.name)}</b>${esc(l.text)}</div>`).join('');
+
+  return `<div class="row between"><h1 class="stencil">How we work</h1><a class="small" href="#/how">your answers</a></div>
+    <p class="small">${esc(C.summary(r))}</p>
+    ${r.waiting.length ? `<p class="tiny dim" style="margin-top:0.3rem">Revealed early. Still to answer: ${esc(list(r.waiting))}.</p>` : ''}
+    <div class="card gold" style="margin-top:1rem"><div class="card-top"><h2 class="stencil">Time</h2><span class="badge warn">${t.lo}–${t.hi} h a week, together</span></div>
+      <h3 style="margin-bottom:0.4rem">When we’re free</h3><div class="chips" style="margin-bottom:0.5rem">${windows}</div>
+      <p class="tiny dim">Filled in: everyone picked it. The slowest call rhythm anyone can keep: <b>${esc(t.meetLabel.toLowerCase())}</b>.</p>
+      <div class="hr"></div>${timeRows}</div>
+    <div class="card"><div class="card-top"><h2 class="stencil">Who wants what</h2></div>
+      ${matrix(r.work.areas, 'areas', workFlag)}
+      <p class="small" style="margin-top:0.6rem">If we could each do one thing: ${mains}.</p>
+      ${r.work.learn.length ? `<h3 style="margin:0.9rem 0 0.2rem">Want to get better at</h3>${quotes(r.work.learn)}` : ''}</div>
+    <div class="card hot"><div class="card-top"><h2 class="stencil">AI, by what we make</h2></div>
+      ${matrix(r.ai.areas, 'ai-areas', aiFlag)}
+      <h3 style="margin:1rem 0 0.2rem">By stage</h3>
+      ${matrix(r.ai.stages, 'ai-stages', aiFlag)}
+      <p class="tiny dim" style="margin-top:0.5rem">NO: people only. IDEAS: AI to think with, nothing it makes ships. DRAFT: AI starts it, a person reworks it. FREE: whatever works.</p></div>
+    <div class="card quiet"><div class="card-top"><h2 class="stencil">A starting house rule</h2><span class="tiny dim">the most cautious answer on each</span></div>
+      <ul class="verdicts">${rule}</ul>
+      <p class="tiny dim" style="margin-top:0.5rem">Not a verdict. If one of us says no, the rule starts at no, and the launch meeting can talk it up.</p></div>
+    <div class="card quiet"><div class="card-top"><h2 class="stencil">Agree or disagree</h2></div><ul class="verdicts">${views}</ul>
+      ${r.ai.lines.length ? `<h3 style="margin:0.9rem 0 0.2rem">Hard lines</h3>${quotes(r.ai.lines)}` : ''}</div>`;
+}
+
 // ---------- tasks
 function taskRow(t) {
   const late = isLate(t);
@@ -775,7 +981,7 @@ function crew() {
     <div class="card"><h3>Add someone</h3><p class="small dim" style="margin:0.3rem 0 0.6rem">Use the Gmail address they'll sign in with. They're on the list before they ever log in.</p>
       <form class="inline" data-form="member"><input type="email" name="email" placeholder="friend@gmail.com" required><input type="text" name="name" placeholder="First name" maxlength="40" required><button class="btn sm" type="submit">Add</button></form></div>
     <div class="card quiet">${S.members.map((m) => `<div class="person"><div class="row between"><div><span class="dot ${colorOf(m.email)}" style="position:static;transform:none;display:inline-flex;width:20px;height:20px;font-size:0.6rem;margin-right:0.4rem;border:0;vertical-align:middle">${initial(m.name)}</span><b>${esc(m.name)}</b> <span class="tiny dim mono">${esc(m.email)}</span></div>
-      <div class="row" style="gap:0.35rem"><span class="badge ${m.user_id ? 'ok' : ''}">${m.user_id ? 'signed in' : 'never signed in'}</span><span class="badge ${myProgress(m.email) >= QUESTIONS.length ? 'ok' : ''}">quiz ${myProgress(m.email)}/${QUESTIONS.length}</span>
+      <div class="row" style="gap:0.35rem"><span class="badge ${m.user_id ? 'ok' : ''}">${m.user_id ? 'signed in' : 'never signed in'}</span><span class="badge ${myProgress(m.email) >= QUESTIONS.length ? 'ok' : ''}">quiz ${myProgress(m.email)}/${QUESTIONS.length}</span>${S.crewMissing ? '' : `<span class="badge ${crewProgress2(m.email) >= C.QUESTIONS.length ? 'ok' : ''}">how ${crewProgress2(m.email)}/${C.QUESTIONS.length}</span>`}
       <button class="link tiny" data-act="rename" data-email="${attr(m.email)}">rename</button>${m.email === S.me.email ? '' : `<button class="link tiny" data-act="remove-member" data-email="${attr(m.email)}" style="color:var(--oxide)">remove</button>`}</div></div></div>`).join('')}</div>
     <p class="tiny dim">Everyone here sees everything here, and only people here can. Quiz answers can only be changed by the person who gave them.</p>`;
 }
@@ -806,6 +1012,40 @@ app.addEventListener('click', async (e) => {
       break;
     }
     case 'quiz-go': S.quizAt = Number(d.to); render(); break;
+    case 'crew-one': {
+      await answerCrew(d.q, d.v);
+      howNext(d.q);
+      break;
+    }
+    case 'crew-many': {
+      const cur = S.crew[S.me.email]?.[d.q];
+      const on = Array.isArray(cur) ? [...cur] : [];
+      const i = on.indexOf(d.v);
+      if (i >= 0) on.splice(i, 1); else on.push(d.v);
+      await answerCrew(d.q, on);
+      break;
+    }
+    case 'crew-grid': {
+      const cur = S.crew[S.me.email]?.[d.q];
+      await answerCrew(d.q, { ...(cur && typeof cur === 'object' && !Array.isArray(cur) ? cur : {}), [d.row]: d.v });
+      break;
+    }
+    case 'crew-text': {
+      const v = String(S.drafts[d.q] ?? S.crew[S.me.email]?.[d.q] ?? '').trim().slice(0, 280);
+      delete S.drafts[d.q];
+      await answerCrew(d.q, v);
+      howNext(d.q);
+      break;
+    }
+    case 'crew-go': S.crewAt = Number(d.to); location.hash = '#/how'; render(); break;
+    case 'crew-review': S.crewAt = -1; render(); break;
+    case 'crew-reveal': {
+      const r = howData();
+      if (!confirm(`Show everyone's answers now, without ${list(r.waiting)}? Their answers still count when they come in.`)) return;
+      await write(sb.from('homies_state').upsert({ key: 'reveal-crew', value: { on: true, by: S.me.email, at: new Date().toISOString() }, updated_at: new Date().toISOString() }), 'Could not reveal');
+      location.hash = '#/how/results';
+      break;
+    }
     case 'quiz-review': S.quizAt = -1; render(); break;
     case 'reveal': {
       const r = results();
@@ -925,6 +1165,21 @@ app.addEventListener('change', async (e) => {
   render();
 });
 
+// After answering one question, go to the next unanswered one after it.
+function howNext(qid) {
+  const i = C.QUESTIONS.findIndex((x) => x.id === qid);
+  const mine = S.crew[S.me.email] || {};
+  const nxt = C.QUESTIONS.findIndex((x, j) => j > i && !C.answered(x, mine[x.id]));
+  S.crewAt = nxt === -1 ? (C.complete(mine) ? -1 : C.nextUnanswered(mine)) : nxt;
+  render();
+}
+
+// Text typed into a "How we work" answer survives a re-render until it's saved.
+app.addEventListener('input', (e) => {
+  const el = e.target.closest('[data-draft]');
+  if (el) S.drafts[el.dataset.draft] = el.value;
+});
+
 async function closeMeeting(id) {
   const m = S.meetings.find((x) => x.id === id);
   if (!m) return;
@@ -953,9 +1208,11 @@ async function closeMeeting(id) {
 }
 
 // ---------------------------------------------------------------- boot
-window.addEventListener('hashchange', () => { if (route().view !== 'quiz') S.quizAt = null; render(); });
+window.addEventListener('hashchange', () => { if (route().view !== 'quiz') S.quizAt = null; if (route().view !== 'how') S.crewAt = null; render(); });
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && S.me) refresh(); });
-setInterval(() => { if (document.visibilityState === 'visible' && S.me && !S.busy) refresh(); }, POLL_MS);
+// Skips a refresh while someone is typing, so a re-render doesn't take the field away.
+const typing = () => { const a = document.activeElement; return !!a && app.contains(a) && /^(INPUT|TEXTAREA)$/.test(a.tagName); };
+setInterval(() => { if (document.visibilityState === 'visible' && S.me && !S.busy && !typing()) refresh(); }, POLL_MS);
 
 if (sb) {
   // Coming back from Google, the URL carries the token (hash) or a code (query).
