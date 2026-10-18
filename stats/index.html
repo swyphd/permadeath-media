@@ -280,7 +280,7 @@ function overview(st) {
   const su = st.signups;
   return `
   <div class="tiles">
-    ${su && !su.error ? tile('Email signups', fmt(su.in_range), `${fmt(su.total)} on the list in all`) : ''}
+    ${su && !su.error ? tile('Email signups', fmt(su.in_range), S.days === 'all' ? 'the whole list' : `in this range · ${fmt(su.total)} on the list in all`) : ''}
     ${tile('Unique players', fmt(t.players), `${fmt(t.new_players)} new · ${fmt(t.returning_players)} came back another day`)}
     ${tile('Runs', fmt(t.runs), `${fmt(t.runs_started)} started in range`)}
     ${tile('Hours played', hours(t.play_seconds), `${dur(n0(t.play_seconds) / Math.max(1, n0(t.players)))} per player`)}
@@ -413,11 +413,12 @@ function signupsSection(st) {
   const sources = su.sources || [];
   const ranged = S.days !== 'all';
   return `${head}
-  <p class="sub">Email addresses that signed up, by the page or game they signed up from. ${fmt(su.total)} on the list in all${ranged ? `, ${fmt(su.in_range)} of them in this range` : ''}.</p>
+  <p class="sub">Email addresses that signed up, by the page or game they signed up from. Each row counts only that page or game; the last row is the whole list. ${fmt(su.total)} on the list in all${ranged ? `, ${fmt(su.in_range)} of them in this range` : ''}.</p>
   ${dailyChart({ since: st.since, daily: (su.daily || []).map((d) => ({ day: d.day, game: d.source, signups: d.signups })) }, sources.map((x) => x.source), 'signups', 160)}
   ${sources.length ? `<div class="table-wrap" style="margin-top:0.75rem"><table>
-    <thead><tr><th>Signed up from</th>${ranged ? '<th>In range</th>' : ''}<th>All time</th><th>Share of list</th></tr></thead>
-    <tbody>${sources.map((x) => `<tr><td>${swatch(gameOf(x.source).color)} ${esc(gameOf(x.source).name)}</td>${ranged ? `<td>${fmt(x.in_range)}</td>` : ''}<td>${fmt(x.total)}</td><td>${pct(x.total, su.total)}</td></tr>`).join('')}</tbody>
+    <thead><tr><th>Signed up from</th>${ranged ? '<th>In range</th>' : ''}<th>Total</th><th>Share of list</th></tr></thead>
+    <tbody>${sources.map((x) => `<tr><td>${swatch(gameOf(x.source).color)} ${esc(gameOf(x.source).name)}</td>${ranged ? `<td>${fmt(x.in_range)}</td>` : ''}<td>${fmt(x.total)}</td><td>${pct(x.total, su.total)}</td></tr>`).join('')}
+    <tr><td><b>Whole list</b></td>${ranged ? `<td><b>${fmt(su.in_range)}</b></td>` : ''}<td><b>${fmt(su.total)}</b></td><td><b>100%</b></td></tr></tbody>
   </table></div>` : ''}`;
 }
 
@@ -506,7 +507,7 @@ function signupTile(st, id) {
   const su = st.signups;
   if (!su || su.error) return '';
   const x = (su.sources || []).find((s) => s.source === id) || { total: 0, in_range: 0 };
-  return tile('Email signups', fmt(x.in_range), `${fmt(x.total)} from this game in all`);
+  return tile('Email signups', fmt(x.in_range), `${fmt(x.total)} from this game since launch`);
 }
 
 function resultOf(id) { return RESULTS.find((r) => r.id === id) || { id, name: esc(id), color: 'var(--g6)' }; }
