@@ -1,6 +1,6 @@
 // Mailing list signup for permadeathmedia.com and the games under it.
 //
-// POST /api/subscribe  { email, source, tag?, website }
+// POST /api/subscribe  { email, source, tag?, ref?, website }
 //   -> 200 { ok: true }            subscribed (or already was)
 //   -> 400 { ok: false, error }    not a usable address
 //   -> 502 { ok: false, error }    neither Buttondown nor the backup accepted it
@@ -24,6 +24,9 @@ const TAGS = new Set([
   'hexagons-account',
 ]);
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+// The ?ref= tag the browser first arrived with (kit/analytics.js signupRef),
+// so /stats/ can count signups by source. Same shape the kit accepts.
+const REF_RE = /^[a-z0-9][a-z0-9_-]{0,39}$/;
 const TIMEOUT_MS = 8000;
 
 function cors(res) {
@@ -54,10 +57,10 @@ async function fetchWithTimeout(url, init) {
 
 // Returns 'subscribed', 'exists', 'blocked' (Buttondown's spam firewall said
 // no), 'skipped' (no key) or throws.
-async function addToButtondown(email, source, tag, apiKey) {
+async function addToButtondown(email, source, tag, ref, apiKey) {
   if (!apiKey) return 'skipped';
   const tags = tag ? [source, tag] : [source];
-  const metadata = tag ? { source, tag } : { source };
+  const metadata = { source, ...(tag ? { tag } : {}), ...(ref ? { ref } : {}) };
   const res = await fetchWithTimeout(BUTTONDOWN_URL, {
     method: 'POST',
     headers: { Authorization: `Token ${apiKey}`, 'Content-Type': 'application/json' },
@@ -73,8 +76,19 @@ async function addToButtondown(email, source, tag, apiKey) {
 }
 
 // Returns 'saved', 'exists' or throws. The table rejects malformed rows itself.
-async function addToSupabase(email, source) {
-  const res = await fetchWithTimeout(SUPABASE_URL, {
+// A row with a ref that the table refuses (the ref column not added yet) is
+// saved again without it, so the backup never loses an address over a tag.
+async function addToSupabase(email, source, ref) {
+  const res = await insertSignup(ref ? { email, source, ref } : { email, source });
+  if (res.ok) return 'saved';
+  if (res.status === 409) return 'exists';
+  const detail = await res.text();
+  if (ref && res.status === 400) return addToSupabase(email, source, null);
+  throw new Error(`Supabase ${res.status}: ${detail}`);
+}
+
+function insertSignup(row) {
+  return fetchWithTimeout(SUPABASE_URL, {
     method: 'POST',
     headers: {
       apikey: SUPABASE_KEY,
@@ -82,11 +96,8 @@ async function addToSupabase(email, source) {
       'Content-Type': 'application/json',
       Prefer: 'return=minimal',
     },
-    body: JSON.stringify({ email, source }),
+    body: JSON.stringify(row),
   });
-  if (res.ok) return 'saved';
-  if (res.status === 409) return 'exists';
-  throw new Error(`Supabase ${res.status}: ${await res.text()}`);
 }
 
 function readBody(req) {
@@ -104,6 +115,7 @@ module.exports = async function handler(req, res) {
   const email = String(body.email || '').trim().toLowerCase();
   const source = SOURCES.has(body.source) ? body.source : 'unknown';
   const tag = TAGS.has(body.tag) ? body.tag : null;
+  const ref = typeof body.ref === 'string' && REF_RE.test(body.ref) ? body.ref : null;
 
   // Honeypot: bots fill the hidden field, people cannot. Say yes, do nothing.
   if (body.website) return send(res, 200, { ok: true });
@@ -112,8 +124,8 @@ module.exports = async function handler(req, res) {
   }
 
   const [mailer, backup] = await Promise.allSettled([
-    addToButtondown(email, source, tag, process.env.BUTTONDOWN_API_KEY),
-    addToSupabase(email, source),
+    addToButtondown(email, source, tag, ref, process.env.BUTTONDOWN_API_KEY),
+    addToSupabase(email, source, ref),
   ]);
   const mailerOk = mailer.status === 'fulfilled';
   const backupOk = backup.status === 'fulfilled';
