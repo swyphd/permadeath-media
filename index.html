@@ -481,6 +481,9 @@
 
   .shelf-link::after { content: " \2192"; }
 
+  .devlog-more { margin-top: 1rem; font-size: 0.8rem; letter-spacing: 0.06em; }
+  .devlog-more a { color: var(--yellow); }
+
   @media (max-width: 720px) {
     .featured-card { grid-template-columns: 1fr; }
     .featured-shot { border-left: 0; border-top: 2px solid var(--yellow); aspect-ratio: 16 / 10; }
@@ -565,6 +568,28 @@
       </div>
     </section>
 
+    <!-- devlog:start (written by devlog/build.mjs) -->
+    <section id="devlog">
+      <span class="section-label mono">From the Devlog</span>
+
+      <div class="shelf">
+        <a class="shelf-item" href="/devlog/hedy-plant-act-3/">
+          <span class="file-id mono">HEDY PLANT · OCTOBER 19, 2026</span>
+          <span class="shelf-title">Act 3, mandatory overtime, and a factory you can see</span>
+          <span class="shelf-desc mono">Freeing Plant 9 is no longer the end. Act 3 hands you a federation of worker co-ops to run, act 1 gets mandatory overtime, and the whole game gets pictures.</span>
+          <span class="shelf-link mono">Read the post</span>
+        </a>
+        <a class="shelf-item" href="/devlog/hedy-plant-nobody-lost/">
+          <span class="file-id mono">HEDY PLANT · OCTOBER 15, 2026</span>
+          <span class="shelf-title">Nobody lost Hedy Plant. That was a bug in the balance, not in you.</span>
+          <span class="shelf-desc mono">147 runs, 67 wins, 0 losses. What the first two days on itch.io told us about Hedy Plant's balance, and what changed.</span>
+          <span class="shelf-link mono">Read the post</span>
+        </a>
+      </div>
+      <p class="devlog-more mono"><a href="/devlog/">All devlog posts</a></p>
+    </section>
+    <!-- devlog:end -->
+
     <section id="dispatches">
       <span class="section-label mono">Founding Playtesters</span>
 
@@ -643,7 +668,7 @@
     </section>
 
     <footer>
-      <p class="mono">© 2026 PERMADEATH MEDIA · <a href="/press/" style="color:inherit">PRESS KIT</a></p>
+      <p class="mono">© 2026 PERMADEATH MEDIA · <a href="/devlog/" style="color:inherit">DEVLOG</a> · <a href="/press/" style="color:inherit">PRESS KIT</a></p>
     </footer>
   </div>
 

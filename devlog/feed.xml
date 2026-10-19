@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+<channel>
+  <title>Permadeath Media devlog</title>
+  <link>https://permadeathmedia.com/devlog/</link>
+  <description>What we changed in our games and why.</description>
+  <item>
+    <title>Act 3, mandatory overtime, and a factory you can see</title>
+    <link>https://permadeathmedia.com/devlog/hedy-plant-act-3/</link>
+    <guid>https://permadeathmedia.com/devlog/hedy-plant-act-3/</guid>
+    <pubDate>Mon, 19 Oct 2026 12:00:00 GMT</pubDate>
+    <category>Hedy Plant</category>
+    <description>Freeing Plant 9 is no longer the end. Act 3 hands you a federation of worker co-ops to run, act 1 gets mandatory overtime, and the whole game gets pictures.</description>
+  </item>
+  <item>
+    <title>Nobody lost Hedy Plant. That was a bug in the balance, not in you.</title>
+    <link>https://permadeathmedia.com/devlog/hedy-plant-nobody-lost/</link>
+    <guid>https://permadeathmedia.com/devlog/hedy-plant-nobody-lost/</guid>
+    <pubDate>Thu, 15 Oct 2026 12:00:00 GMT</pubDate>
+    <category>Hedy Plant</category>
+    <description>147 runs, 67 wins, 0 losses. What the first two days on itch.io told us about Hedy Plant's balance, and what changed.</description>
+  </item>
+</channel>
+</rss>

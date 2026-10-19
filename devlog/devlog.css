@@ -1,0 +1,191 @@
+/* The devlog's pages. Same palette and type as the homepage (index.html). */
+:root {
+  --soot: #1A1A18;
+  --soot-2: #232320;
+  --oxide: #C0392B;
+  --oxide-text: #E0675A;
+  --yellow: #F1C40F;
+  --teal: #1A7A6E;
+  --teal-text: #4FB3A5;
+  --paper: #E9E4D8;
+  --paper-dim: #B8B2A2;
+  --line: rgba(233, 228, 216, 0.15);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--soot);
+  color: var(--paper);
+  font-family: "IBM Plex Sans", sans-serif;
+  line-height: 1.5;
+}
+
+a { color: var(--yellow); }
+
+.stencil { font-family: "Big Shoulders Stencil", sans-serif; text-transform: uppercase; }
+.mono { font-family: "IBM Plex Mono", monospace; }
+.hit { color: var(--oxide); }
+
+.hazard-rule {
+  height: 8px;
+  background: repeating-linear-gradient(135deg, var(--yellow) 0 16px, var(--soot) 16px 32px);
+}
+
+.wrap { max-width: 960px; margin: 0 auto; padding: 0 1rem; }
+@media (min-width: 600px) { .wrap { padding: 0 1.5rem; } }
+
+/* Header */
+.top {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.75rem;
+  padding: 1.5rem 0 1.25rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.brand { font-size: 1.6rem; font-weight: 800; color: var(--paper); text-decoration: none; letter-spacing: 0.01em; }
+
+.top nav { display: flex; gap: 1.1rem; font-size: 0.8rem; letter-spacing: 0.06em; }
+.top nav a { color: var(--paper-dim); text-decoration: none; }
+.top nav a:hover, .top nav a:focus-visible { color: var(--yellow); }
+
+section, main { padding: 2.5rem 0; border-bottom: 1px solid var(--line); }
+
+.section-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.78rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--soot);
+  background: var(--yellow);
+  padding: 0.3rem 0.7rem;
+  margin-bottom: 1.5rem;
+}
+.section-label::before { content: ""; width: 8px; height: 8px; background: var(--soot); display: inline-block; }
+
+/* Index */
+.intro { border: 0; padding-bottom: 1.5rem; }
+.intro h1 { font-size: clamp(3rem, 10vw, 5rem); font-weight: 800; line-height: 0.95; }
+.intro p { margin-top: 1rem; max-width: 56ch; font-size: 0.9rem; color: var(--paper-dim); }
+
+.chips { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1.5rem; }
+.chip {
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  color: var(--paper);
+  background: transparent;
+  border: 1px solid rgba(233, 228, 216, 0.3);
+  padding: 0.4rem 0.8rem;
+  cursor: pointer;
+}
+.chip[aria-pressed="true"] { background: var(--yellow); border-color: var(--yellow); color: var(--soot); }
+.chip:focus-visible { outline: 2px solid var(--yellow); outline-offset: 2px; }
+
+.post-list { display: grid; gap: 1.25rem; }
+main > .post-list { margin-top: 0.5rem; }
+
+.post-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  background: var(--soot-2);
+  border: 1px solid rgba(233, 228, 216, 0.18);
+  border-left: 4px solid var(--teal);
+}
+.post-card[hidden] { display: none; }
+@media (min-width: 720px) { .post-card { grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); } }
+
+.post-cover { display: block; background: #E8EBEE; aspect-ratio: 16 / 10; overflow: hidden; }
+.post-cover img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: top left; }
+
+.post-card-body { padding: 1.25rem 1.4rem 1.4rem; }
+.post-card-title { font-size: 1.35rem; font-weight: 600; line-height: 1.25; margin: 0.6rem 0 0.5rem; }
+.post-card-title a { color: var(--paper); text-decoration: none; }
+.post-card-title a:hover, .post-card-title a:focus-visible { color: var(--yellow); }
+.post-card-body p { font-size: 0.82rem; color: var(--paper-dim); }
+
+.meta { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem; font-size: 0.75rem; letter-spacing: 0.06em; color: var(--paper-dim); }
+.tag { color: var(--teal-text); border: 1px solid var(--teal-text); padding: 0.1rem 0.55rem; text-decoration: none; text-transform: uppercase; letter-spacing: 0.1em; }
+.tag:hover, .tag:focus-visible { color: var(--yellow); border-color: var(--yellow); }
+
+.empty { color: var(--paper-dim); font-size: 0.85rem; }
+
+/* Post */
+.post h1 { font-size: clamp(2.2rem, 6.5vw, 3.6rem); font-weight: 800; line-height: 1; margin: 1rem 0 1.75rem; max-width: 22ch; }
+
+.prose { max-width: 68ch; font-size: 1.02rem; line-height: 1.65; }
+.prose > * + * { margin-top: 1.1rem; }
+.prose h2 { font-family: "Big Shoulders Stencil", sans-serif; text-transform: uppercase; font-size: 1.9rem; font-weight: 700; line-height: 1.05; margin-top: 2.5rem; color: var(--paper); }
+.prose h3 { font-size: 1.15rem; font-weight: 600; margin-top: 1.75rem; }
+.prose ul { padding-left: 1.25rem; }
+.prose li + li { margin-top: 0.45rem; }
+.prose strong { color: #fff; font-weight: 600; }
+.prose code { font-family: "IBM Plex Mono", monospace; font-size: 0.9em; }
+.prose figure { margin: 1.75rem 0; }
+.prose figure img, .prose img { display: block; max-width: 100%; height: auto; border: 1px solid rgba(233, 228, 216, 0.25); background: #E8EBEE; }
+.prose figcaption { margin-top: 0.5rem; font-family: "IBM Plex Mono", monospace; font-size: 0.75rem; color: var(--paper-dim); }
+
+.cta { display: flex; flex-wrap: wrap; align-items: center; gap: 0.9rem; margin-top: 2.5rem; font-size: 0.8rem; color: var(--paper-dim); }
+
+.file-link {
+  display: inline-block;
+  font-size: 0.85rem;
+  letter-spacing: 0.06em;
+  color: var(--soot);
+  background: var(--yellow);
+  padding: 0.65rem 1.1rem;
+  text-decoration: none;
+  font-weight: 500;
+}
+.file-link:hover, .file-link:focus-visible { background: var(--paper); }
+.file-link::after { content: " \2192"; }
+
+/* Games shelf */
+.shelf { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; }
+.shelf-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 1.1rem 1.15rem;
+  background: var(--soot-2);
+  border: 1px solid rgba(233, 228, 216, 0.18);
+  color: var(--paper);
+  text-decoration: none;
+}
+.shelf-item:hover, .shelf-item:focus-visible { border-color: var(--yellow); }
+.shelf-title { font-size: 1.4rem; font-weight: 700; line-height: 1; }
+.shelf-desc { font-size: 0.8rem; color: var(--paper-dim); flex: 1; }
+.shelf-link { font-size: 0.78rem; letter-spacing: 0.06em; color: var(--yellow); }
+.shelf-link::after { content: " \2192"; }
+
+/* Signup (same form as the homepage) */
+.signup p { max-width: 56ch; font-size: 0.85rem; color: var(--paper-dim); }
+.signup-form { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 1.1rem; max-width: 480px; }
+.signup-form input[type="email"] {
+  flex: 1 1 220px;
+  min-width: 0;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.9rem;
+  color: var(--paper);
+  background: var(--soot);
+  border: 1px solid rgba(233, 228, 216, 0.3);
+  padding: 0.65rem 0.9rem;
+  border-radius: 0;
+}
+.signup-form input[type="email"]:focus { outline: 2px solid var(--yellow); outline-offset: 1px; border-color: var(--yellow); }
+.signup-btn { font-size: 0.85rem; letter-spacing: 0.06em; font-weight: 500; color: var(--soot); background: var(--yellow); border: 0; padding: 0.65rem 1.1rem; cursor: pointer; }
+.signup-btn:hover, .signup-btn:focus-visible { background: var(--paper); }
+.signup-btn:disabled { opacity: 0.6; cursor: wait; }
+.signup-hp { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
+.signup-msg { margin-top: 0.75rem; font-size: 0.8rem; min-height: 1.2em; color: var(--paper-dim); }
+.signup-msg.ok { color: var(--yellow); }
+.signup-msg.err { color: var(--oxide-text); }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+footer { padding: 2rem 0 2.5rem; text-align: center; }
+footer p { font-size: 0.75rem; letter-spacing: 0.08em; color: var(--paper-dim); }
+footer a { color: inherit; }
