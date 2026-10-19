@@ -20,6 +20,21 @@ addresses send visitors here. Adding another separately-built game is the
 same three steps: a rewrite here, a `base` there, a redirect on its old
 address.
 
+## Devlog
+
+`/devlog/` is one devlog for every game, so a post about one game also shows
+readers the others. Each post is a folder, `devlog/<slug>/`, holding `post.md`
+and its images. `post.md` starts with a frontmatter block (`title`, `date`
+as YYYY-MM-DD, `game` (a key of `GAMES` in `devlog/build.mjs`, or `studio`),
+`summary`, and an optional `cover` image), then the post in plain Markdown:
+headings, paragraphs, `-` lists, links, bold and italic, and an image on its own
+line, whose alt text becomes its caption.
+
+After adding or editing a post, run `node devlog/build.mjs` and commit what it
+writes: the post page, `devlog/index.html` (filterable by game), `devlog/feed.xml`
+and the "From the Devlog" block on the homepage. The kit tests fail if the
+committed pages are out of date. Game links from the devlog carry `?ref=devlog`.
+
 ## Studio kit
 
 `/kit/` is the shared code every game was writing for itself: the mailing-list
