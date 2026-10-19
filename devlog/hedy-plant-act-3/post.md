@@ -59,6 +59,14 @@ Then the crew wears down. The bonus shrinks to 10%. People start quitting, and e
 
 You can end it any time. The quitting stops, but the crew takes ten minutes to recover and nobody who left comes back. In our test runs, overtime for the first five minutes puts you about 8% ahead. Leave it on and you're 7% behind by minute 10 and 15 to 20% behind by minute 20. Buying the plant out ends it for good.
 
+## Act 1: no more parking under Hedy's radar
+
+Some of you found a quiet trick: take Hedy's first letter or two, then stop growing just under the next review. Hedy never wrote again, and you walked into the buyout with tens of millions saved and nothing to fear in act 2.
+
+Not anymore. After the first letter, the Supply Agreement panel now shows a second clock: if your output stays flat for six minutes, Hedy reviews your pricing anyway, because "a plant that stands still costs the network more per car to support." If you've signed a federation agreement, the same clock voids it instead, and the closure threat comes back. Keep growing and you'll never see the clock. Grow and get squeezed, or stall and get squeezed: there's no parking spot under Hedy.
+
+![Hedy's letter to a plant that stopped growing, with the countdown on the Supply Agreement panel behind it](review-clock-letter.png)
+
 ## A car you build by hand, and pictures for the numbers
 
 Beta players told us each column was a wall of text, and they were right. So:
@@ -104,7 +112,9 @@ The sales panel also finally explains something a lot of you asked about: why pr
 - After the run ends, act 3 panels say the act is over instead of showing live-looking buttons and frozen timers.
 - Save image and Share on the Congress win screen no longer throw an error.
 - Raising the education share right before a year close no longer gives you the whole year's bonus.
-- Layoffs now actually close the hired lines instead of hiding the workers while their lines kept running.
+- In the act 3 downturn, laying off members now idles the lines they ran (the car plants drop to about two thirds), and a "Hire them back" button brings them back once orders return.
+- "Ride it out on reserves" now actually pays the idle crews from the reserve fund until it runs dry. The recession banner shows what's left and how fast it's going.
+- Federation vote cards only count down while they're on screen, one at a time, so the council can't decide before you've seen the question.
 - The year letter no longer doubles your capital and fund while the tax case stands, and shows what the state took.
 - Hedy Capital's rescue now counts the jobs that leave with it.
 - During a recession, "Where our cars go" shows a Recession row and a red total.
