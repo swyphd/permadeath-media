@@ -91,6 +91,7 @@ The sales panel also finally explains something a lot of you asked about: why pr
 
 - Cars/min now shows what the plant is actually turning out. Cars you build by hand count (a 15-second average, with a small "by hand" line under the number), and profit and both charts include them.
 - During a line stoppage, Cars/min turns red and drops by what's lost, and profit, the charts and the belt follow. Hedy's price reviews still go by your normal line rate, so a breakdown or a burst of clicking never triggers one.
+- Optional sound effects: quiet cues for taps, finished cars, purchases, line stoppages, letters, votes and the win. Sound starts off; turn it on with the speaker button in the top bar, next to help and settings, and the game remembers your choice.
 - The robot welder now "takes no breaks".
 - The worker card counts how many people quit.
 - The fleet and showroom cards show their current caps instead of the starting numbers.
