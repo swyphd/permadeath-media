@@ -24,40 +24,84 @@ export const GAMES = {
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
 // ---------- Markdown (the subset the posts use) ----------
-// # headings, paragraphs, - lists, a line that is only ![alt](src) becomes a figure with the alt as its caption,
-// [links](url), **bold**, *italic*, `code`. Raw HTML is escaped, not passed through.
-function inline(s) {
-  return esc(s)
-    .replace(/`([^`]+)`/g, '<code>$1</code>')
-    .replace(/!\[([^\]]*)\]\(([^)\s]+)\)/g, '<img src="$2" alt="$1" loading="lazy">')
-    .replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, '<a href="$2">$1</a>')
-    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
-    .replace(/(^|[^*])\*([^*\s][^*]*?)\*(?!\*)/g, '$1<em>$2</em>');
+// # headings, paragraphs, - and 1. lists, a line that is only ![alt](src) becomes a figure with the alt as its caption,
+// [links](url), **bold**, *italic*, `code`. Raw HTML is escaped, not passed through. `base` is the post's folder
+// (/devlog/<slug>/): image paths in a post are relative to it, and are written out absolute so they still load
+// when the page is reached without its trailing slash.
+
+// Width and height of a PNG, GIF or JPEG, so the page doesn't jump as images load. null if unreadable.
+export function imageSize(file) {
+  let b;
+  try { b = fs.readFileSync(file); } catch { return null; }
+  if (b.length > 24 && b.readUInt32BE(0) === 0x89504e47) return { w: b.readUInt32BE(16), h: b.readUInt32BE(20) };
+  if (b.length > 10 && b.toString('ascii', 0, 3) === 'GIF') return { w: b.readUInt16LE(6), h: b.readUInt16LE(8) };
+  if (b[0] === 0xff && b[1] === 0xd8) {
+    for (let i = 2; i + 9 < b.length;) {
+      if (b[i] !== 0xff) { i++; continue; }
+      const marker = b[i + 1];
+      if (marker >= 0xc0 && marker <= 0xcf && ![0xc4, 0xc8, 0xcc].includes(marker)) return { w: b.readUInt16BE(i + 7), h: b.readUInt16BE(i + 5) };
+      i += 2 + b.readUInt16BE(i + 2);
+    }
+  }
+  return null;
 }
 
-export function markdown(src) {
+const isRelative = (src) => !/^([a-z][a-z0-9+.-]*:|\/|#)/i.test(src);
+
+function img(src, alt, base) {
+  const url = base && isRelative(src) ? base + src : src;
+  let size = null;
+  if (base && isRelative(src)) {
+    const file = path.join(DIR, base.replace(/^\/devlog\//, ''), src);
+    if (!fs.existsSync(file)) throw new Error(`${base}: image ${src} is not in the post's folder`);
+    size = imageSize(file);
+  }
+  return `<img src="${esc(url)}" alt="${esc(alt)}"${size ? ` width="${size.w}" height="${size.h}"` : ''} loading="lazy">`;
+}
+
+function inline(s, base = '') {
+  // images first, on the raw text, so their alt and src are escaped once
+  const parts = s.split(/(!\[[^\]]*\]\([^)\s]+\))/);
+  return parts.map((part, i) => {
+    if (i % 2) { const m = part.match(/^!\[([^\]]*)\]\(([^)\s]+)\)$/); return img(m[2], m[1], base); }
+    return esc(part)
+      .replace(/`([^`]+)`/g, '<code>$1</code>')
+      .replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, '<a href="$2">$1</a>')
+      .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+      .replace(/(^|[^*\w])\*([^*\s][^*]*?)\*(?![*\w])/g, '$1<em>$2</em>');
+  }).join('');
+}
+
+export function markdown(src, base = '') {
   const out = [];
-  let para = [], list = null;
-  const flush = () => {
-    if (para.length) out.push(`<p>${inline(para.join(' '))}</p>`);
+  let para = [], list = null, ordered = false;
+  const endPara = () => {
+    if (para.length) out.push(`<p>${inline(para.join(' '), base)}</p>`);
     para = [];
-    if (list) out.push(`<ul>${list.map((li) => `<li>${inline(li)}</li>`).join('')}</ul>`);
+  };
+  const flush = () => {
+    endPara();
+    const tag = ordered ? 'ol' : 'ul';
+    if (list) out.push(`<${tag}>${list.map((li) => `<li>${inline(li, base)}</li>`).join('')}</${tag}>`);
     list = null;
   };
-  for (const raw of src.split('\n')) {
+  for (const raw of src.replace(/\r\n?/g, '\n').split('\n')) {
     const line = raw.trimEnd();
     let m;
     if (!line.trim()) { flush(); continue; }
-    if ((m = line.match(/^(#{1,4})\s+(.*)$/))) {
+    if ((m = line.match(/^(#{1,6})\s+(.*)$/))) {
       flush();
-      const level = Math.min(m[1].length + 1, 4); // the post title is the page's h1, so # in a post is an h2
-      out.push(`<h${level}>${inline(m[2])}</h${level}>`);
+      const level = Math.min(m[1].length + 1, 6); // the post title is the page's h1, so # in a post is an h2
+      out.push(`<h${level}>${inline(m[2], base)}</h${level}>`);
     } else if ((m = line.match(/^!\[([^\]]*)\]\(([^)\s]+)\)$/))) {
       flush();
-      out.push(`<figure><img src="${esc(m[2])}" alt="${esc(m[1])}" loading="lazy">${m[1] ? `<figcaption>${inline(m[1])}</figcaption>` : ''}</figure>`);
-    } else if ((m = line.match(/^[-*]\s+(.*)$/))) {
-      if (para.length) { out.push(`<p>${inline(para.join(' '))}</p>`); para = []; }
-      (list ||= []).push(m[1]);
+      out.push(`<figure>${img(m[2], m[1], base)}${m[1] ? `<figcaption>${inline(m[1], base)}</figcaption>` : ''}</figure>`);
+    } else if ((m = line.match(/^(?:([-*])|(\d+)[.)])\s+(.*)$/))) {
+      const isOl = !m[1];
+      if (list && isOl !== ordered) flush();
+      endPara();
+      ordered = isOl;
+      (list ||= []).push(m[3]);
     } else if (list && /^\s+\S/.test(raw)) {
       list[list.length - 1] += ' ' + line.trim(); // a wrapped list item
     } else {
@@ -70,7 +114,7 @@ export function markdown(src) {
 }
 
 export function parsePost(text, slug) {
-  const m = text.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/);
+  const m = text.replace(/\r\n?/g, '\n').replace(/^\uFEFF/, '').match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/);
   if (!m) throw new Error(`${slug}/post.md needs a --- frontmatter block`);
   const meta = {};
   for (const line of m[1].split('\n')) {
@@ -88,7 +132,7 @@ const fmtDate = (d) => new Date(d + 'T12:00:00Z').toLocaleDateString('en-US', { 
 // ---------- page parts ----------
 const FONTS = '<link rel="preconnect" href="https://fonts.googleapis.com">\n<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Stencil:wght@600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">';
 
-function head({ title, description, url, image }) {
+function head({ title, description, url, image, type = 'article' }) {
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -96,7 +140,7 @@ function head({ title, description, url, image }) {
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>${esc(title)}</title>
 <meta name="description" content="${esc(description)}">
-<meta property="og:type" content="article">
+<meta property="og:type" content="${type}">
 <meta property="og:title" content="${esc(title)}">
 <meta property="og:description" content="${esc(description)}">
 <meta property="og:url" content="${SITE}${url}">
@@ -116,9 +160,9 @@ ${FONTS}
 const tag = (game) => `<a class="tag mono" href="/devlog/?game=${game}">${esc(GAMES[game].name)}</a>`;
 
 function card(p) {
-  const cover = p.cover ? `<img src="/devlog/${p.slug}/${esc(p.cover)}" alt="" loading="lazy">` : '';
-  return `<article class="post-card" data-game="${p.game}">
-  <a class="post-cover" href="/devlog/${p.slug}/" tabindex="-1" aria-hidden="true">${cover}</a>
+  const cover = p.cover ? `<a class="post-cover" href="/devlog/${p.slug}/" tabindex="-1" aria-hidden="true">${img(p.cover, '', `/devlog/${p.slug}/`)}</a>` : '';
+  return `<article class="post-card${p.cover ? '' : ' no-cover'}" data-game="${p.game}">
+  ${cover}
   <div class="post-card-body">
     <div class="meta mono">${tag(p.game)}<time datetime="${p.date}">${fmtDate(p.date)}</time></div>
     <h2 class="post-card-title"><a href="/devlog/${p.slug}/">${esc(p.title)}</a></h2>
@@ -167,7 +211,7 @@ function postPage(p, posts) {
   <div class="meta mono">${tag(p.game)}<time datetime="${p.date}">${fmtDate(p.date)}</time></div>
   <h1 class="stencil">${esc(p.title)}</h1>
   <div class="prose">
-${markdown(p.body)}
+${markdown(p.body, `/devlog/${p.slug}/`)}
   </div>
   ${cta}
 </main>
@@ -180,7 +224,7 @@ ${FOOT}`;
 function indexPage(posts) {
   const used = [...new Set(posts.map((p) => p.game))];
   const chips = [`<button class="chip mono" data-game="" aria-pressed="true">All games</button>`, ...used.map((id) => `<button class="chip mono" data-game="${id}" aria-pressed="false">${esc(GAMES[id].name)}</button>`)];
-  return `${head({ title: 'Devlog · Permadeath Media', description: 'What we changed in our games and why: balance numbers, playtest findings and new acts, from every Permadeath Media game.', url: '/devlog/', image: posts[0]?.cover ? `/devlog/${posts[0].slug}/${posts[0].cover}` : null })}
+  return `${head({ title: 'Devlog · Permadeath Media', description: 'What we changed in our games and why: balance numbers, playtest findings and new acts, from every Permadeath Media game.', url: '/devlog/', type: 'website', image: posts[0]?.cover ? `/devlog/${posts[0].slug}/${posts[0].cover}` : null })}
 <main>
   <section class="intro">
     <h1 class="stencil">Dev<span class="hit">log</span></h1>
